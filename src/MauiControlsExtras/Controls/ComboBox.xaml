@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:converters="clr-namespace:MauiControlsExtras.Converters"
+             x:Class="MauiControlsExtras.Controls.ComboBox"
+             x:Name="thisControl">
+
+    <ContentView.Resources>
+        <converters:MauiAssetImageConverter x:Key="MauiAssetImageConverter" />
+    </ContentView.Resources>
+
+    <Grid RowDefinitions="Auto,Auto">
+
+        <!-- Collapsed View: Selected Value + Dropdown Arrow -->
+        <Border x:Name="collapsedBorder"
+                StrokeThickness="1.5"
+                Stroke="{AppThemeBinding Light=#BDBDBD, Dark=#9E9E9E}"
+                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+                Padding="12,10"
+                HeightRequest="48">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="8" />
+            </Border.StrokeShape>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnCollapsedTapped" />
+            </Border.GestureRecognizers>
+
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                <!-- Selected Icon (only visible when IconMemberPath is set and item selected) -->
+                <Image x:Name="selectedIcon"
+                       Grid.Column="0"
+                       Source="{Binding SelectedIconSource, Source={x:Reference thisControl}, Converter={StaticResource MauiAssetImageConverter}}"
+                       WidthRequest="28"
+                       HeightRequest="28"
+                       VerticalOptions="Center"
+                       Aspect="AspectFit"
+                       IsVisible="{Binding HasSelectedIcon, Source={x:Reference thisControl}}" />
+
+                <!-- Selected Value or Placeholder -->
+                <Label x:Name="selectedLabel"
+                       Grid.Column="1"
+                       Text="{Binding DisplayText, Source={x:Reference thisControl}}"
+                       TextColor="{Binding DisplayTextColor, Source={x:Reference thisControl}}"
+                       FontSize="14"
+                       VerticalOptions="Center"
+                       LineBreakMode="TailTruncation" />
+
+                <!-- Clear Button (only visible when item selected) -->
+                <Label x:Name="clearButton"
+                       Grid.Column="2"
+                       Text="✕"
+                       FontSize="14"
+                       TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                       VerticalOptions="Center"
+                       IsVisible="{Binding HasSelection, Source={x:Reference thisControl}}">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnClearTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <!-- Dropdown Arrow -->
+                <Label x:Name="dropdownArrow"
+                       Grid.Column="3"
+                       Text="▼"
+                       FontSize="10"
+                       TextColor="{AppThemeBinding Light=#757575, Dark=#BDBDBD}"
+                       VerticalOptions="Center" />
+            </Grid>
+        </Border>
+
+        <!-- Expanded View: Search + List -->
+        <Border x:Name="expandedBorder"
+                Grid.Row="1"
+                IsVisible="False"
+                StrokeThickness="1"
+                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#616161}"
+                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+                Margin="0,-1,0,0"
+                ZIndex="100">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="0,0,8,8" />
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="{AppThemeBinding Light=#9E9E9E, Dark=#000000}"
+                        Offset="0,4"
+                        Radius="8"
+                        Opacity="0.3" />
+            </Border.Shadow>
+
+            <Grid RowDefinitions="Auto,*">
+                <!-- Search Input -->
+                <Border Grid.Row="0"
+                        StrokeThickness="0,0,0,1"
+                        Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
+                        Padding="8,6"
+                        BackgroundColor="Transparent">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <!-- Search Icon -->
+                        <Label Grid.Column="0"
+                               Text="🔍"
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               Margin="0,0,8,0"
+                               Opacity="0.6" />
+
+                        <!-- Search Entry -->
+                        <Entry x:Name="searchEntry"
+                               Grid.Column="1"
+                               Placeholder="Search..."
+                               PlaceholderColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                               TextColor="{AppThemeBinding Light=#212121, Dark=#FFFFFF}"
+                               BackgroundColor="Transparent"
+                               FontSize="14"
+                               TextChanged="OnSearchTextChanged" />
+
+                        <!-- Clear Search Button -->
+                        <Label x:Name="clearSearchButton"
+                               Grid.Column="2"
+                               Text="✕"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                               VerticalOptions="Center"
+                               IsVisible="False">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnClearSearchTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </Border>
+
+                <!-- Items List (ItemTemplate set in code-behind for DisplayMemberPath support) -->
+                <CollectionView x:Name="itemsList"
+                                Grid.Row="1"
+                                ItemsSource="{Binding FilteredItems, Source={x:Reference thisControl}}"
+                                SelectionMode="None"
+                                MaximumHeightRequest="{Binding ListMaxHeight, Source={x:Reference thisControl}}">
+                    <CollectionView.EmptyView>
+                        <Grid Padding="12,16">
+                            <Label Text="No matches found"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                                   HorizontalOptions="Center" />
+                        </Grid>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+            </Grid>
+        </Border>
+    </Grid>
+</ContentView>

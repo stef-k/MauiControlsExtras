@@ -1,0 +1,62 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Node modules (for docs)
+node_modules/
+
+# Publish output
+publish/
