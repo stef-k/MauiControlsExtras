@@ -28,7 +28,6 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageIcon>icon.png</PackageIcon>
 		<Copyright>Copyright (c) 2026 stef-k</Copyright>
 
 		<!-- Generate XML documentation -->
@@ -46,7 +45,6 @@
 
 	<ItemGroup>
 		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
-		<None Include="..\..\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\..\icon.png')" />
 	</ItemGroup>
 
 </Project>
