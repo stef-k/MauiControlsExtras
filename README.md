@@ -2,7 +2,7 @@
 
 A collection of enhanced UI controls for .NET MAUI applications that fill gaps in the standard control library.
 
-[![NuGet](https://img.shields.io/nuget/v/MauiControlsExtras.svg)](https://www.nuget.org/packages/MauiControlsExtras/)
+[![NuGet](https://img.shields.io/nuget/v/StefK.MauiControlsExtras.svg)](https://www.nuget.org/packages/StefK.MauiControlsExtras/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
@@ -24,13 +24,13 @@ A feature-rich dropdown control similar to WinForms ComboBox, with modern mobile
 ### NuGet Package Manager
 
 ```
-Install-Package MauiControlsExtras
+Install-Package StefK.MauiControlsExtras
 ```
 
 ### .NET CLI
 
 ```
-dotnet add package MauiControlsExtras
+dotnet add package StefK.MauiControlsExtras
 ```
 
 ## Quick Start

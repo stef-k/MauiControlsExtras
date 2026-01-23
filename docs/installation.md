@@ -7,13 +7,13 @@ MAUI Controls Extras is available as a NuGet package.
 ### Package Manager Console
 
 ```powershell
-Install-Package MauiControlsExtras
+Install-Package StefK.MauiControlsExtras
 ```
 
 ### .NET CLI
 
 ```bash
-dotnet add package MauiControlsExtras
+dotnet add package StefK.MauiControlsExtras
 ```
 
 ### PackageReference
@@ -21,7 +21,7 @@ dotnet add package MauiControlsExtras
 Add to your `.csproj` file:
 
 ```xml
-<PackageReference Include="MauiControlsExtras" Version="1.0.0" />
+<PackageReference Include="StefK.MauiControlsExtras" Version="1.0.0" />
 ```
 
 ## Requirements
