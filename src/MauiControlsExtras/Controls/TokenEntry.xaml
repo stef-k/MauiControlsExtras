@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:TextStyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                            xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                            x:Class="MauiControlsExtras.Controls.TokenEntry"
+                            x:Name="thisControl">
+
+    <Grid RowDefinitions="Auto,Auto">
+        <!-- Main Input Area -->
+        <Border x:Name="mainBorder"
+                StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+                Stroke="{Binding CurrentBorderColor, Source={x:Reference thisControl}}"
+                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+                Padding="8,6"
+                MinHeightRequest="48">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+            </Border.StrokeShape>
+
+            <FlexLayout x:Name="tokensContainer"
+                        Wrap="Wrap"
+                        AlignItems="Center"
+                        JustifyContent="Start"
+                        Direction="Row">
+                <!-- Tokens are added dynamically -->
+                <!-- Entry is added at the end -->
+            </FlexLayout>
+        </Border>
+
+        <!-- Suggestions Dropdown -->
+        <Border x:Name="suggestionsDropdown"
+                Grid.Row="1"
+                IsVisible="False"
+                StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#616161}"
+                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+                Margin="0,-1,0,0"
+                ZIndex="100">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="0,0,8,8" />
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="{AppThemeBinding Light=#9E9E9E, Dark=#000000}"
+                        Offset="0,4"
+                        Radius="8"
+                        Opacity="0.3" />
+            </Border.Shadow>
+
+            <CollectionView x:Name="suggestionsList"
+                            ItemsSource="{Binding FilteredSuggestions, Source={x:Reference thisControl}}"
+                            SelectionMode="None"
+                            MaximumHeightRequest="180">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="12,10">
+                            <Grid.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnSuggestionTapped" />
+                            </Grid.GestureRecognizers>
+                            <Label Text="{Binding .}"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#212121, Dark=#FFFFFF}" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <Grid Padding="12,10">
+                        <Label Text="No suggestions"
+                               FontSize="14"
+                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}" />
+                    </Grid>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Border>
+    </Grid>
+</base:TextStyledControlBase>
