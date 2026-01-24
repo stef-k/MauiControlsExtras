@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        x:Class="MauiControlsExtras.Controls.Rating"
+                        x:Name="thisControl">
+
+    <HorizontalStackLayout x:Name="iconsContainer"
+                           Spacing="{Binding Spacing, Source={x:Reference thisControl}}"
+                           HorizontalOptions="Start"
+                           VerticalOptions="Center">
+        <!-- Rating icons are added dynamically -->
+    </HorizontalStackLayout>
+</base:StyledControlBase>
