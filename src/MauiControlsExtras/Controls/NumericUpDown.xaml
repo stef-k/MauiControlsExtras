@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:TextStyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                            xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                            x:Class="MauiControlsExtras.Controls.NumericUpDown"
+                            x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding CurrentBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+            HeightRequest="48">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <Grid x:Name="mainGrid">
+            <!-- Content is built dynamically based on ButtonPlacement -->
+        </Grid>
+    </Border>
+</base:TextStyledControlBase>

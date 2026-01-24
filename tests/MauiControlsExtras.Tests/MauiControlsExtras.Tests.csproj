@@ -19,12 +19,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Include validation source files directly for unit testing (no MAUI dependencies) -->
+    <!-- Include source files without MAUI dependencies for unit testing -->
     <Compile Include="..\..\src\MauiControlsExtras\Base\Validation\ValidationResult.cs" Link="Base\Validation\ValidationResult.cs" />
   </ItemGroup>
 
-  <!-- Note: MAUI controls cannot be directly referenced in standard test projects.
-       For UI testing, create a MAUI test application or use device runners.
-       This project tests non-UI logic and serves as a placeholder for future tests. -->
+  <!--
+    Note: MAUI controls require the platform runtime for testing.
+    For UI/control testing, use one of these approaches:
+    1. Create a MAUI test application (e.g., using Xunit.Maui or NUnit device runners)
+    2. Use the sample app for manual testing
+    3. Test platform-specific handlers in platform test projects
+
+    This project tests non-UI logic (ValidationResult, etc.) that doesn't require MAUI runtime.
+  -->
 
 </Project>
