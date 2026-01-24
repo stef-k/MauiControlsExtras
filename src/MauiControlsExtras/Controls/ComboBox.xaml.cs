@@ -58,7 +58,7 @@ namespace MauiControlsExtras.Controls;
 /// </code>
 /// </example>
 /// </remarks>
-public partial class ComboBox : StyledControlBase, IValidatable
+public partial class ComboBox : TextStyledControlBase, IValidatable
 {
     private bool _isExpanded;
     private bool _isUpdatingFromSelection;
@@ -992,7 +992,7 @@ public partial class ComboBox : StyledControlBase, IValidatable
             UpdateFilteredItems(string.Empty);
             expandedBorder.IsVisible = true;
             dropdownArrow.Text = "▲";
-            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(CornerRadius, CornerRadius, 0, 0) };
+            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
             RaiseOpened();
@@ -1001,7 +1001,7 @@ public partial class ComboBox : StyledControlBase, IValidatable
         {
             expandedBorder.IsVisible = false;
             dropdownArrow.Text = "▼";
-            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(CornerRadius) };
+            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius) };
             collapsedBorder.Stroke = defaultStroke;
             searchEntry.Text = string.Empty;
             searchEntry.Unfocus();
