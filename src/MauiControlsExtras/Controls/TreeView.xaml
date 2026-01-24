@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                        x:Class="MauiControlsExtras.Controls.TreeView"
+                        x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <CollectionView x:Name="flattenedList"
+                        ItemsSource="{Binding FlattenedItems, Source={x:Reference thisControl}}"
+                        SelectionMode="{Binding CollectionSelectionMode, Source={x:Reference thisControl}}"
+                        SelectionChanged="OnCollectionSelectionChanged">
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="local:TreeViewNode">
+                    <Grid Padding="4,2"
+                          BackgroundColor="{Binding BackgroundColor}">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnItemTapped"
+                                                  NumberOfTapsRequired="1" />
+                            <TapGestureRecognizer Tapped="OnItemDoubleTapped"
+                                                  NumberOfTapsRequired="2" />
+                        </Grid.GestureRecognizers>
+
+                        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*"
+                              Margin="{Binding IndentMargin}">
+
+                            <!-- Tree Lines (optional) -->
+                            <BoxView Grid.Column="0"
+                                     IsVisible="{Binding ShowLines, Source={x:Reference thisControl}}"
+                                     WidthRequest="1"
+                                     Color="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                                     VerticalOptions="Fill"
+                                     HorizontalOptions="End"
+                                     Margin="0,0,8,0" />
+
+                            <!-- Expand/Collapse Button -->
+                            <Border Grid.Column="1"
+                                    WidthRequest="24"
+                                    HeightRequest="24"
+                                    BackgroundColor="Transparent"
+                                    StrokeThickness="0"
+                                    IsVisible="{Binding HasChildren}">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnExpanderTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding ExpanderIcon}"
+                                       FontSize="12"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       TextColor="{Binding ExpanderColor, Source={x:Reference thisControl}}" />
+                            </Border>
+
+                            <!-- Placeholder for items without children (alignment) -->
+                            <BoxView Grid.Column="1"
+                                     WidthRequest="24"
+                                     HeightRequest="24"
+                                     Color="Transparent"
+                                     IsVisible="{Binding HasNoChildren}" />
+
+                            <!-- Checkbox (optional) -->
+                            <Border Grid.Column="2"
+                                    WidthRequest="24"
+                                    HeightRequest="24"
+                                    BackgroundColor="Transparent"
+                                    StrokeThickness="0"
+                                    IsVisible="{Binding ShowCheckBoxes, Source={x:Reference thisControl}}"
+                                    Margin="4,0">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnCheckBoxTapped" />
+                                </Border.GestureRecognizers>
+                                <Label Text="{Binding CheckBoxIcon}"
+                                       FontSize="16"
+                                       HorizontalOptions="Center"
+                                       VerticalOptions="Center"
+                                       TextColor="{Binding CheckBoxColor, Source={x:Reference thisControl}}" />
+                            </Border>
+
+                            <!-- Icon (optional) -->
+                            <Image Grid.Column="3"
+                                   Source="{Binding Icon}"
+                                   WidthRequest="20"
+                                   HeightRequest="20"
+                                   Margin="0,0,8,0"
+                                   IsVisible="{Binding HasIcon}"
+                                   VerticalOptions="Center" />
+
+                            <!-- Content -->
+                            <ContentView Grid.Column="4"
+                                         Content="{Binding Content}"
+                                         VerticalOptions="Center" />
+                        </Grid>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Border>
+</base:StyledControlBase>
