@@ -1,25 +1,26 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-             xmlns:converters="clr-namespace:MauiControlsExtras.Converters"
-             x:Class="MauiControlsExtras.Controls.ComboBox"
-             x:Name="thisControl">
+<base:TextStyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                            xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                            xmlns:converters="clr-namespace:MauiControlsExtras.Converters"
+                            x:Class="MauiControlsExtras.Controls.ComboBox"
+                            x:Name="thisControl">
 
-    <ContentView.Resources>
+    <base:TextStyledControlBase.Resources>
         <converters:MauiAssetImageConverter x:Key="MauiAssetImageConverter" />
-    </ContentView.Resources>
+    </base:TextStyledControlBase.Resources>
 
     <Grid RowDefinitions="Auto,Auto">
 
         <!-- Collapsed View: Selected Value + Dropdown Arrow -->
         <Border x:Name="collapsedBorder"
-                StrokeThickness="1.5"
-                Stroke="{AppThemeBinding Light=#BDBDBD, Dark=#9E9E9E}"
+                StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+                Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
                 BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
                 Padding="12,10"
                 HeightRequest="48">
             <Border.StrokeShape>
-                <RoundRectangle CornerRadius="8" />
+                <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
             </Border.StrokeShape>
             <Border.GestureRecognizers>
                 <TapGestureRecognizer Tapped="OnCollapsedTapped" />
@@ -48,7 +49,7 @@
                 <!-- Clear Button (only visible when item selected) -->
                 <Label x:Name="clearButton"
                        Grid.Column="2"
-                       Text="✕"
+                       Text="&#x2715;"
                        FontSize="14"
                        TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
                        VerticalOptions="Center"
@@ -61,7 +62,7 @@
                 <!-- Dropdown Arrow -->
                 <Label x:Name="dropdownArrow"
                        Grid.Column="3"
-                       Text="▼"
+                       Text="&#x25BC;"
                        FontSize="10"
                        TextColor="{AppThemeBinding Light=#757575, Dark=#BDBDBD}"
                        VerticalOptions="Center" />
@@ -72,7 +73,7 @@
         <Border x:Name="expandedBorder"
                 Grid.Row="1"
                 IsVisible="False"
-                StrokeThickness="1"
+                StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
                 Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#616161}"
                 BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
                 Margin="0,-1,0,0"
@@ -97,7 +98,7 @@
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Search Icon -->
                         <Label Grid.Column="0"
-                               Text="🔍"
+                               Text="&#x1F50D;"
                                FontSize="14"
                                VerticalOptions="Center"
                                Margin="0,0,8,0"
@@ -116,7 +117,7 @@
                         <!-- Clear Search Button -->
                         <Label x:Name="clearSearchButton"
                                Grid.Column="2"
-                               Text="✕"
+                               Text="&#x2715;"
                                FontSize="12"
                                TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
                                VerticalOptions="Center"
@@ -146,4 +147,4 @@
             </Grid>
         </Border>
     </Grid>
-</ContentView>
+</base:TextStyledControlBase>

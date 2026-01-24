@@ -1,5 +1,8 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Windows.Input;
+using MauiControlsExtras.Base;
+using MauiControlsExtras.Base.Validation;
 using MauiControlsExtras.Converters;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -22,6 +25,8 @@ namespace MauiControlsExtras.Controls;
 ///   <item><description>Customizable placeholder text</description></item>
 ///   <item><description>Clear selection button</description></item>
 ///   <item><description>Default value support</description></item>
+///   <item><description>MVVM command support (SelectionChangedCommand, OpenedCommand, etc.)</description></item>
+///   <item><description>Built-in validation with IsRequired support</description></item>
 /// </list>
 /// <example>
 /// Basic usage:
@@ -42,12 +47,23 @@ namespace MauiControlsExtras.Controls;
 ///                  Placeholder="Select an icon..." /&gt;
 /// </code>
 /// </example>
+/// <example>
+/// With MVVM commands:
+/// <code>
+/// &lt;extras:ComboBox ItemsSource="{Binding Countries}"
+///                  SelectedItem="{Binding SelectedCountry, Mode=TwoWay}"
+///                  SelectionChangedCommand="{Binding CountrySelectedCommand}"
+///                  IsRequired="True"
+///                  ValidateCommand="{Binding ValidateCommand}" /&gt;
+/// </code>
+/// </example>
 /// </remarks>
-public partial class ComboBox : ContentView
+public partial class ComboBox : TextStyledControlBase, IValidatable
 {
     private bool _isExpanded;
     private bool _isUpdatingFromSelection;
     private CancellationTokenSource? _debounceTokenSource;
+    private List<string> _validationErrors = new();
 
     #region Bindable Properties
 
@@ -141,15 +157,6 @@ public partial class ComboBox : ContentView
         5);
 
     /// <summary>
-    /// Identifies the <see cref="AccentColor"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty AccentColorProperty = BindableProperty.Create(
-        nameof(AccentColor),
-        typeof(Color),
-        typeof(ComboBox),
-        Color.FromArgb("#0078D4")); // Default blue accent
-
-    /// <summary>
     /// Identifies the <see cref="DisplayText"/> bindable property.
     /// </summary>
     public static readonly BindableProperty DisplayTextProperty = BindableProperty.Create(
@@ -211,6 +218,95 @@ public partial class ComboBox : ContentView
         typeof(bool),
         typeof(ComboBox),
         false);
+
+    #endregion
+
+    #region Command Bindable Properties
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommand),
+        typeof(ICommand),
+        typeof(ComboBox),
+        default(ICommand));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommandParameter),
+        typeof(object),
+        typeof(ComboBox),
+        default(object));
+
+    /// <summary>
+    /// Identifies the <see cref="OpenedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty OpenedCommandProperty = BindableProperty.Create(
+        nameof(OpenedCommand),
+        typeof(ICommand),
+        typeof(ComboBox),
+        default(ICommand));
+
+    /// <summary>
+    /// Identifies the <see cref="ClosedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClosedCommandProperty = BindableProperty.Create(
+        nameof(ClosedCommand),
+        typeof(ICommand),
+        typeof(ComboBox),
+        default(ICommand));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearCommandProperty = BindableProperty.Create(
+        nameof(ClearCommand),
+        typeof(ICommand),
+        typeof(ComboBox),
+        default(ICommand));
+
+    #endregion
+
+    #region Validation Bindable Properties
+
+    /// <summary>
+    /// Identifies the <see cref="IsRequired"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsRequiredProperty = BindableProperty.Create(
+        nameof(IsRequired),
+        typeof(bool),
+        typeof(ComboBox),
+        false);
+
+    /// <summary>
+    /// Identifies the <see cref="RequiredErrorMessage"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RequiredErrorMessageProperty = BindableProperty.Create(
+        nameof(RequiredErrorMessage),
+        typeof(string),
+        typeof(ComboBox),
+        "Selection is required");
+
+    /// <summary>
+    /// Identifies the <see cref="IsValid"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsValidProperty = BindableProperty.Create(
+        nameof(IsValid),
+        typeof(bool),
+        typeof(ComboBox),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="ValidateCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ValidateCommandProperty = BindableProperty.Create(
+        nameof(ValidateCommand),
+        typeof(ICommand),
+        typeof(ComboBox),
+        default(ICommand));
 
     #endregion
 
@@ -325,16 +421,6 @@ public partial class ComboBox : ContentView
     }
 
     /// <summary>
-    /// Gets or sets the accent color used for focus indication.
-    /// </summary>
-    /// <value>The accent color. Default is blue (#0078D4).</value>
-    public Color AccentColor
-    {
-        get => (Color)GetValue(AccentColorProperty);
-        set => SetValue(AccentColorProperty, value);
-    }
-
-    /// <summary>
     /// Gets the display text shown in collapsed state.
     /// </summary>
     public string DisplayText
@@ -401,6 +487,103 @@ public partial class ComboBox : ContentView
     /// Gets whether the dropdown is currently expanded.
     /// </summary>
     public bool IsExpanded => _isExpanded;
+
+    #endregion
+
+    #region Command Properties
+
+    /// <summary>
+    /// Gets or sets the command to execute when the selection changes.
+    /// The command parameter is the newly selected item (or <see cref="SelectionChangedCommandParameter"/> if set).
+    /// </summary>
+    public ICommand? SelectionChangedCommand
+    {
+        get => (ICommand?)GetValue(SelectionChangedCommandProperty);
+        set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectionChangedCommand"/>.
+    /// If not set, the selected item is used as the parameter.
+    /// </summary>
+    public object? SelectionChangedCommandParameter
+    {
+        get => GetValue(SelectionChangedCommandParameterProperty);
+        set => SetValue(SelectionChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when the dropdown is opened.
+    /// </summary>
+    public ICommand? OpenedCommand
+    {
+        get => (ICommand?)GetValue(OpenedCommandProperty);
+        set => SetValue(OpenedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when the dropdown is closed.
+    /// </summary>
+    public ICommand? ClosedCommand
+    {
+        get => (ICommand?)GetValue(ClosedCommandProperty);
+        set => SetValue(ClosedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when the selection is cleared.
+    /// </summary>
+    public ICommand? ClearCommand
+    {
+        get => (ICommand?)GetValue(ClearCommandProperty);
+        set => SetValue(ClearCommandProperty, value);
+    }
+
+    #endregion
+
+    #region Validation Properties
+
+    /// <summary>
+    /// Gets or sets whether a selection is required for validation to pass.
+    /// </summary>
+    public bool IsRequired
+    {
+        get => (bool)GetValue(IsRequiredProperty);
+        set => SetValue(IsRequiredProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the error message shown when validation fails due to no selection.
+    /// </summary>
+    public string RequiredErrorMessage
+    {
+        get => (string)GetValue(RequiredErrorMessageProperty);
+        set => SetValue(RequiredErrorMessageProperty, value);
+    }
+
+    /// <summary>
+    /// Gets whether the current selection is valid according to validation rules.
+    /// </summary>
+    public bool IsValid
+    {
+        get => (bool)GetValue(IsValidProperty);
+        private set => SetValue(IsValidProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the list of current validation errors.
+    /// </summary>
+    public IReadOnlyList<string> ValidationErrors => _validationErrors.AsReadOnly();
+
+    /// <summary>
+    /// Gets or sets the command to execute when validation is triggered.
+    /// The command parameter is the <see cref="ValidationResult"/>.
+    /// </summary>
+    public ICommand? ValidateCommand
+    {
+        get => (ICommand?)GetValue(ValidateCommandProperty);
+        set => SetValue(ValidateCommandProperty, value);
+    }
 
     #endregion
 
@@ -508,7 +691,7 @@ public partial class ComboBox : ContentView
             }
 
             UpdateDisplayState();
-            SelectionChanged?.Invoke(this, newValue);
+            RaiseSelectionChanged(newValue);
         }
         finally
         {
@@ -598,11 +781,17 @@ public partial class ComboBox : ContentView
             SelectedItem = null;
             SelectedValue = null;
             UpdateDisplayState();
-            SelectionChanged?.Invoke(this, null);
+            RaiseSelectionChanged(null);
         }
         finally
         {
             _isUpdatingFromSelection = false;
+        }
+
+        // Execute clear command
+        if (ClearCommand?.CanExecute(null) == true)
+        {
+            ClearCommand.Execute(null);
         }
 
         if (_isExpanded)
@@ -619,9 +808,80 @@ public partial class ComboBox : ContentView
         UpdateFilteredItems(searchEntry?.Text ?? string.Empty);
     }
 
+    /// <summary>
+    /// Performs validation and returns the result.
+    /// </summary>
+    /// <returns>The validation result.</returns>
+    public ValidationResult Validate()
+    {
+        _validationErrors.Clear();
+
+        if (IsRequired && SelectedItem == null)
+        {
+            _validationErrors.Add(RequiredErrorMessage);
+        }
+
+        var result = _validationErrors.Count == 0
+            ? ValidationResult.Success
+            : ValidationResult.Failure(_validationErrors);
+
+        IsValid = result.IsValid;
+        OnPropertyChanged(nameof(ValidationErrors));
+
+        // Execute validate command with result
+        if (ValidateCommand?.CanExecute(result) == true)
+        {
+            ValidateCommand.Execute(result);
+        }
+
+        return result;
+    }
+
     #endregion
 
     #region Private Methods
+
+    private void RaiseSelectionChanged(object? newValue)
+    {
+        // Raise event
+        SelectionChanged?.Invoke(this, newValue);
+
+        // Execute command
+        if (SelectionChangedCommand != null)
+        {
+            var parameter = SelectionChangedCommandParameter ?? newValue;
+            if (SelectionChangedCommand.CanExecute(parameter))
+            {
+                SelectionChangedCommand.Execute(parameter);
+            }
+        }
+
+        // Trigger validation if required
+        if (IsRequired)
+        {
+            Validate();
+        }
+    }
+
+    private void RaiseOpened()
+    {
+        Opened?.Invoke(this, EventArgs.Empty);
+
+        if (OpenedCommand?.CanExecute(null) == true)
+        {
+            OpenedCommand.Execute(null);
+        }
+    }
+
+    private void RaiseClosed()
+    {
+        Closed?.Invoke(this, EventArgs.Empty);
+
+        if (ClosedCommand?.CanExecute(null) == true)
+        {
+            ClosedCommand.Execute(null);
+        }
+    }
 
     private void SetupItemTemplate()
     {
@@ -725,29 +985,27 @@ public partial class ComboBox : ContentView
         _isExpanded = !_isExpanded;
 
         var accentColor = AccentColor;
-        var defaultStroke = Application.Current?.RequestedTheme == AppTheme.Dark
-            ? Color.FromArgb("#9E9E9E")
-            : Color.FromArgb("#BDBDBD");
+        var defaultStroke = EffectiveBorderColor;
 
         if (_isExpanded)
         {
             UpdateFilteredItems(string.Empty);
             expandedBorder.IsVisible = true;
             dropdownArrow.Text = "▲";
-            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(8, 8, 0, 0) };
-            collapsedBorder.Stroke = accentColor;
-            expandedBorder.Stroke = accentColor;
-            Opened?.Invoke(this, EventArgs.Empty);
+            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
+            collapsedBorder.Stroke = EffectiveFocusBorderColor;
+            expandedBorder.Stroke = EffectiveFocusBorderColor;
+            RaiseOpened();
         }
         else
         {
             expandedBorder.IsVisible = false;
             dropdownArrow.Text = "▼";
-            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(8) };
+            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius) };
             collapsedBorder.Stroke = defaultStroke;
             searchEntry.Text = string.Empty;
             searchEntry.Unfocus();
-            Closed?.Invoke(this, EventArgs.Empty);
+            RaiseClosed();
         }
     }
 
@@ -771,7 +1029,7 @@ public partial class ComboBox : ContentView
         }
 
         Close();
-        SelectionChanged?.Invoke(this, item);
+        RaiseSelectionChanged(item);
     }
 
     private void SelectItemByValue(object? value)

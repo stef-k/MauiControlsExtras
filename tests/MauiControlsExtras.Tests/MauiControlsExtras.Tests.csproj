@@ -18,6 +18,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Include validation source files directly for unit testing (no MAUI dependencies) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Base\Validation\ValidationResult.cs" Link="Base\Validation\ValidationResult.cs" />
+  </ItemGroup>
+
   <!-- Note: MAUI controls cannot be directly referenced in standard test projects.
        For UI testing, create a MAUI test application or use device runners.
        This project tests non-UI logic and serves as a placeholder for future tests. -->
