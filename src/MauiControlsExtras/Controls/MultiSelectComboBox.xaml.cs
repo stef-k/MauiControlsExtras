@@ -1,0 +1,1111 @@
+using System.Collections;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Windows.Input;
+using MauiControlsExtras.Base;
+using MauiControlsExtras.Base.Validation;
+using MauiControlsExtras.Converters;
+using Microsoft.Maui.Controls.Shapes;
+
+namespace MauiControlsExtras.Controls;
+
+/// <summary>
+/// A dropdown control that allows selecting multiple items, displaying selections as removable chips.
+/// </summary>
+public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable
+{
+    #region Fields
+
+    private bool _isExpanded;
+    private bool _isUpdatingSelection;
+    private CancellationTokenSource? _debounceTokenSource;
+    private readonly List<string> _validationErrors = new();
+    private readonly Dictionary<object, CheckBox> _itemCheckboxes = new();
+
+    #endregion
+
+    #region Bindable Properties
+
+    public static readonly BindableProperty ItemsSourceProperty = BindableProperty.Create(
+        nameof(ItemsSource),
+        typeof(IEnumerable),
+        typeof(MultiSelectComboBox),
+        default(IEnumerable),
+        propertyChanged: OnItemsSourceChanged);
+
+    public static readonly BindableProperty SelectedItemsProperty = BindableProperty.Create(
+        nameof(SelectedItems),
+        typeof(IList),
+        typeof(MultiSelectComboBox),
+        default(IList),
+        BindingMode.TwoWay,
+        propertyChanged: OnSelectedItemsChanged);
+
+    public static readonly BindableProperty DisplayMemberPathProperty = BindableProperty.Create(
+        nameof(DisplayMemberPath),
+        typeof(string),
+        typeof(MultiSelectComboBox),
+        default(string),
+        propertyChanged: OnDisplayMemberPathChanged);
+
+    public static readonly BindableProperty ValueMemberPathProperty = BindableProperty.Create(
+        nameof(ValueMemberPath),
+        typeof(string),
+        typeof(MultiSelectComboBox),
+        default(string));
+
+    public static readonly BindableProperty IconMemberPathProperty = BindableProperty.Create(
+        nameof(IconMemberPath),
+        typeof(string),
+        typeof(MultiSelectComboBox),
+        default(string),
+        propertyChanged: OnIconMemberPathChanged);
+
+    public static readonly BindableProperty PlaceholderProperty = BindableProperty.Create(
+        nameof(Placeholder),
+        typeof(string),
+        typeof(MultiSelectComboBox),
+        "Select items...");
+
+    public static readonly BindableProperty MaxSelectionsProperty = BindableProperty.Create(
+        nameof(MaxSelections),
+        typeof(int?),
+        typeof(MultiSelectComboBox),
+        default(int?),
+        propertyChanged: OnMaxSelectionsChanged);
+
+    public static readonly BindableProperty IsSearchableProperty = BindableProperty.Create(
+        nameof(IsSearchable),
+        typeof(bool),
+        typeof(MultiSelectComboBox),
+        true);
+
+    public static readonly BindableProperty SelectAllOptionProperty = BindableProperty.Create(
+        nameof(SelectAllOption),
+        typeof(bool),
+        typeof(MultiSelectComboBox),
+        false);
+
+    public static readonly BindableProperty VisibleItemCountProperty = BindableProperty.Create(
+        nameof(VisibleItemCount),
+        typeof(int),
+        typeof(MultiSelectComboBox),
+        5);
+
+    public static readonly BindableProperty FilteredItemsProperty = BindableProperty.Create(
+        nameof(FilteredItems),
+        typeof(ObservableCollection<object>),
+        typeof(MultiSelectComboBox),
+        default(ObservableCollection<object>));
+
+    public static readonly BindableProperty ListMaxHeightProperty = BindableProperty.Create(
+        nameof(ListMaxHeight),
+        typeof(double),
+        typeof(MultiSelectComboBox),
+        200.0);
+
+    public static readonly BindableProperty IsRequiredProperty = BindableProperty.Create(
+        nameof(IsRequired),
+        typeof(bool),
+        typeof(MultiSelectComboBox),
+        false);
+
+    public static readonly BindableProperty RequiredErrorMessageProperty = BindableProperty.Create(
+        nameof(RequiredErrorMessage),
+        typeof(string),
+        typeof(MultiSelectComboBox),
+        "At least one selection is required");
+
+    public static readonly BindableProperty MinSelectionsProperty = BindableProperty.Create(
+        nameof(MinSelections),
+        typeof(int),
+        typeof(MultiSelectComboBox),
+        0);
+
+    #endregion
+
+    #region Command Bindable Properties
+
+    public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty ItemSelectedCommandProperty = BindableProperty.Create(
+        nameof(ItemSelectedCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty ItemDeselectedCommandProperty = BindableProperty.Create(
+        nameof(ItemDeselectedCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty OpenedCommandProperty = BindableProperty.Create(
+        nameof(OpenedCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty ClosedCommandProperty = BindableProperty.Create(
+        nameof(ClosedCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty ValidateCommandProperty = BindableProperty.Create(
+        nameof(ValidateCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets or sets the collection of available items.
+    /// </summary>
+    public IEnumerable? ItemsSource
+    {
+        get => (IEnumerable?)GetValue(ItemsSourceProperty);
+        set => SetValue(ItemsSourceProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the collection of selected items.
+    /// </summary>
+    public IList? SelectedItems
+    {
+        get => (IList?)GetValue(SelectedItemsProperty);
+        set => SetValue(SelectedItemsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the property path for display text.
+    /// </summary>
+    public string? DisplayMemberPath
+    {
+        get => (string?)GetValue(DisplayMemberPathProperty);
+        set => SetValue(DisplayMemberPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the property path for the value.
+    /// </summary>
+    public string? ValueMemberPath
+    {
+        get => (string?)GetValue(ValueMemberPathProperty);
+        set => SetValue(ValueMemberPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the property path for item icons.
+    /// </summary>
+    public string? IconMemberPath
+    {
+        get => (string?)GetValue(IconMemberPathProperty);
+        set => SetValue(IconMemberPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the placeholder text.
+    /// </summary>
+    public string Placeholder
+    {
+        get => (string)GetValue(PlaceholderProperty);
+        set => SetValue(PlaceholderProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the maximum number of selections allowed.
+    /// </summary>
+    public int? MaxSelections
+    {
+        get => (int?)GetValue(MaxSelectionsProperty);
+        set => SetValue(MaxSelectionsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether searching is enabled.
+    /// </summary>
+    public bool IsSearchable
+    {
+        get => (bool)GetValue(IsSearchableProperty);
+        set => SetValue(IsSearchableProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether to show the Select All option.
+    /// </summary>
+    public bool SelectAllOption
+    {
+        get => (bool)GetValue(SelectAllOptionProperty);
+        set => SetValue(SelectAllOptionProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the number of visible items without scrolling.
+    /// </summary>
+    public int VisibleItemCount
+    {
+        get => (int)GetValue(VisibleItemCountProperty);
+        set => SetValue(VisibleItemCountProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the filtered items collection.
+    /// </summary>
+    public ObservableCollection<object> FilteredItems
+    {
+        get => (ObservableCollection<object>)GetValue(FilteredItemsProperty);
+        private set => SetValue(FilteredItemsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the maximum height for the dropdown list.
+    /// </summary>
+    public double ListMaxHeight
+    {
+        get => (double)GetValue(ListMaxHeightProperty);
+        private set => SetValue(ListMaxHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether selection is required.
+    /// </summary>
+    public bool IsRequired
+    {
+        get => (bool)GetValue(IsRequiredProperty);
+        set => SetValue(IsRequiredProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the required error message.
+    /// </summary>
+    public string RequiredErrorMessage
+    {
+        get => (string)GetValue(RequiredErrorMessageProperty);
+        set => SetValue(RequiredErrorMessageProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the minimum number of selections required.
+    /// </summary>
+    public int MinSelections
+    {
+        get => (int)GetValue(MinSelectionsProperty);
+        set => SetValue(MinSelectionsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets whether the dropdown is expanded.
+    /// </summary>
+    public bool IsExpanded => _isExpanded;
+
+    /// <summary>
+    /// Gets the count of selected items.
+    /// </summary>
+    public int SelectedCount => SelectedItems?.Count ?? 0;
+
+    /// <summary>
+    /// Gets whether the max selection limit has been reached.
+    /// </summary>
+    public bool IsMaxReached => MaxSelections.HasValue && SelectedCount >= MaxSelections.Value;
+
+    #endregion
+
+    #region Command Properties
+
+    public ICommand? SelectionChangedCommand
+    {
+        get => (ICommand?)GetValue(SelectionChangedCommandProperty);
+        set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
+    public ICommand? ItemSelectedCommand
+    {
+        get => (ICommand?)GetValue(ItemSelectedCommandProperty);
+        set => SetValue(ItemSelectedCommandProperty, value);
+    }
+
+    public ICommand? ItemDeselectedCommand
+    {
+        get => (ICommand?)GetValue(ItemDeselectedCommandProperty);
+        set => SetValue(ItemDeselectedCommandProperty, value);
+    }
+
+    public ICommand? OpenedCommand
+    {
+        get => (ICommand?)GetValue(OpenedCommandProperty);
+        set => SetValue(OpenedCommandProperty, value);
+    }
+
+    public ICommand? ClosedCommand
+    {
+        get => (ICommand?)GetValue(ClosedCommandProperty);
+        set => SetValue(ClosedCommandProperty, value);
+    }
+
+    public ICommand? ValidateCommand
+    {
+        get => (ICommand?)GetValue(ValidateCommandProperty);
+        set => SetValue(ValidateCommandProperty, value);
+    }
+
+    #endregion
+
+    #region IValidatable
+
+    public bool IsValid => _validationErrors.Count == 0;
+
+    public IReadOnlyList<string> ValidationErrors => _validationErrors.AsReadOnly();
+
+    public ValidationResult Validate()
+    {
+        _validationErrors.Clear();
+
+        var count = SelectedCount;
+
+        if (IsRequired && count == 0)
+        {
+            _validationErrors.Add(RequiredErrorMessage);
+        }
+
+        if (MinSelections > 0 && count < MinSelections)
+        {
+            _validationErrors.Add($"At least {MinSelections} selection(s) required.");
+        }
+
+        if (MaxSelections.HasValue && count > MaxSelections.Value)
+        {
+            _validationErrors.Add($"Maximum {MaxSelections.Value} selection(s) allowed.");
+        }
+
+        OnPropertyChanged(nameof(IsValid));
+        OnPropertyChanged(nameof(ValidationErrors));
+
+        var result = _validationErrors.Count == 0
+            ? ValidationResult.Success
+            : ValidationResult.Failure(_validationErrors);
+
+        if (ValidateCommand?.CanExecute(result) == true)
+        {
+            ValidateCommand.Execute(result);
+        }
+
+        return result;
+    }
+
+    #endregion
+
+    #region Events
+
+    /// <summary>
+    /// Occurs when the selection changes.
+    /// </summary>
+    public event EventHandler<IList?>? SelectionChanged;
+
+    /// <summary>
+    /// Occurs when an item is selected.
+    /// </summary>
+    public event EventHandler<object>? ItemSelected;
+
+    /// <summary>
+    /// Occurs when an item is deselected.
+    /// </summary>
+    public event EventHandler<object>? ItemDeselected;
+
+    /// <summary>
+    /// Occurs when the dropdown opens.
+    /// </summary>
+    public event EventHandler? Opened;
+
+    /// <summary>
+    /// Occurs when the dropdown closes.
+    /// </summary>
+    public event EventHandler? Closed;
+
+    #endregion
+
+    #region Constructor
+
+    public MultiSelectComboBox()
+    {
+        InitializeComponent();
+        FilteredItems = new ObservableCollection<object>();
+        UpdateListMaxHeight();
+        SetupItemTemplate();
+        UpdateChipsDisplay();
+    }
+
+    #endregion
+
+    #region Property Changed Handlers
+
+    private static void OnItemsSourceChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.UpdateFilteredItems(string.Empty);
+            control.SetupItemTemplate();
+        }
+    }
+
+    private static void OnSelectedItemsChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            // Unsubscribe from old collection
+            if (oldValue is INotifyCollectionChanged oldCollection)
+            {
+                oldCollection.CollectionChanged -= control.OnSelectedItemsCollectionChanged;
+            }
+
+            // Subscribe to new collection
+            if (newValue is INotifyCollectionChanged newCollection)
+            {
+                newCollection.CollectionChanged += control.OnSelectedItemsCollectionChanged;
+            }
+
+            control.UpdateChipsDisplay();
+            control.UpdateCheckboxStates();
+            control.UpdateSelectAllState();
+            control.OnPropertyChanged(nameof(SelectedCount));
+            control.OnPropertyChanged(nameof(IsMaxReached));
+        }
+    }
+
+    private void OnSelectedItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_isUpdatingSelection) return;
+
+        UpdateChipsDisplay();
+        UpdateCheckboxStates();
+        UpdateSelectAllState();
+        OnPropertyChanged(nameof(SelectedCount));
+        OnPropertyChanged(nameof(IsMaxReached));
+        RaiseSelectionChanged();
+    }
+
+    private static void OnDisplayMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.SetupItemTemplate();
+            control.UpdateChipsDisplay();
+        }
+    }
+
+    private static void OnIconMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.SetupItemTemplate();
+        }
+    }
+
+    private static void OnMaxSelectionsChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.OnPropertyChanged(nameof(IsMaxReached));
+            control.UpdateCheckboxStates();
+        }
+    }
+
+    #endregion
+
+    #region Event Handlers
+
+    private void OnCollapsedTapped(object? sender, TappedEventArgs e)
+    {
+        ToggleDropdown();
+    }
+
+    private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
+    {
+        clearSearchButton.IsVisible = !string.IsNullOrEmpty(e.NewTextValue);
+
+        _debounceTokenSource?.Cancel();
+        _debounceTokenSource = new CancellationTokenSource();
+
+        var token = _debounceTokenSource.Token;
+        Task.Delay(100, token).ContinueWith(_ =>
+        {
+            if (!token.IsCancellationRequested)
+            {
+                MainThread.BeginInvokeOnMainThread(() => UpdateFilteredItems(e.NewTextValue));
+            }
+        }, TaskContinuationOptions.OnlyOnRanToCompletion);
+    }
+
+    private void OnClearSearchTapped(object? sender, TappedEventArgs e)
+    {
+        searchEntry.Text = string.Empty;
+        UpdateFilteredItems(string.Empty);
+    }
+
+    private void OnSelectAllTapped(object? sender, TappedEventArgs e)
+    {
+        selectAllCheckBox.IsChecked = !selectAllCheckBox.IsChecked;
+    }
+
+    private void OnSelectAllCheckChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        if (_isUpdatingSelection) return;
+
+        _isUpdatingSelection = true;
+        try
+        {
+            if (e.Value)
+            {
+                SelectAll();
+            }
+            else
+            {
+                ClearSelection();
+            }
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+    }
+
+    private void OnItemCheckChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        if (_isUpdatingSelection) return;
+
+        if (sender is CheckBox checkBox && checkBox.BindingContext is { } item)
+        {
+            if (e.Value)
+            {
+                SelectItem(item);
+            }
+            else
+            {
+                DeselectItem(item);
+            }
+        }
+    }
+
+    private void OnChipRemoveTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Label label && label.BindingContext is { } item)
+        {
+            DeselectItem(item);
+        }
+    }
+
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// Selects all available items.
+    /// </summary>
+    public void SelectAll()
+    {
+        if (ItemsSource == null) return;
+
+        EnsureSelectedItemsList();
+
+        _isUpdatingSelection = true;
+        try
+        {
+            var maxToSelect = MaxSelections ?? int.MaxValue;
+            var currentCount = SelectedCount;
+
+            foreach (var item in ItemsSource)
+            {
+                if (item == null) continue;
+                if (currentCount >= maxToSelect) break;
+
+                if (!IsItemSelected(item))
+                {
+                    SelectedItems!.Add(item);
+                    currentCount++;
+                    RaiseItemSelected(item);
+                }
+            }
+
+            UpdateChipsDisplay();
+            UpdateCheckboxStates();
+            UpdateSelectAllState();
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsMaxReached));
+            RaiseSelectionChanged();
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+    }
+
+    /// <summary>
+    /// Clears all selections.
+    /// </summary>
+    public void ClearSelection()
+    {
+        if (SelectedItems == null || SelectedItems.Count == 0) return;
+
+        _isUpdatingSelection = true;
+        try
+        {
+            var items = SelectedItems.Cast<object>().ToList();
+            SelectedItems.Clear();
+
+            foreach (var item in items)
+            {
+                RaiseItemDeselected(item);
+            }
+
+            UpdateChipsDisplay();
+            UpdateCheckboxStates();
+            UpdateSelectAllState();
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsMaxReached));
+            RaiseSelectionChanged();
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+    }
+
+    /// <summary>
+    /// Selects a specific item.
+    /// </summary>
+    public void SelectItem(object item)
+    {
+        if (item == null) return;
+        if (IsMaxReached) return;
+        if (IsItemSelected(item)) return;
+
+        EnsureSelectedItemsList();
+
+        _isUpdatingSelection = true;
+        try
+        {
+            SelectedItems!.Add(item);
+            UpdateChipsDisplay();
+            UpdateCheckboxStates();
+            UpdateSelectAllState();
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsMaxReached));
+            RaiseItemSelected(item);
+            RaiseSelectionChanged();
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+    }
+
+    /// <summary>
+    /// Deselects a specific item.
+    /// </summary>
+    public void DeselectItem(object item)
+    {
+        if (item == null || SelectedItems == null) return;
+        if (!IsItemSelected(item)) return;
+
+        _isUpdatingSelection = true;
+        try
+        {
+            SelectedItems.Remove(item);
+            UpdateChipsDisplay();
+            UpdateCheckboxStates();
+            UpdateSelectAllState();
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsMaxReached));
+            RaiseItemDeselected(item);
+            RaiseSelectionChanged();
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+    }
+
+    /// <summary>
+    /// Opens the dropdown.
+    /// </summary>
+    public void Open()
+    {
+        if (!_isExpanded) ToggleDropdown();
+    }
+
+    /// <summary>
+    /// Closes the dropdown.
+    /// </summary>
+    public void Close()
+    {
+        if (_isExpanded) ToggleDropdown();
+    }
+
+    #endregion
+
+    #region Private Methods
+
+    private void EnsureSelectedItemsList()
+    {
+        if (SelectedItems == null)
+        {
+            SelectedItems = new ObservableCollection<object>();
+        }
+    }
+
+    private bool IsItemSelected(object item)
+    {
+        if (SelectedItems == null) return false;
+
+        foreach (var selected in SelectedItems)
+        {
+            if (Equals(selected, item)) return true;
+        }
+        return false;
+    }
+
+    private void ToggleDropdown()
+    {
+        _isExpanded = !_isExpanded;
+
+        if (_isExpanded)
+        {
+            UpdateFilteredItems(string.Empty);
+            expandedBorder.IsVisible = true;
+            dropdownArrow.Text = "▲";
+            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
+            collapsedBorder.Stroke = EffectiveFocusBorderColor;
+            expandedBorder.Stroke = EffectiveFocusBorderColor;
+            UpdateCheckboxStates();
+            UpdateSelectAllState();
+            RaiseOpened();
+        }
+        else
+        {
+            expandedBorder.IsVisible = false;
+            dropdownArrow.Text = "▼";
+            collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius) };
+            collapsedBorder.Stroke = EffectiveBorderColor;
+            searchEntry.Text = string.Empty;
+            searchEntry.Unfocus();
+            RaiseClosed();
+            Validate();
+        }
+    }
+
+    private void UpdateFilteredItems(string? searchText)
+    {
+        FilteredItems.Clear();
+        _itemCheckboxes.Clear();
+
+        if (ItemsSource == null) return;
+
+        var search = searchText?.Trim() ?? string.Empty;
+        var hasSearch = !string.IsNullOrWhiteSpace(search);
+
+        foreach (var item in ItemsSource)
+        {
+            if (item == null) continue;
+
+            var displayText = GetDisplayText(item);
+            if (!hasSearch || displayText.Contains(search, StringComparison.OrdinalIgnoreCase))
+            {
+                FilteredItems.Add(item);
+            }
+        }
+    }
+
+    private void SetupItemTemplate()
+    {
+        var displayMemberPath = DisplayMemberPath;
+        var iconMemberPath = IconMemberPath;
+        var hasIcon = !string.IsNullOrEmpty(iconMemberPath);
+
+        itemsList.ItemTemplate = new DataTemplate(() =>
+        {
+            var grid = new Grid
+            {
+                Padding = new Thickness(12, 8),
+                ColumnSpacing = 8
+            };
+
+            grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(32)));
+            if (hasIcon)
+            {
+                grid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(28)));
+            }
+            grid.ColumnDefinitions.Add(new ColumnDefinition(GridLength.Star));
+
+            // Checkbox
+            var checkBox = new CheckBox
+            {
+                VerticalOptions = LayoutOptions.Center
+            };
+            checkBox.SetBinding(CheckBox.ColorProperty, new Binding(nameof(EffectiveAccentColor), source: this));
+            checkBox.CheckedChanged += OnItemCheckChanged;
+            Grid.SetColumn(checkBox, 0);
+            grid.Add(checkBox);
+
+            // Store reference for later updates
+            grid.Loaded += (s, e) =>
+            {
+                if (grid.BindingContext != null)
+                {
+                    _itemCheckboxes[grid.BindingContext] = checkBox;
+                    checkBox.IsChecked = IsItemSelected(grid.BindingContext);
+
+                    // Disable if max reached and not selected
+                    if (IsMaxReached && !checkBox.IsChecked)
+                    {
+                        checkBox.IsEnabled = false;
+                        checkBox.Opacity = 0.5;
+                    }
+                }
+            };
+
+            var columnIndex = 1;
+
+            // Icon
+            if (hasIcon)
+            {
+                var image = new Image
+                {
+                    WidthRequest = 28,
+                    HeightRequest = 28,
+                    VerticalOptions = LayoutOptions.Center,
+                    Aspect = Aspect.AspectFit
+                };
+                image.SetBinding(Image.SourceProperty, new Binding(iconMemberPath, converter: new MauiAssetImageConverter()));
+                Grid.SetColumn(image, columnIndex++);
+                grid.Add(image);
+            }
+
+            // Label
+            var label = new Label
+            {
+                FontSize = 14,
+                VerticalOptions = LayoutOptions.Center
+            };
+            label.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#212121"), Colors.White);
+
+            if (!string.IsNullOrEmpty(displayMemberPath))
+            {
+                label.SetBinding(Label.TextProperty, new Binding(displayMemberPath));
+            }
+            else
+            {
+                label.SetBinding(Label.TextProperty, new Binding("."));
+            }
+
+            Grid.SetColumn(label, columnIndex);
+            grid.Add(label);
+
+            // Tap to toggle
+            var tapGesture = new TapGestureRecognizer();
+            tapGesture.Tapped += (s, e) =>
+            {
+                if (grid.BindingContext != null && _itemCheckboxes.TryGetValue(grid.BindingContext, out var cb))
+                {
+                    if (cb.IsEnabled)
+                    {
+                        cb.IsChecked = !cb.IsChecked;
+                    }
+                }
+            };
+            grid.GestureRecognizers.Add(tapGesture);
+
+            return grid;
+        });
+    }
+
+    private void UpdateChipsDisplay()
+    {
+        chipsContainer.Children.Clear();
+
+        if (SelectedItems == null || SelectedItems.Count == 0)
+        {
+            // Show placeholder
+            var placeholder = new Label
+            {
+                Text = Placeholder,
+                TextColor = Application.Current?.RequestedTheme == AppTheme.Dark
+                    ? Color.FromArgb("#9CA3AF")
+                    : Color.FromArgb("#6B7280"),
+                FontSize = 14,
+                VerticalOptions = LayoutOptions.Center
+            };
+            chipsContainer.Children.Add(placeholder);
+            return;
+        }
+
+        foreach (var item in SelectedItems)
+        {
+            if (item == null) continue;
+            var chip = CreateChip(item);
+            chipsContainer.Children.Add(chip);
+        }
+    }
+
+    private View CreateChip(object item)
+    {
+        var displayText = GetDisplayText(item);
+
+        var chipBorder = new Border
+        {
+            BackgroundColor = EffectiveAccentColor.WithAlpha(0.15f),
+            StrokeThickness = 0,
+            Padding = new Thickness(8, 4),
+            Margin = new Thickness(2),
+            StrokeShape = new RoundRectangle { CornerRadius = 12 }
+        };
+
+        var chipGrid = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Auto)
+            },
+            ColumnSpacing = 6
+        };
+
+        var textLabel = new Label
+        {
+            Text = displayText,
+            FontSize = 12,
+            TextColor = EffectiveAccentColor,
+            VerticalOptions = LayoutOptions.Center
+        };
+        Grid.SetColumn(textLabel, 0);
+        chipGrid.Add(textLabel);
+
+        var removeLabel = new Label
+        {
+            Text = "✕",
+            FontSize = 10,
+            TextColor = EffectiveAccentColor.WithAlpha(0.7f),
+            VerticalOptions = LayoutOptions.Center,
+            BindingContext = item
+        };
+        var removeTap = new TapGestureRecognizer();
+        removeTap.Tapped += OnChipRemoveTapped;
+        removeLabel.GestureRecognizers.Add(removeTap);
+        Grid.SetColumn(removeLabel, 1);
+        chipGrid.Add(removeLabel);
+
+        chipBorder.Content = chipGrid;
+        return chipBorder;
+    }
+
+    private void UpdateCheckboxStates()
+    {
+        var maxReached = IsMaxReached;
+
+        foreach (var kvp in _itemCheckboxes)
+        {
+            var item = kvp.Key;
+            var checkBox = kvp.Value;
+            var isSelected = IsItemSelected(item);
+
+            checkBox.IsChecked = isSelected;
+            checkBox.IsEnabled = isSelected || !maxReached;
+            checkBox.Opacity = checkBox.IsEnabled ? 1.0 : 0.5;
+        }
+    }
+
+    private void UpdateSelectAllState()
+    {
+        if (!SelectAllOption) return;
+        if (_isUpdatingSelection) return;
+
+        _isUpdatingSelection = true;
+        try
+        {
+            var allCount = ItemsSource?.Cast<object>().Count() ?? 0;
+            var selectedCount = SelectedCount;
+
+            selectAllCheckBox.IsChecked = allCount > 0 && selectedCount == allCount;
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
+        }
+    }
+
+    private void UpdateListMaxHeight()
+    {
+        ListMaxHeight = VisibleItemCount * 44;
+    }
+
+    private string GetDisplayText(object item)
+    {
+        if (item == null) return string.Empty;
+
+        if (!string.IsNullOrEmpty(DisplayMemberPath))
+        {
+            var property = item.GetType().GetProperty(DisplayMemberPath);
+            return property?.GetValue(item)?.ToString() ?? string.Empty;
+        }
+
+        return item.ToString() ?? string.Empty;
+    }
+
+    private void RaiseSelectionChanged()
+    {
+        SelectionChanged?.Invoke(this, SelectedItems);
+
+        if (SelectionChangedCommand?.CanExecute(SelectedItems) == true)
+        {
+            SelectionChangedCommand.Execute(SelectedItems);
+        }
+    }
+
+    private void RaiseItemSelected(object item)
+    {
+        ItemSelected?.Invoke(this, item);
+
+        if (ItemSelectedCommand?.CanExecute(item) == true)
+        {
+            ItemSelectedCommand.Execute(item);
+        }
+    }
+
+    private void RaiseItemDeselected(object item)
+    {
+        ItemDeselected?.Invoke(this, item);
+
+        if (ItemDeselectedCommand?.CanExecute(item) == true)
+        {
+            ItemDeselectedCommand.Execute(item);
+        }
+    }
+
+    private void RaiseOpened()
+    {
+        Opened?.Invoke(this, EventArgs.Empty);
+
+        if (OpenedCommand?.CanExecute(null) == true)
+        {
+            OpenedCommand.Execute(null);
+        }
+    }
+
+    private void RaiseClosed()
+    {
+        Closed?.Invoke(this, EventArgs.Empty);
+
+        if (ClosedCommand?.CanExecute(null) == true)
+        {
+            ClosedCommand.Execute(null);
+        }
+    }
+
+    #endregion
+}
