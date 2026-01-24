@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        x:Class="MauiControlsExtras.Controls.RangeSlider"
+                        x:Name="thisControl">
+
+    <Grid x:Name="rootGrid">
+        <!-- Horizontal Layout -->
+        <Grid x:Name="horizontalLayout"
+              RowDefinitions="Auto,Auto,Auto"
+              IsVisible="{Binding IsHorizontal, Source={x:Reference thisControl}}">
+
+            <!-- Upper Labels Row -->
+            <Grid x:Name="upperLabelsGrid"
+                  Grid.Row="0"
+                  IsVisible="{Binding ShowLabels, Source={x:Reference thisControl}}"
+                  Margin="0,0,0,4">
+                <Label x:Name="lowerLabel"
+                       HorizontalOptions="Start"
+                       FontSize="12"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}"
+                       Text="{Binding LowerLabelText, Source={x:Reference thisControl}}" />
+                <Label x:Name="upperLabel"
+                       HorizontalOptions="End"
+                       FontSize="12"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}"
+                       Text="{Binding UpperLabelText, Source={x:Reference thisControl}}" />
+            </Grid>
+
+            <!-- Slider Track and Thumbs -->
+            <Grid x:Name="sliderGrid"
+                  Grid.Row="1"
+                  HeightRequest="{Binding TrackAreaHeight, Source={x:Reference thisControl}}">
+
+                <!-- Background Track -->
+                <BoxView x:Name="backgroundTrack"
+                         VerticalOptions="Center"
+                         HeightRequest="{Binding TrackHeight, Source={x:Reference thisControl}}"
+                         Color="{Binding EffectiveTrackColor, Source={x:Reference thisControl}}"
+                         CornerRadius="{Binding TrackCornerRadius, Source={x:Reference thisControl}}" />
+
+                <!-- Selected Range Track -->
+                <BoxView x:Name="rangeTrack"
+                         VerticalOptions="Center"
+                         HeightRequest="{Binding TrackHeight, Source={x:Reference thisControl}}"
+                         Color="{Binding EffectiveRangeColor, Source={x:Reference thisControl}}"
+                         CornerRadius="{Binding TrackCornerRadius, Source={x:Reference thisControl}}"
+                         HorizontalOptions="Start"
+                         Margin="{Binding RangeTrackMargin, Source={x:Reference thisControl}}"
+                         WidthRequest="{Binding RangeTrackWidth, Source={x:Reference thisControl}}" />
+
+                <!-- Lower Thumb -->
+                <Border x:Name="lowerThumb"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Start"
+                        WidthRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        HeightRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        BackgroundColor="{Binding EffectiveThumbColor, Source={x:Reference thisControl}}"
+                        StrokeThickness="0"
+                        TranslationX="{Binding LowerThumbPosition, Source={x:Reference thisControl}}">
+                    <Border.StrokeShape>
+                        <Ellipse />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,2"
+                                Radius="4"
+                                Opacity="0.3" />
+                    </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnLowerThumbPanUpdated" />
+                    </Border.GestureRecognizers>
+                </Border>
+
+                <!-- Upper Thumb -->
+                <Border x:Name="upperThumb"
+                        VerticalOptions="Center"
+                        HorizontalOptions="Start"
+                        WidthRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        HeightRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        BackgroundColor="{Binding EffectiveThumbColor, Source={x:Reference thisControl}}"
+                        StrokeThickness="0"
+                        TranslationX="{Binding UpperThumbPosition, Source={x:Reference thisControl}}">
+                    <Border.StrokeShape>
+                        <Ellipse />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,2"
+                                Radius="4"
+                                Opacity="0.3" />
+                    </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnUpperThumbPanUpdated" />
+                    </Border.GestureRecognizers>
+                </Border>
+            </Grid>
+
+            <!-- Min/Max Labels Row -->
+            <Grid x:Name="minMaxLabelsGrid"
+                  Grid.Row="2"
+                  IsVisible="{Binding ShowMinMaxLabels, Source={x:Reference thisControl}}"
+                  Margin="0,4,0,0">
+                <Label x:Name="minLabel"
+                       HorizontalOptions="Start"
+                       FontSize="10"
+                       TextColor="{Binding EffectiveDisabledColor, Source={x:Reference thisControl}}"
+                       Text="{Binding MinLabelText, Source={x:Reference thisControl}}" />
+                <Label x:Name="maxLabel"
+                       HorizontalOptions="End"
+                       FontSize="10"
+                       TextColor="{Binding EffectiveDisabledColor, Source={x:Reference thisControl}}"
+                       Text="{Binding MaxLabelText, Source={x:Reference thisControl}}" />
+            </Grid>
+        </Grid>
+
+        <!-- Vertical Layout -->
+        <Grid x:Name="verticalLayout"
+              ColumnDefinitions="Auto,Auto,Auto"
+              IsVisible="{Binding IsVertical, Source={x:Reference thisControl}}">
+
+            <!-- Left Labels Column -->
+            <Grid x:Name="leftLabelsGrid"
+                  Grid.Column="0"
+                  IsVisible="{Binding ShowLabels, Source={x:Reference thisControl}}"
+                  Margin="0,0,4,0">
+                <Label x:Name="upperLabelVertical"
+                       VerticalOptions="Start"
+                       FontSize="12"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}"
+                       Text="{Binding UpperLabelText, Source={x:Reference thisControl}}" />
+                <Label x:Name="lowerLabelVertical"
+                       VerticalOptions="End"
+                       FontSize="12"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}"
+                       Text="{Binding LowerLabelText, Source={x:Reference thisControl}}" />
+            </Grid>
+
+            <!-- Vertical Slider Track and Thumbs -->
+            <Grid x:Name="verticalSliderGrid"
+                  Grid.Column="1"
+                  WidthRequest="{Binding TrackAreaHeight, Source={x:Reference thisControl}}">
+
+                <!-- Background Track -->
+                <BoxView x:Name="backgroundTrackVertical"
+                         HorizontalOptions="Center"
+                         WidthRequest="{Binding TrackHeight, Source={x:Reference thisControl}}"
+                         Color="{Binding EffectiveTrackColor, Source={x:Reference thisControl}}"
+                         CornerRadius="{Binding TrackCornerRadius, Source={x:Reference thisControl}}" />
+
+                <!-- Selected Range Track -->
+                <BoxView x:Name="rangeTrackVertical"
+                         HorizontalOptions="Center"
+                         WidthRequest="{Binding TrackHeight, Source={x:Reference thisControl}}"
+                         Color="{Binding EffectiveRangeColor, Source={x:Reference thisControl}}"
+                         CornerRadius="{Binding TrackCornerRadius, Source={x:Reference thisControl}}"
+                         VerticalOptions="End"
+                         Margin="{Binding RangeTrackMarginVertical, Source={x:Reference thisControl}}"
+                         HeightRequest="{Binding RangeTrackHeightVertical, Source={x:Reference thisControl}}" />
+
+                <!-- Lower Thumb (bottom in vertical) -->
+                <Border x:Name="lowerThumbVertical"
+                        HorizontalOptions="Center"
+                        VerticalOptions="End"
+                        WidthRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        HeightRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        BackgroundColor="{Binding EffectiveThumbColor, Source={x:Reference thisControl}}"
+                        StrokeThickness="0"
+                        TranslationY="{Binding LowerThumbPositionVertical, Source={x:Reference thisControl}}">
+                    <Border.StrokeShape>
+                        <Ellipse />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,2"
+                                Radius="4"
+                                Opacity="0.3" />
+                    </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnLowerThumbPanUpdatedVertical" />
+                    </Border.GestureRecognizers>
+                </Border>
+
+                <!-- Upper Thumb (top in vertical) -->
+                <Border x:Name="upperThumbVertical"
+                        HorizontalOptions="Center"
+                        VerticalOptions="End"
+                        WidthRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        HeightRequest="{Binding ThumbSize, Source={x:Reference thisControl}}"
+                        BackgroundColor="{Binding EffectiveThumbColor, Source={x:Reference thisControl}}"
+                        StrokeThickness="0"
+                        TranslationY="{Binding UpperThumbPositionVertical, Source={x:Reference thisControl}}">
+                    <Border.StrokeShape>
+                        <Ellipse />
+                    </Border.StrokeShape>
+                    <Border.Shadow>
+                        <Shadow Brush="#000000"
+                                Offset="0,2"
+                                Radius="4"
+                                Opacity="0.3" />
+                    </Border.Shadow>
+                    <Border.GestureRecognizers>
+                        <PanGestureRecognizer PanUpdated="OnUpperThumbPanUpdatedVertical" />
+                    </Border.GestureRecognizers>
+                </Border>
+            </Grid>
+
+            <!-- Right Labels Column (Min/Max) -->
+            <Grid x:Name="rightLabelsGrid"
+                  Grid.Column="2"
+                  IsVisible="{Binding ShowMinMaxLabels, Source={x:Reference thisControl}}"
+                  Margin="4,0,0,0">
+                <Label x:Name="maxLabelVertical"
+                       VerticalOptions="Start"
+                       FontSize="10"
+                       TextColor="{Binding EffectiveDisabledColor, Source={x:Reference thisControl}}"
+                       Text="{Binding MaxLabelText, Source={x:Reference thisControl}}" />
+                <Label x:Name="minLabelVertical"
+                       VerticalOptions="End"
+                       FontSize="10"
+                       TextColor="{Binding EffectiveDisabledColor, Source={x:Reference thisControl}}"
+                       Text="{Binding MinLabelText, Source={x:Reference thisControl}}" />
+            </Grid>
+        </Grid>
+    </Grid>
+</base:StyledControlBase>
