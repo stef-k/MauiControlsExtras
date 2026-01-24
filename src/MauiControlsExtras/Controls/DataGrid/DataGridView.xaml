@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        x:Class="MauiControlsExtras.Controls.DataGridView"
+                        x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <Grid RowDefinitions="Auto,*">
+            <!-- Header Row -->
+            <ScrollView x:Name="headerScrollView"
+                        Grid.Row="0"
+                        Orientation="Horizontal"
+                        HorizontalScrollBarVisibility="Never">
+                <Grid x:Name="headerGrid"
+                      BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+                      HeightRequest="{Binding HeaderHeight, Source={x:Reference thisControl}}">
+                    <!-- Headers are added dynamically -->
+                </Grid>
+            </ScrollView>
+
+            <!-- Data Rows -->
+            <ScrollView x:Name="dataScrollView"
+                        Grid.Row="1"
+                        Orientation="Both"
+                        Scrolled="OnDataScrollViewScrolled">
+                <Grid x:Name="dataGrid">
+                    <!-- Rows are added dynamically -->
+                </Grid>
+            </ScrollView>
+
+            <!-- Empty View -->
+            <ContentView x:Name="emptyViewContainer"
+                         Grid.Row="1"
+                         IsVisible="False"
+                         HorizontalOptions="Center"
+                         VerticalOptions="Center">
+                <!-- EmptyView content is set dynamically -->
+            </ContentView>
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator x:Name="loadingIndicator"
+                               Grid.Row="1"
+                               IsRunning="{Binding IsRefreshing, Source={x:Reference thisControl}}"
+                               IsVisible="{Binding IsRefreshing, Source={x:Reference thisControl}}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"
+                               Color="{Binding EffectiveAccentColor, Source={x:Reference thisControl}}" />
+        </Grid>
+    </Border>
+</base:StyledControlBase>
