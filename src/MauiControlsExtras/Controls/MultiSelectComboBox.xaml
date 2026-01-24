@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:TextStyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                            xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                            x:Class="MauiControlsExtras.Controls.MultiSelectComboBox"
+                            x:Name="thisControl">
+
+    <Grid RowDefinitions="Auto,Auto">
+
+        <!-- Collapsed View: Selected Chips + Dropdown Arrow -->
+        <Border x:Name="collapsedBorder"
+                StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+                Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+                Padding="8,6"
+                MinHeightRequest="48">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+            </Border.StrokeShape>
+            <Border.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnCollapsedTapped" />
+            </Border.GestureRecognizers>
+
+            <Grid ColumnDefinitions="*,Auto">
+                <!-- Chips Container or Placeholder -->
+                <FlexLayout x:Name="chipsContainer"
+                            Grid.Column="0"
+                            Wrap="Wrap"
+                            AlignItems="Center"
+                            JustifyContent="Start"
+                            Direction="Row" />
+
+                <!-- Dropdown Arrow -->
+                <Label x:Name="dropdownArrow"
+                       Grid.Column="1"
+                       Text="&#x25BC;"
+                       FontSize="10"
+                       TextColor="{AppThemeBinding Light=#757575, Dark=#BDBDBD}"
+                       VerticalOptions="Center"
+                       Margin="8,0,4,0" />
+            </Grid>
+        </Border>
+
+        <!-- Expanded View: Search + Checkbox List -->
+        <Border x:Name="expandedBorder"
+                Grid.Row="1"
+                IsVisible="False"
+                StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#616161}"
+                BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
+                Margin="0,-1,0,0"
+                ZIndex="100">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="0,0,8,8" />
+            </Border.StrokeShape>
+            <Border.Shadow>
+                <Shadow Brush="{AppThemeBinding Light=#9E9E9E, Dark=#000000}"
+                        Offset="0,4"
+                        Radius="8"
+                        Opacity="0.3" />
+            </Border.Shadow>
+
+            <Grid RowDefinitions="Auto,Auto,*">
+                <!-- Search Input -->
+                <Border Grid.Row="0"
+                        StrokeThickness="0,0,0,1"
+                        Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
+                        Padding="8,6"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsSearchable, Source={x:Reference thisControl}}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0"
+                               Text="&#x1F50D;"
+                               FontSize="14"
+                               VerticalOptions="Center"
+                               Margin="0,0,8,0"
+                               Opacity="0.6" />
+
+                        <Entry x:Name="searchEntry"
+                               Grid.Column="1"
+                               Placeholder="Search..."
+                               PlaceholderColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                               TextColor="{AppThemeBinding Light=#212121, Dark=#FFFFFF}"
+                               BackgroundColor="Transparent"
+                               FontSize="14"
+                               TextChanged="OnSearchTextChanged" />
+
+                        <Label x:Name="clearSearchButton"
+                               Grid.Column="2"
+                               Text="&#x2715;"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                               VerticalOptions="Center"
+                               IsVisible="False">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnClearSearchTapped" />
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+                </Border>
+
+                <!-- Select All Option -->
+                <Border x:Name="selectAllBorder"
+                        Grid.Row="1"
+                        StrokeThickness="0,0,0,1"
+                        Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
+                        Padding="12,10"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding SelectAllOption, Source={x:Reference thisControl}}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnSelectAllTapped" />
+                    </Border.GestureRecognizers>
+                    <Grid ColumnDefinitions="Auto,*">
+                        <CheckBox x:Name="selectAllCheckBox"
+                                  Grid.Column="0"
+                                  Color="{Binding EffectiveAccentColor, Source={x:Reference thisControl}}"
+                                  CheckedChanged="OnSelectAllCheckChanged"
+                                  VerticalOptions="Center" />
+                        <Label Grid.Column="1"
+                               Text="Select All"
+                               FontSize="14"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light=#212121, Dark=#FFFFFF}"
+                               VerticalOptions="Center" />
+                    </Grid>
+                </Border>
+
+                <!-- Items List with Checkboxes -->
+                <CollectionView x:Name="itemsList"
+                                Grid.Row="2"
+                                ItemsSource="{Binding FilteredItems, Source={x:Reference thisControl}}"
+                                SelectionMode="None"
+                                MaximumHeightRequest="{Binding ListMaxHeight, Source={x:Reference thisControl}}">
+                    <CollectionView.EmptyView>
+                        <Grid Padding="12,16">
+                            <Label Text="No matches found"
+                                   FontSize="14"
+                                   TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                                   HorizontalOptions="Center" />
+                        </Grid>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+            </Grid>
+        </Border>
+    </Grid>
+</base:TextStyledControlBase>
