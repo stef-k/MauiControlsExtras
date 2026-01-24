@@ -60,3 +60,10 @@ node_modules/
 
 # Publish output
 publish/
+
+# Claude Code
+.claude/
+
+# Windows NUL device redirect artifacts
+nul
+NUL
