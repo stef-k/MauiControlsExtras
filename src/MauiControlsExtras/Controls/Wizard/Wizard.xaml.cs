@@ -1,0 +1,1233 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Windows.Input;
+using MauiControlsExtras.Base;
+using MauiControlsExtras.Theming;
+using Microsoft.Maui.Controls.Shapes;
+
+namespace MauiControlsExtras.Controls;
+
+/// <summary>
+/// A wizard/stepper control for multi-step workflows.
+/// Provides step indicators, navigation, validation, and customization options.
+/// </summary>
+public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
+{
+    #region Private Fields
+
+    private readonly ObservableCollection<WizardStep> _steps = new();
+    private int _currentIndex;
+    private bool _hasKeyboardFocus;
+
+    #endregion
+
+    #region Bindable Properties
+
+    /// <summary>
+    /// Identifies the <see cref="NavigationMode"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty NavigationModeProperty = BindableProperty.Create(
+        nameof(NavigationMode),
+        typeof(WizardNavigationMode),
+        typeof(Wizard),
+        WizardNavigationMode.Linear);
+
+    /// <summary>
+    /// Identifies the <see cref="IndicatorPosition"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IndicatorPositionProperty = BindableProperty.Create(
+        nameof(IndicatorPosition),
+        typeof(StepIndicatorPosition),
+        typeof(Wizard),
+        StepIndicatorPosition.Top,
+        propertyChanged: OnIndicatorPositionChanged);
+
+    /// <summary>
+    /// Identifies the <see cref="IndicatorStyle"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IndicatorStyleProperty = BindableProperty.Create(
+        nameof(IndicatorStyle),
+        typeof(StepIndicatorStyle),
+        typeof(Wizard),
+        StepIndicatorStyle.Circle,
+        propertyChanged: OnIndicatorStyleChanged);
+
+    /// <summary>
+    /// Identifies the <see cref="ShowStepNumbers"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ShowStepNumbersProperty = BindableProperty.Create(
+        nameof(ShowStepNumbers),
+        typeof(bool),
+        typeof(Wizard),
+        true,
+        propertyChanged: OnIndicatorStyleChanged);
+
+    /// <summary>
+    /// Identifies the <see cref="ShowStepTitles"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ShowStepTitlesProperty = BindableProperty.Create(
+        nameof(ShowStepTitles),
+        typeof(bool),
+        typeof(Wizard),
+        true,
+        propertyChanged: OnIndicatorStyleChanged);
+
+    /// <summary>
+    /// Identifies the <see cref="ShowCancelButton"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ShowCancelButtonProperty = BindableProperty.Create(
+        nameof(ShowCancelButton),
+        typeof(bool),
+        typeof(Wizard),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="ShowBackButton"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ShowBackButtonProperty = BindableProperty.Create(
+        nameof(ShowBackButton),
+        typeof(bool),
+        typeof(Wizard),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="BackButtonText"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty BackButtonTextProperty = BindableProperty.Create(
+        nameof(BackButtonText),
+        typeof(string),
+        typeof(Wizard),
+        "Back");
+
+    /// <summary>
+    /// Identifies the <see cref="NextButtonText"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty NextButtonTextProperty = BindableProperty.Create(
+        nameof(NextButtonText),
+        typeof(string),
+        typeof(Wizard),
+        "Next");
+
+    /// <summary>
+    /// Identifies the <see cref="FinishButtonText"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FinishButtonTextProperty = BindableProperty.Create(
+        nameof(FinishButtonText),
+        typeof(string),
+        typeof(Wizard),
+        "Finish");
+
+    /// <summary>
+    /// Identifies the <see cref="CancelButtonText"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CancelButtonTextProperty = BindableProperty.Create(
+        nameof(CancelButtonText),
+        typeof(string),
+        typeof(Wizard),
+        "Cancel");
+
+    /// <summary>
+    /// Identifies the <see cref="SkipButtonText"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SkipButtonTextProperty = BindableProperty.Create(
+        nameof(SkipButtonText),
+        typeof(string),
+        typeof(Wizard),
+        "Skip");
+
+    /// <summary>
+    /// Identifies the <see cref="ValidateOnNext"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ValidateOnNextProperty = BindableProperty.Create(
+        nameof(ValidateOnNext),
+        typeof(bool),
+        typeof(Wizard),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="AnimateTransitions"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty AnimateTransitionsProperty = BindableProperty.Create(
+        nameof(AnimateTransitions),
+        typeof(bool),
+        typeof(Wizard),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="IsKeyboardNavigationEnabled"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsKeyboardNavigationEnabledProperty = BindableProperty.Create(
+        nameof(IsKeyboardNavigationEnabled),
+        typeof(bool),
+        typeof(Wizard),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="CompletedStepColor"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CompletedStepColorProperty = BindableProperty.Create(
+        nameof(CompletedStepColor),
+        typeof(Color),
+        typeof(Wizard),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="ErrorStepColor"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ErrorStepColorProperty = BindableProperty.Create(
+        nameof(ErrorStepColor),
+        typeof(Color),
+        typeof(Wizard),
+        null);
+
+    #endregion
+
+    #region Command Properties
+
+    /// <summary>
+    /// Identifies the <see cref="StepChangedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepChangedCommandProperty = BindableProperty.Create(
+        nameof(StepChangedCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="FinishedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FinishedCommandProperty = BindableProperty.Create(
+        nameof(FinishedCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="CancelledCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CancelledCommandProperty = BindableProperty.Create(
+        nameof(CancelledCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="GotFocusCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="LostFocusCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="KeyPressCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets or sets the navigation mode (linear or non-linear).
+    /// </summary>
+    public WizardNavigationMode NavigationMode
+    {
+        get => (WizardNavigationMode)GetValue(NavigationModeProperty);
+        set => SetValue(NavigationModeProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the position of the step indicator.
+    /// </summary>
+    public StepIndicatorPosition IndicatorPosition
+    {
+        get => (StepIndicatorPosition)GetValue(IndicatorPositionProperty);
+        set => SetValue(IndicatorPositionProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the style of the step indicator.
+    /// </summary>
+    public StepIndicatorStyle IndicatorStyle
+    {
+        get => (StepIndicatorStyle)GetValue(IndicatorStyleProperty);
+        set => SetValue(IndicatorStyleProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether step numbers are shown.
+    /// </summary>
+    public bool ShowStepNumbers
+    {
+        get => (bool)GetValue(ShowStepNumbersProperty);
+        set => SetValue(ShowStepNumbersProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether step titles are shown in the indicator.
+    /// </summary>
+    public bool ShowStepTitles
+    {
+        get => (bool)GetValue(ShowStepTitlesProperty);
+        set => SetValue(ShowStepTitlesProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether the cancel button is shown.
+    /// </summary>
+    public bool ShowCancelButton
+    {
+        get => (bool)GetValue(ShowCancelButtonProperty);
+        set => SetValue(ShowCancelButtonProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether the back button is shown.
+    /// </summary>
+    public bool ShowBackButton
+    {
+        get => (bool)GetValue(ShowBackButtonProperty);
+        set => SetValue(ShowBackButtonProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the back button text.
+    /// </summary>
+    public string BackButtonText
+    {
+        get => (string)GetValue(BackButtonTextProperty);
+        set => SetValue(BackButtonTextProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the next button text.
+    /// </summary>
+    public string NextButtonText
+    {
+        get => (string)GetValue(NextButtonTextProperty);
+        set => SetValue(NextButtonTextProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the finish button text.
+    /// </summary>
+    public string FinishButtonText
+    {
+        get => (string)GetValue(FinishButtonTextProperty);
+        set => SetValue(FinishButtonTextProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the cancel button text.
+    /// </summary>
+    public string CancelButtonText
+    {
+        get => (string)GetValue(CancelButtonTextProperty);
+        set => SetValue(CancelButtonTextProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the skip button text.
+    /// </summary>
+    public string SkipButtonText
+    {
+        get => (string)GetValue(SkipButtonTextProperty);
+        set => SetValue(SkipButtonTextProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether validation is performed when clicking Next.
+    /// </summary>
+    public bool ValidateOnNext
+    {
+        get => (bool)GetValue(ValidateOnNextProperty);
+        set => SetValue(ValidateOnNextProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether step transitions are animated.
+    /// </summary>
+    public bool AnimateTransitions
+    {
+        get => (bool)GetValue(AnimateTransitionsProperty);
+        set => SetValue(AnimateTransitionsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the color for completed steps.
+    /// </summary>
+    public Color? CompletedStepColor
+    {
+        get => (Color?)GetValue(CompletedStepColorProperty);
+        set => SetValue(CompletedStepColorProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the color for steps with errors.
+    /// </summary>
+    public Color? ErrorStepColor
+    {
+        get => (Color?)GetValue(ErrorStepColorProperty);
+        set => SetValue(ErrorStepColorProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the collection of wizard steps.
+    /// </summary>
+    public ObservableCollection<WizardStep> Steps => _steps;
+
+    /// <summary>
+    /// Gets the current step index.
+    /// </summary>
+    public int CurrentIndex => _currentIndex;
+
+    /// <summary>
+    /// Gets the current step.
+    /// </summary>
+    public WizardStep? CurrentStep => _currentIndex >= 0 && _currentIndex < _steps.Count
+        ? _steps[_currentIndex]
+        : null;
+
+    /// <summary>
+    /// Gets whether the wizard can go back.
+    /// </summary>
+    public bool CanGoBack => _currentIndex > 0;
+
+    /// <summary>
+    /// Gets whether the wizard can go forward.
+    /// </summary>
+    public bool CanGoNext => _currentIndex < _steps.Count - 1;
+
+    /// <summary>
+    /// Gets whether the current step is the last step.
+    /// </summary>
+    public bool IsLastStep => _currentIndex == _steps.Count - 1;
+
+    /// <summary>
+    /// Gets whether the current step is the first step.
+    /// </summary>
+    public bool IsFirstStep => _currentIndex == 0;
+
+    /// <summary>
+    /// Gets the step count.
+    /// </summary>
+    public int StepCount => _steps.Count;
+
+    /// <summary>
+    /// Gets the completion percentage (0-100).
+    /// </summary>
+    public double CompletionPercentage => _steps.Count > 0
+        ? (_currentIndex / (double)_steps.Count) * 100
+        : 0;
+
+    #endregion
+
+    #region Command Properties Implementation
+
+    /// <summary>
+    /// Gets or sets the command executed when the step changes.
+    /// </summary>
+    public ICommand? StepChangedCommand
+    {
+        get => (ICommand?)GetValue(StepChangedCommandProperty);
+        set => SetValue(StepChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when the wizard finishes.
+    /// </summary>
+    public ICommand? FinishedCommand
+    {
+        get => (ICommand?)GetValue(FinishedCommandProperty);
+        set => SetValue(FinishedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when the wizard is cancelled.
+    /// </summary>
+    public ICommand? CancelledCommand
+    {
+        get => (ICommand?)GetValue(CancelledCommandProperty);
+        set => SetValue(CancelledCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    #endregion
+
+    #region Events
+
+    /// <summary>
+    /// Occurs when the current step changes.
+    /// </summary>
+    public event EventHandler<WizardStepChangedEventArgs>? StepChanged;
+
+    /// <summary>
+    /// Occurs before the current step changes (cancelable).
+    /// </summary>
+    public event EventHandler<WizardStepChangingEventArgs>? StepChanging;
+
+    /// <summary>
+    /// Occurs when the wizard finishes.
+    /// </summary>
+    public event EventHandler<WizardFinishedEventArgs>? Finished;
+
+    /// <summary>
+    /// Occurs before the wizard finishes (cancelable).
+    /// </summary>
+    public event EventHandler<WizardFinishingEventArgs>? Finishing;
+
+    /// <summary>
+    /// Occurs when the wizard is cancelled.
+    /// </summary>
+    public event EventHandler<WizardFinishedEventArgs>? Cancelled;
+
+    /// <summary>
+    /// Occurs before the wizard is cancelled (cancelable).
+    /// </summary>
+    public event EventHandler<WizardCancellingEventArgs>? Cancelling;
+
+    /// <inheritdoc/>
+    public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc/>
+#pragma warning disable CS0067
+    public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc/>
+    public event EventHandler<KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc/>
+#pragma warning disable CS0067
+    public event EventHandler<KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc/>
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc/>
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => (bool)GetValue(IsKeyboardNavigationEnabledProperty);
+        set => SetValue(IsKeyboardNavigationEnabledProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public bool HasKeyboardFocus => _hasKeyboardFocus;
+
+    /// <inheritdoc/>
+    public bool HandleKeyPress(KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        switch (e.Key)
+        {
+            case "ArrowLeft":
+            case "PageUp":
+                if (CanGoBack)
+                {
+                    GoBack();
+                    return true;
+                }
+                break;
+            case "ArrowRight":
+            case "PageDown":
+                if (CanGoNext)
+                {
+                    GoNext();
+                    return true;
+                }
+                break;
+            case "Home":
+                if (_currentIndex > 0 && NavigationMode == WizardNavigationMode.NonLinear)
+                {
+                    GoToStep(0);
+                    return true;
+                }
+                break;
+            case "End":
+                if (_currentIndex < _steps.Count - 1 && NavigationMode == WizardNavigationMode.NonLinear)
+                {
+                    GoToStep(_steps.Count - 1);
+                    return true;
+                }
+                break;
+            case "Enter":
+                if (IsLastStep)
+                {
+                    Finish();
+                }
+                else
+                {
+                    GoNext();
+                }
+                return true;
+            case "Escape":
+                Cancel();
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc/>
+    public IReadOnlyList<KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        return new List<KeyboardShortcut>
+        {
+            new() { Key = "ArrowLeft", Description = "Previous step", Category = "Navigation" },
+            new() { Key = "ArrowRight", Description = "Next step", Category = "Navigation" },
+            new() { Key = "PageUp", Description = "Previous step", Category = "Navigation" },
+            new() { Key = "PageDown", Description = "Next step", Category = "Navigation" },
+            new() { Key = "Home", Description = "First step (non-linear)", Category = "Navigation" },
+            new() { Key = "End", Description = "Last step (non-linear)", Category = "Navigation" },
+            new() { Key = "Enter", Description = "Next step / Finish", Category = "Actions" },
+            new() { Key = "Escape", Description = "Cancel wizard", Category = "Actions" }
+        };
+    }
+
+    /// <inheritdoc/>
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+        _hasKeyboardFocus = true;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
+        GotFocusCommand?.Execute(this);
+        return true;
+    }
+
+    #endregion
+
+    #region Constructor
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Wizard"/> class.
+    /// </summary>
+    public Wizard()
+    {
+        InitializeComponent();
+        _steps.CollectionChanged += OnStepsCollectionChanged;
+    }
+
+    #endregion
+
+    #region Navigation Methods
+
+    /// <summary>
+    /// Navigates to the next step.
+    /// </summary>
+    /// <returns>True if navigation succeeded.</returns>
+    public bool GoNext()
+    {
+        if (!CanGoNext) return false;
+
+        // Validate current step if required
+        if (ValidateOnNext && CurrentStep != null && !CurrentStep.Validate())
+        {
+            return false;
+        }
+
+        return GoToStep(_currentIndex + 1);
+    }
+
+    /// <summary>
+    /// Navigates to the previous step.
+    /// </summary>
+    /// <returns>True if navigation succeeded.</returns>
+    public bool GoBack()
+    {
+        if (!CanGoBack) return false;
+        return GoToStep(_currentIndex - 1);
+    }
+
+    /// <summary>
+    /// Navigates to a specific step.
+    /// </summary>
+    /// <param name="index">The step index.</param>
+    /// <returns>True if navigation succeeded.</returns>
+    public bool GoToStep(int index)
+    {
+        if (index < 0 || index >= _steps.Count)
+            return false;
+
+        if (index == _currentIndex)
+            return true;
+
+        // Check if non-linear navigation is allowed
+        if (NavigationMode == WizardNavigationMode.Linear)
+        {
+            // In linear mode, can only go to adjacent steps or previously visited steps
+            var targetStep = _steps[index];
+            if (index > _currentIndex + 1 && targetStep.Status == WizardStepStatus.NotVisited)
+            {
+                return false;
+            }
+        }
+
+        var oldStep = CurrentStep;
+        var newStep = _steps[index];
+        var oldIndex = _currentIndex;
+
+        // Raise changing event
+        var changingArgs = new WizardStepChangingEventArgs(oldStep, newStep, oldIndex, index);
+        StepChanging?.Invoke(this, changingArgs);
+        if (changingArgs.Cancel)
+            return false;
+
+        // Exit old step
+        if (oldStep != null)
+        {
+            oldStep.OnExit(index > oldIndex);
+        }
+
+        // Update state
+        _currentIndex = index;
+        OnPropertyChanged(nameof(CurrentIndex));
+        OnPropertyChanged(nameof(CurrentStep));
+        OnPropertyChanged(nameof(CanGoBack));
+        OnPropertyChanged(nameof(CanGoNext));
+        OnPropertyChanged(nameof(IsFirstStep));
+        OnPropertyChanged(nameof(IsLastStep));
+        OnPropertyChanged(nameof(CompletionPercentage));
+
+        // Enter new step
+        newStep.OnEnter();
+
+        // Update UI
+        UpdateStepContent();
+        UpdateStepIndicator();
+        UpdateNavigationButtons();
+
+        // Raise changed event
+        var changedArgs = new WizardStepChangedEventArgs(oldStep, newStep, oldIndex, index);
+        StepChanged?.Invoke(this, changedArgs);
+        StepChangedCommand?.Execute(changedArgs);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Finishes the wizard.
+    /// </summary>
+    /// <returns>True if the wizard finished successfully.</returns>
+    public bool Finish()
+    {
+        // Validate all steps if in linear mode
+        if (ValidateOnNext)
+        {
+            foreach (var step in _steps)
+            {
+                if (!step.IsOptional && !step.Validate())
+                {
+                    GoToStep(step.Index);
+                    return false;
+                }
+            }
+        }
+
+        // Raise finishing event
+        var finishingArgs = new WizardFinishingEventArgs(_steps.ToList());
+        Finishing?.Invoke(this, finishingArgs);
+        if (finishingArgs.Cancel)
+            return false;
+
+        // Mark current step as completed
+        if (CurrentStep != null)
+        {
+            CurrentStep.OnExit(true);
+        }
+
+        // Raise finished event
+        var finishedArgs = new WizardFinishedEventArgs(false, _steps.ToList());
+        Finished?.Invoke(this, finishedArgs);
+        FinishedCommand?.Execute(finishedArgs);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Cancels the wizard.
+    /// </summary>
+    /// <returns>True if the wizard was cancelled successfully.</returns>
+    public bool Cancel()
+    {
+        // Raise cancelling event
+        var cancellingArgs = new WizardCancellingEventArgs(_currentIndex);
+        Cancelling?.Invoke(this, cancellingArgs);
+        if (cancellingArgs.Cancel)
+            return false;
+
+        // Raise cancelled event
+        var cancelledArgs = new WizardFinishedEventArgs(true, _steps.ToList());
+        Cancelled?.Invoke(this, cancelledArgs);
+        CancelledCommand?.Execute(cancelledArgs);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Skips the current step.
+    /// </summary>
+    /// <returns>True if the step was skipped successfully.</returns>
+    public bool SkipStep()
+    {
+        if (CurrentStep == null || !CurrentStep.CanSkip)
+            return false;
+
+        CurrentStep.Status = WizardStepStatus.Skipped;
+        return GoNext();
+    }
+
+    /// <summary>
+    /// Resets the wizard to the first step.
+    /// </summary>
+    public void Reset()
+    {
+        foreach (var step in _steps)
+        {
+            step.Status = WizardStepStatus.NotVisited;
+            step.IsValid = true;
+            step.ValidationMessage = null;
+        }
+
+        _currentIndex = -1;
+        if (_steps.Count > 0)
+        {
+            GoToStep(0);
+        }
+    }
+
+    #endregion
+
+    #region UI Update Methods
+
+    private void UpdateStepContent()
+    {
+        if (_steps.Count == 0)
+        {
+            emptyLabel.IsVisible = true;
+            stepTitleLabel.IsVisible = false;
+            stepDescriptionLabel.IsVisible = false;
+            stepContentContainer.Content = null;
+            return;
+        }
+
+        emptyLabel.IsVisible = false;
+
+        var step = CurrentStep;
+        if (step == null) return;
+
+        stepTitleLabel.IsVisible = !string.IsNullOrEmpty(step.Title);
+        stepTitleLabel.Text = step.Title;
+
+        stepDescriptionLabel.IsVisible = !string.IsNullOrEmpty(step.Description);
+        stepDescriptionLabel.Text = step.Description;
+
+        if (AnimateTransitions)
+        {
+            AnimateStepTransition(step);
+        }
+        else
+        {
+            stepContentContainer.Content = step;
+        }
+    }
+
+    private async void AnimateStepTransition(WizardStep step)
+    {
+        await stepContentContainer.FadeToAsync(0, 150);
+        stepContentContainer.Content = step;
+        await stepContentContainer.FadeToAsync(1, 150);
+    }
+
+    private void UpdateStepIndicator()
+    {
+        stepIndicatorTop.IsVisible = IndicatorPosition == StepIndicatorPosition.Top;
+        if (IndicatorPosition == StepIndicatorPosition.None)
+            return;
+
+        stepIndicatorContainer.Children.Clear();
+
+        for (int i = 0; i < _steps.Count; i++)
+        {
+            var step = _steps[i];
+            var indicator = CreateStepIndicatorItem(step, i);
+            stepIndicatorContainer.Children.Add(indicator);
+
+            // Add connector line
+            if (i < _steps.Count - 1)
+            {
+                var connector = CreateConnector(step, _steps[i + 1]);
+                stepIndicatorContainer.Children.Add(connector);
+            }
+        }
+    }
+
+    private View CreateStepIndicatorItem(WizardStep step, int index)
+    {
+        var container = new VerticalStackLayout
+        {
+            Spacing = 4,
+            HorizontalOptions = LayoutOptions.Center
+        };
+
+        View indicator;
+        switch (IndicatorStyle)
+        {
+            case StepIndicatorStyle.Circle:
+                indicator = CreateCircleIndicator(step, index);
+                break;
+            case StepIndicatorStyle.Dot:
+                indicator = CreateDotIndicator(step);
+                break;
+            case StepIndicatorStyle.Progress:
+                indicator = CreateProgressIndicator(step, index);
+                break;
+            case StepIndicatorStyle.Text:
+            default:
+                indicator = CreateTextIndicator(step, index);
+                break;
+        }
+
+        container.Children.Add(indicator);
+
+        if (ShowStepTitles && !string.IsNullOrEmpty(step.Title))
+        {
+            var titleLabel = new Label
+            {
+                Text = step.Title,
+                FontSize = 11,
+                HorizontalOptions = LayoutOptions.Center,
+                TextColor = GetIndicatorTextColor(step),
+                MaximumWidthRequest = 80,
+                LineBreakMode = LineBreakMode.TailTruncation
+            };
+            container.Children.Add(titleLabel);
+        }
+
+        // Make clickable in non-linear mode
+        if (NavigationMode == WizardNavigationMode.NonLinear ||
+            step.Status == WizardStepStatus.Completed ||
+            step.Status == WizardStepStatus.Current)
+        {
+            var tapGesture = new TapGestureRecognizer();
+            var capturedIndex = index;
+            tapGesture.Tapped += (s, e) => GoToStep(capturedIndex);
+            container.GestureRecognizers.Add(tapGesture);
+        }
+
+        return container;
+    }
+
+    private View CreateCircleIndicator(WizardStep step, int index)
+    {
+        var size = 32.0;
+        var color = GetIndicatorColor(step);
+
+        var circle = new Border
+        {
+            WidthRequest = size,
+            HeightRequest = size,
+            BackgroundColor = step.IsCurrent ? color : Colors.Transparent,
+            Stroke = new SolidColorBrush(color),
+            StrokeThickness = 2,
+            StrokeShape = new RoundRectangle { CornerRadius = size / 2 }
+        };
+
+        var content = new Label
+        {
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+            FontSize = 13
+        };
+
+        if (step.Status == WizardStepStatus.Completed)
+        {
+            content.Text = "✓";
+            content.TextColor = step.IsCurrent ? Colors.White : color;
+        }
+        else if (step.Status == WizardStepStatus.Error)
+        {
+            content.Text = "!";
+            content.TextColor = step.IsCurrent ? Colors.White : color;
+        }
+        else if (ShowStepNumbers)
+        {
+            content.Text = (index + 1).ToString();
+            content.TextColor = step.IsCurrent ? Colors.White : color;
+        }
+        else if (!string.IsNullOrEmpty(step.Icon))
+        {
+            content.Text = step.Icon;
+            content.TextColor = step.IsCurrent ? Colors.White : color;
+        }
+
+        circle.Content = content;
+        return circle;
+    }
+
+    private View CreateDotIndicator(WizardStep step)
+    {
+        var size = step.IsCurrent ? 12.0 : 8.0;
+        var color = GetIndicatorColor(step);
+
+        return new BoxView
+        {
+            WidthRequest = size,
+            HeightRequest = size,
+            Color = color,
+            CornerRadius = size / 2,
+            VerticalOptions = LayoutOptions.Center
+        };
+    }
+
+    private View CreateProgressIndicator(WizardStep step, int index)
+    {
+        var color = GetIndicatorColor(step);
+        var progress = step.IsCompleted ? 1.0 :
+                       step.IsCurrent ? 0.5 : 0.0;
+
+        var container = new Grid
+        {
+            WidthRequest = 60,
+            HeightRequest = 8
+        };
+
+        // Background
+        container.Children.Add(new BoxView
+        {
+            Color = MauiControlsExtrasTheme.GetBorderColor(),
+            Opacity = 0.3,
+            CornerRadius = 4
+        });
+
+        // Progress
+        container.Children.Add(new BoxView
+        {
+            Color = color,
+            WidthRequest = 60 * progress,
+            HorizontalOptions = LayoutOptions.Start,
+            CornerRadius = 4
+        });
+
+        return container;
+    }
+
+    private View CreateTextIndicator(WizardStep step, int index)
+    {
+        return new Label
+        {
+            Text = ShowStepNumbers ? $"Step {index + 1}" : step.Title ?? $"Step {index + 1}",
+            FontSize = 12,
+            FontAttributes = step.IsCurrent ? FontAttributes.Bold : FontAttributes.None,
+            TextColor = GetIndicatorColor(step)
+        };
+    }
+
+    private View CreateConnector(WizardStep currentStep, WizardStep nextStep)
+    {
+        var color = currentStep.IsCompleted
+            ? (CompletedStepColor ?? EffectiveAccentColor)
+            : MauiControlsExtrasTheme.GetBorderColor();
+
+        return new BoxView
+        {
+            WidthRequest = 40,
+            HeightRequest = 2,
+            Color = color,
+            Opacity = currentStep.IsCompleted ? 1.0 : 0.3,
+            VerticalOptions = LayoutOptions.Center,
+            Margin = new Thickness(4, 0)
+        };
+    }
+
+    private Color GetIndicatorColor(WizardStep step)
+    {
+        return step.Status switch
+        {
+            WizardStepStatus.Completed => CompletedStepColor ?? EffectiveAccentColor,
+            WizardStepStatus.Error => ErrorStepColor ?? Colors.Red,
+            WizardStepStatus.Current => EffectiveAccentColor,
+            WizardStepStatus.Skipped => MauiControlsExtrasTheme.GetBorderColor(),
+            _ => MauiControlsExtrasTheme.GetBorderColor()
+        };
+    }
+
+    private Color GetIndicatorTextColor(WizardStep step)
+    {
+        return step.IsCurrent
+            ? EffectiveForegroundColor
+            : MauiControlsExtrasTheme.GetForegroundColor().WithAlpha(0.6f);
+    }
+
+    private void UpdateNavigationButtons()
+    {
+        // Update back button
+        backButton.IsEnabled = CanGoBack;
+
+        // Update next/finish button
+        if (IsLastStep)
+        {
+            nextButton.Text = FinishButtonText;
+        }
+        else
+        {
+            nextButton.Text = NextButtonText;
+        }
+
+        // Update skip button
+        skipButton.IsVisible = CurrentStep?.CanSkip == true;
+    }
+
+    #endregion
+
+    #region Event Handlers
+
+    private void OnStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // Update step indices
+        for (int i = 0; i < _steps.Count; i++)
+        {
+            _steps[i].Index = i;
+        }
+
+        OnPropertyChanged(nameof(StepCount));
+        OnPropertyChanged(nameof(CompletionPercentage));
+
+        // Initialize to first step if needed
+        if (_steps.Count > 0 && _currentIndex < 0)
+        {
+            GoToStep(0);
+        }
+        else
+        {
+            UpdateStepIndicator();
+            UpdateNavigationButtons();
+        }
+    }
+
+    private void OnBackClicked(object? sender, EventArgs e)
+    {
+        GoBack();
+    }
+
+    private void OnNextClicked(object? sender, EventArgs e)
+    {
+        if (IsLastStep)
+        {
+            Finish();
+        }
+        else
+        {
+            GoNext();
+        }
+    }
+
+    private void OnCancelClicked(object? sender, EventArgs e)
+    {
+        Cancel();
+    }
+
+    private void OnSkipClicked(object? sender, EventArgs e)
+    {
+        SkipStep();
+    }
+
+    #endregion
+
+    #region Property Changed Handlers
+
+    private static void OnIndicatorPositionChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is Wizard wizard)
+        {
+            wizard.UpdateStepIndicator();
+        }
+    }
+
+    private static void OnIndicatorStyleChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is Wizard wizard)
+        {
+            wizard.UpdateStepIndicator();
+        }
+    }
+
+    #endregion
+
+    #region Public Methods
+
+    /// <summary>
+    /// Adds a step to the wizard.
+    /// </summary>
+    /// <param name="step">The step to add.</param>
+    public void AddStep(WizardStep step)
+    {
+        _steps.Add(step);
+    }
+
+    /// <summary>
+    /// Removes a step from the wizard.
+    /// </summary>
+    /// <param name="step">The step to remove.</param>
+    public void RemoveStep(WizardStep step)
+    {
+        _steps.Remove(step);
+    }
+
+    /// <summary>
+    /// Clears all steps from the wizard.
+    /// </summary>
+    public void ClearSteps()
+    {
+        _steps.Clear();
+        _currentIndex = -1;
+        OnPropertyChanged(nameof(CurrentIndex));
+        OnPropertyChanged(nameof(CurrentStep));
+    }
+
+    #endregion
+}
