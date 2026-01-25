@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                        x:Class="MauiControlsExtras.Controls.Calendar"
+                        x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <Grid RowDefinitions="Auto,Auto,*"
+              Padding="8">
+
+            <!-- Navigation Header -->
+            <Grid Grid.Row="0"
+                  ColumnDefinitions="Auto,*,Auto"
+                  Padding="4">
+
+                <Button x:Name="previousButton"
+                        Grid.Column="0"
+                        Text="◀"
+                        WidthRequest="32"
+                        HeightRequest="32"
+                        Padding="0"
+                        BackgroundColor="Transparent"
+                        TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}"
+                        Clicked="OnPreviousClicked" />
+
+                <Label x:Name="headerLabel"
+                       Grid.Column="1"
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       FontSize="16"
+                       FontAttributes="Bold"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnHeaderTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <Button x:Name="nextButton"
+                        Grid.Column="2"
+                        Text="▶"
+                        WidthRequest="32"
+                        HeightRequest="32"
+                        Padding="0"
+                        BackgroundColor="Transparent"
+                        TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}"
+                        Clicked="OnNextClicked" />
+            </Grid>
+
+            <!-- Day of Week Headers -->
+            <Grid x:Name="dayOfWeekHeader"
+                  Grid.Row="1"
+                  Padding="0,4">
+                <!-- Day headers are added dynamically -->
+            </Grid>
+
+            <!-- Calendar Grid -->
+            <Grid x:Name="calendarGrid"
+                  Grid.Row="2">
+                <!-- Calendar cells are added dynamically -->
+            </Grid>
+        </Grid>
+    </Border>
+</base:StyledControlBase>
