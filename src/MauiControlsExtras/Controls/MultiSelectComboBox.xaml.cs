@@ -443,7 +443,83 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         UpdateListMaxHeight();
         SetupItemTemplate();
         UpdateChipsDisplay();
+        searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
     }
+
+    private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (searchEntry.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (searchEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+        {
+            textBox.KeyDown += OnWindowsTextBoxKeyDown;
+        }
+#endif
+    }
+
+#if WINDOWS
+    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (!_isExpanded) return;
+
+        switch (e.Key)
+        {
+            case Windows.System.VirtualKey.Down:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = (_highlightedIndex + 1) % FilteredItems.Count;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Up:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = _highlightedIndex <= 0 ? FilteredItems.Count - 1 : _highlightedIndex - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Space:
+                if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+                {
+                    var item = FilteredItems[_highlightedIndex];
+                    if (IsItemSelected(item))
+                        DeselectItem(item);
+                    else
+                        SelectItem(item);
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Escape:
+                Close();
+                e.Handled = true;
+                break;
+
+            case Windows.System.VirtualKey.Home:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = 0;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.End:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = FilteredItems.Count - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+        }
+    }
+#endif
 
     #endregion
 
@@ -796,9 +872,16 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
+            _highlightedIndex = -1;
             UpdateCheckboxStates();
             UpdateSelectAllState();
             RaiseOpened();
+
+            // Focus the search entry when dropdown opens
+            if (IsSearchable)
+            {
+                Dispatcher.Dispatch(() => searchEntry?.Focus());
+            }
         }
         else
         {

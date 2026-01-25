@@ -624,7 +624,91 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
         // Wire up keyboard events from search entry
         searchEntry.Completed += OnSearchEntryCompleted;
+        searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
     }
+
+    private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (searchEntry.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (searchEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+        {
+            textBox.KeyDown += OnWindowsTextBoxKeyDown;
+            textBox.PreviewKeyDown += OnWindowsTextBoxPreviewKeyDown;
+        }
+#endif
+    }
+
+#if WINDOWS
+    private void OnWindowsTextBoxPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        // Handle Tab key for autocomplete
+        if (e.Key == Windows.System.VirtualKey.Tab && _isExpanded)
+        {
+            // If single filtered result or highlighted item, select it
+            if (FilteredItems.Count == 1)
+            {
+                SelectItem(FilteredItems[0]);
+                e.Handled = true;
+            }
+            else if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+            {
+                SelectItem(FilteredItems[_highlightedIndex]);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (!_isExpanded) return;
+
+        switch (e.Key)
+        {
+            case Windows.System.VirtualKey.Down:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = (_highlightedIndex + 1) % FilteredItems.Count;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Up:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = _highlightedIndex <= 0 ? FilteredItems.Count - 1 : _highlightedIndex - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Escape:
+                Close();
+                e.Handled = true;
+                break;
+
+            case Windows.System.VirtualKey.Home:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = 0;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.End:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = FilteredItems.Count - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+        }
+    }
+#endif
 
     private void OnSearchEntryCompleted(object? sender, EventArgs e)
     {
