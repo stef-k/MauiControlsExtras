@@ -1,5 +1,7 @@
+using System.Collections;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using MauiControlsExtras.Base.Validation;
 
 namespace MauiControlsExtras.Controls;
 
@@ -57,11 +59,20 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     private bool _canUserSort = true;
     private bool _canUserFilter = true;
     private bool _canUserEdit = true;
+    private bool _canUserResize = true;
+    private bool _canUserReorder = true;
     private bool _isReadOnly;
     private bool _isVisible = true;
     private TextAlignment _textAlignment = TextAlignment.Start;
     private SortDirection? _sortDirection;
     private double _actualWidth;
+    private string? _headerTooltip;
+    private DataGridAggregateType _aggregateType = DataGridAggregateType.None;
+    private string? _aggregateFormat;
+    private Func<object, object?, ValidationResult>? _validationFunc;
+    private string? _validationErrorMessage;
+    private IEnumerable<object>? _filterValues;
+    private string? _filterText;
 
     /// <summary>
     /// Gets or sets the column header text.
@@ -264,6 +275,264 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
                 OnPropertyChanged();
             }
         }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the user can resize this column.
+    /// </summary>
+    public bool CanUserResize
+    {
+        get => _canUserResize;
+        set
+        {
+            if (_canUserResize != value)
+            {
+                _canUserResize = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the user can reorder this column.
+    /// </summary>
+    public bool CanUserReorder
+    {
+        get => _canUserReorder;
+        set
+        {
+            if (_canUserReorder != value)
+            {
+                _canUserReorder = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the tooltip for the column header.
+    /// </summary>
+    public string? HeaderTooltip
+    {
+        get => _headerTooltip;
+        set
+        {
+            if (_headerTooltip != value)
+            {
+                _headerTooltip = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the aggregate function for the column footer.
+    /// </summary>
+    public DataGridAggregateType AggregateType
+    {
+        get => _aggregateType;
+        set
+        {
+            if (_aggregateType != value)
+            {
+                _aggregateType = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the format string for the aggregate value.
+    /// </summary>
+    public string? AggregateFormat
+    {
+        get => _aggregateFormat;
+        set
+        {
+            if (_aggregateFormat != value)
+            {
+                _aggregateFormat = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the validation function for this column.
+    /// </summary>
+    public Func<object, object?, ValidationResult>? ValidationFunc
+    {
+        get => _validationFunc;
+        set
+        {
+            if (_validationFunc != value)
+            {
+                _validationFunc = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the default validation error message.
+    /// </summary>
+    public string? ValidationErrorMessage
+    {
+        get => _validationErrorMessage;
+        set
+        {
+            if (_validationErrorMessage != value)
+            {
+                _validationErrorMessage = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the selected filter values for this column.
+    /// </summary>
+    public IEnumerable<object>? FilterValues
+    {
+        get => _filterValues;
+        set
+        {
+            if (_filterValues != value)
+            {
+                _filterValues = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsFiltered));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the filter text for this column.
+    /// </summary>
+    public string? FilterText
+    {
+        get => _filterText;
+        set
+        {
+            if (_filterText != value)
+            {
+                _filterText = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(IsFiltered));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets whether this column is currently filtered.
+    /// </summary>
+    public bool IsFiltered => (_filterValues != null && _filterValues.Any()) || !string.IsNullOrEmpty(_filterText);
+
+    /// <summary>
+    /// Validates a value for this column.
+    /// </summary>
+    public ValidationResult Validate(object item, object? newValue)
+    {
+        if (ValidationFunc != null)
+        {
+            return ValidationFunc(item, newValue);
+        }
+        return ValidationResult.Success;
+    }
+
+    /// <summary>
+    /// Calculates the aggregate value for this column from a collection of items.
+    /// </summary>
+    public object? CalculateAggregate(IEnumerable items)
+    {
+        if (AggregateType == DataGridAggregateType.None)
+            return null;
+
+        var values = new List<object?>();
+        foreach (var item in items)
+        {
+            values.Add(GetCellValue(item));
+        }
+
+        return AggregateType switch
+        {
+            DataGridAggregateType.Count => values.Count,
+            DataGridAggregateType.Sum => CalculateSum(values),
+            DataGridAggregateType.Average => CalculateAverage(values),
+            DataGridAggregateType.Min => CalculateMin(values),
+            DataGridAggregateType.Max => CalculateMax(values),
+            _ => null
+        };
+    }
+
+    /// <summary>
+    /// Formats the aggregate value for display.
+    /// </summary>
+    public string FormatAggregateValue(object? value)
+    {
+        if (value == null)
+            return string.Empty;
+
+        if (!string.IsNullOrEmpty(AggregateFormat) && value is IFormattable formattable)
+        {
+            return formattable.ToString(AggregateFormat, null);
+        }
+
+        return value.ToString() ?? string.Empty;
+    }
+
+    private static object? CalculateSum(List<object?> values)
+    {
+        decimal sum = 0;
+        foreach (var value in values)
+        {
+            if (value != null && decimal.TryParse(value.ToString(), out var d))
+            {
+                sum += d;
+            }
+        }
+        return sum;
+    }
+
+    private static object? CalculateAverage(List<object?> values)
+    {
+        var numericValues = new List<decimal>();
+        foreach (var value in values)
+        {
+            if (value != null && decimal.TryParse(value.ToString(), out var d))
+            {
+                numericValues.Add(d);
+            }
+        }
+        return numericValues.Count > 0 ? numericValues.Average() : null;
+    }
+
+    private static object? CalculateMin(List<object?> values)
+    {
+        object? min = null;
+        foreach (var value in values)
+        {
+            if (value == null) continue;
+            if (min == null || Comparer<object>.Default.Compare(value, min) < 0)
+            {
+                min = value;
+            }
+        }
+        return min;
+    }
+
+    private static object? CalculateMax(List<object?> values)
+    {
+        object? max = null;
+        foreach (var value in values)
+        {
+            if (value == null) continue;
+            if (max == null || Comparer<object>.Default.Compare(value, max) > 0)
+            {
+                max = value;
+            }
+        }
+        return max;
     }
 
     /// <summary>

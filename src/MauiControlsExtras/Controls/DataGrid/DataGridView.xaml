@@ -2,6 +2,7 @@
 <base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                         xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                         xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
                         x:Class="MauiControlsExtras.Controls.DataGridView"
                         x:Name="thisControl">
 
@@ -12,28 +13,163 @@
             <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
         </Border.StrokeShape>
 
-        <Grid RowDefinitions="Auto,*">
-            <!-- Header Row -->
-            <ScrollView x:Name="headerScrollView"
-                        Grid.Row="0"
-                        Orientation="Horizontal"
-                        HorizontalScrollBarVisibility="Never">
-                <Grid x:Name="headerGrid"
+        <Grid RowDefinitions="Auto,*,Auto,Auto">
+            <!-- Header Row (combined frozen + scrollable) -->
+            <Grid x:Name="headerContainer" Grid.Row="0" ColumnDefinitions="Auto,*">
+                <!-- Frozen Headers -->
+                <Grid x:Name="frozenHeaderGrid"
+                      Grid.Column="0"
                       BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
-                      HeightRequest="{Binding HeaderHeight, Source={x:Reference thisControl}}">
-                    <!-- Headers are added dynamically -->
+                      HeightRequest="{Binding HeaderHeight, Source={x:Reference thisControl}}"
+                      IsVisible="{Binding HasFrozenColumns, Source={x:Reference thisControl}}">
+                    <!-- Frozen headers added dynamically -->
                 </Grid>
-            </ScrollView>
 
-            <!-- Data Rows -->
-            <ScrollView x:Name="dataScrollView"
-                        Grid.Row="1"
-                        Orientation="Both"
-                        Scrolled="OnDataScrollViewScrolled">
-                <Grid x:Name="dataGrid">
-                    <!-- Rows are added dynamically -->
+                <!-- Frozen column separator -->
+                <BoxView x:Name="frozenHeaderSeparator"
+                         Grid.Column="0"
+                         WidthRequest="2"
+                         HorizontalOptions="End"
+                         BackgroundColor="{Binding GridLineColor, Source={x:Reference thisControl}}"
+                         IsVisible="{Binding HasFrozenColumns, Source={x:Reference thisControl}}" />
+
+                <!-- Scrollable Headers -->
+                <ScrollView x:Name="headerScrollView"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never">
+                    <Grid x:Name="headerGrid"
+                          BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+                          HeightRequest="{Binding HeaderHeight, Source={x:Reference thisControl}}">
+                        <!-- Headers are added dynamically -->
+                    </Grid>
+                </ScrollView>
+            </Grid>
+
+            <!-- Data Rows (combined frozen + scrollable) -->
+            <Grid x:Name="dataContainer" Grid.Row="1" ColumnDefinitions="Auto,*">
+                <!-- Frozen Data Columns -->
+                <ScrollView x:Name="frozenDataScrollView"
+                            Grid.Column="0"
+                            Orientation="Vertical"
+                            VerticalScrollBarVisibility="Never"
+                            IsVisible="{Binding HasFrozenColumns, Source={x:Reference thisControl}}"
+                            Scrolled="OnFrozenDataScrollViewScrolled">
+                    <Grid x:Name="frozenDataGrid">
+                        <!-- Frozen data rows added dynamically -->
+                    </Grid>
+                </ScrollView>
+
+                <!-- Frozen column separator -->
+                <BoxView x:Name="frozenDataSeparator"
+                         Grid.Column="0"
+                         WidthRequest="2"
+                         HorizontalOptions="End"
+                         BackgroundColor="{Binding GridLineColor, Source={x:Reference thisControl}}"
+                         IsVisible="{Binding HasFrozenColumns, Source={x:Reference thisControl}}" />
+
+                <!-- Scrollable Data -->
+                <ScrollView x:Name="dataScrollView"
+                            Grid.Column="1"
+                            Orientation="Both"
+                            Scrolled="OnDataScrollViewScrolled">
+                    <Grid x:Name="dataGrid">
+                        <!-- Rows are added dynamically -->
+                    </Grid>
+                </ScrollView>
+            </Grid>
+
+            <!-- Footer Row -->
+            <Grid x:Name="footerContainer"
+                  Grid.Row="2"
+                  ColumnDefinitions="Auto,*"
+                  IsVisible="{Binding ShowFooter, Source={x:Reference thisControl}}"
+                  BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#333333}">
+                <!-- Frozen Footer -->
+                <Grid x:Name="frozenFooterGrid"
+                      Grid.Column="0"
+                      HeightRequest="{Binding RowHeight, Source={x:Reference thisControl}}"
+                      IsVisible="{Binding HasFrozenColumns, Source={x:Reference thisControl}}">
                 </Grid>
-            </ScrollView>
+
+                <!-- Scrollable Footer -->
+                <ScrollView x:Name="footerScrollView"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalScrollBarVisibility="Never">
+                    <Grid x:Name="footerGrid"
+                          HeightRequest="{Binding RowHeight, Source={x:Reference thisControl}}">
+                    </Grid>
+                </ScrollView>
+            </Grid>
+
+            <!-- Pagination -->
+            <Grid x:Name="paginationContainer"
+                  Grid.Row="3"
+                  IsVisible="{Binding EnablePagination, Source={x:Reference thisControl}}"
+                  Padding="8"
+                  ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto">
+
+                <Label x:Name="pageInfoLabel"
+                       Grid.Column="0"
+                       VerticalOptions="Center"
+                       Text="{Binding PageInfoText, Source={x:Reference thisControl}}" />
+
+                <Label Grid.Column="1"
+                       VerticalOptions="Center"
+                       Margin="16,0,4,0"
+                       Text="Page size:" />
+
+                <Picker x:Name="pageSizePicker"
+                        Grid.Column="2"
+                        HorizontalOptions="Start"
+                        WidthRequest="80"
+                        SelectedIndexChanged="OnPageSizeChanged">
+                    <Picker.ItemsSource>
+                        <x:Array Type="{x:Type x:Int32}">
+                            <x:Int32>10</x:Int32>
+                            <x:Int32>25</x:Int32>
+                            <x:Int32>50</x:Int32>
+                            <x:Int32>100</x:Int32>
+                        </x:Array>
+                    </Picker.ItemsSource>
+                </Picker>
+
+                <Button x:Name="firstPageButton"
+                        Grid.Column="4"
+                        Text="⏮"
+                        WidthRequest="44"
+                        HeightRequest="36"
+                        Clicked="OnFirstPageClicked" />
+
+                <Button x:Name="prevPageButton"
+                        Grid.Column="5"
+                        Text="◀"
+                        WidthRequest="44"
+                        HeightRequest="36"
+                        Clicked="OnPreviousPageClicked" />
+
+                <Label x:Name="currentPageLabel"
+                       Grid.Column="6"
+                       VerticalOptions="Center"
+                       HorizontalOptions="Center"
+                       Margin="8,0"
+                       Text="{Binding CurrentPageText, Source={x:Reference thisControl}}" />
+
+                <Button x:Name="nextPageButton"
+                        Grid.Column="7"
+                        Text="▶"
+                        WidthRequest="44"
+                        HeightRequest="36"
+                        Clicked="OnNextPageClicked" />
+
+                <Button x:Name="lastPageButton"
+                        Grid.Column="8"
+                        Text="⏭"
+                        WidthRequest="44"
+                        HeightRequest="36"
+                        Clicked="OnLastPageClicked" />
+            </Grid>
 
             <!-- Empty View -->
             <ContentView x:Name="emptyViewContainer"
@@ -52,6 +188,23 @@
                                HorizontalOptions="Center"
                                VerticalOptions="Center"
                                Color="{Binding EffectiveAccentColor, Source={x:Reference thisControl}}" />
+
+            <!-- Filter Popup Overlay -->
+            <Grid x:Name="filterPopupOverlay"
+                  Grid.RowSpan="4"
+                  IsVisible="False"
+                  BackgroundColor="#80000000"
+                  InputTransparent="False">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnFilterOverlayTapped" />
+                </Grid.GestureRecognizers>
+
+                <local:DataGridFilterPopup x:Name="filterPopup"
+                                           HorizontalOptions="Center"
+                                           VerticalOptions="Center"
+                                           FilterApplied="OnFilterPopupApplied"
+                                           FilterCancelled="OnFilterPopupCancelled" />
+            </Grid>
         </Grid>
     </Border>
 </base:StyledControlBase>

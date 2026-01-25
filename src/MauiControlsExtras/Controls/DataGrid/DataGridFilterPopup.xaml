@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiControlsExtras.Controls.DataGridFilterPopup"
+             x:Name="thisPopup"
+             WidthRequest="280"
+             HeightRequest="350">
+
+    <Border Stroke="{AppThemeBinding Light=#CCCCCC, Dark=#444444}"
+            StrokeThickness="1"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#2D2D2D}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#000000"
+                    Offset="2,2"
+                    Radius="8"
+                    Opacity="0.3" />
+        </Border.Shadow>
+
+        <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="12">
+            <!-- Header -->
+            <Label x:Name="headerLabel"
+                   Grid.Row="0"
+                   Text="Filter"
+                   FontAttributes="Bold"
+                   FontSize="16"
+                   Margin="0,0,0,8" />
+
+            <!-- Search Box -->
+            <Border Grid.Row="1"
+                    Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#555555}"
+                    StrokeThickness="1"
+                    Margin="0,0,0,8">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="4" />
+                </Border.StrokeShape>
+                <Entry x:Name="searchEntry"
+                       Placeholder="Search..."
+                       TextChanged="OnSearchTextChanged"
+                       ClearButtonVisibility="WhileEditing" />
+            </Border>
+
+            <!-- Value List -->
+            <ScrollView Grid.Row="2">
+                <VerticalStackLayout x:Name="valuesContainer" Spacing="4">
+                    <!-- Select All / Clear buttons -->
+                    <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
+                        <Button x:Name="selectAllButton"
+                                Grid.Column="0"
+                                Text="Select All"
+                                Clicked="OnSelectAllClicked"
+                                HeightRequest="32"
+                                Padding="8,4"
+                                FontSize="12"
+                                Margin="0,0,4,0" />
+                        <Button x:Name="clearButton"
+                                Grid.Column="1"
+                                Text="Clear"
+                                Clicked="OnClearClicked"
+                                HeightRequest="32"
+                                Padding="8,4"
+                                FontSize="12"
+                                Margin="4,0,0,0" />
+                    </Grid>
+
+                    <!-- Checkbox items will be added dynamically -->
+                    <VerticalStackLayout x:Name="checkboxContainer" Spacing="2" />
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Action Buttons -->
+            <Grid Grid.Row="3" ColumnDefinitions="*,*" Margin="0,8,0,0">
+                <Button x:Name="cancelButton"
+                        Grid.Column="0"
+                        Text="Cancel"
+                        Clicked="OnCancelClicked"
+                        Margin="0,0,4,0" />
+                <Button x:Name="applyButton"
+                        Grid.Column="1"
+                        Text="Apply"
+                        Clicked="OnApplyClicked"
+                        Margin="4,0,0,0" />
+            </Grid>
+        </Grid>
+    </Border>
+</ContentView>
