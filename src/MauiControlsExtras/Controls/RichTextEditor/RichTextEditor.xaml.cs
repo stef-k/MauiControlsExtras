@@ -13,9 +13,10 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 {
     #region Constants
 
-    private const string QuillCdn = "https://cdn.quilljs.com/1.3.7";
-    private const string TurndownCdn = "https://unpkg.com/turndown@7.1.2/dist/turndown.js";
-    private const string MarkedCdn = "https://unpkg.com/marked@9.1.6/marked.min.js";
+    // CDN URLs kept as fallback
+    private const string QuillCdnBase = "https://cdn.quilljs.com/1.3.7";
+    private const string TurndownCdnUrl = "https://unpkg.com/turndown@7.1.2/dist/turndown.js";
+    private const string MarkedCdnUrl = "https://unpkg.com/marked@9.1.6/marked.min.js";
 
     #endregion
 
@@ -150,6 +151,51 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(bool),
         typeof(RichTextEditor),
         true);
+
+    /// <summary>
+    /// Identifies the <see cref="QuillSource"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty QuillSourceProperty = BindableProperty.Create(
+        nameof(QuillSource),
+        typeof(QuillJsSource),
+        typeof(RichTextEditor),
+        QuillJsSource.Bundled);
+
+    /// <summary>
+    /// Identifies the <see cref="CustomQuillCssUrl"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CustomQuillCssUrlProperty = BindableProperty.Create(
+        nameof(CustomQuillCssUrl),
+        typeof(string),
+        typeof(RichTextEditor),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="CustomQuillJsUrl"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CustomQuillJsUrlProperty = BindableProperty.Create(
+        nameof(CustomQuillJsUrl),
+        typeof(string),
+        typeof(RichTextEditor),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="CustomTurndownJsUrl"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CustomTurndownJsUrlProperty = BindableProperty.Create(
+        nameof(CustomTurndownJsUrl),
+        typeof(string),
+        typeof(RichTextEditor),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="CustomMarkedJsUrl"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CustomMarkedJsUrlProperty = BindableProperty.Create(
+        nameof(CustomMarkedJsUrl),
+        typeof(string),
+        typeof(RichTextEditor),
+        null);
 
     #endregion
 
@@ -352,6 +398,52 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         get => (bool)GetValue(IsLoadingProperty);
         private set => SetValue(IsLoadingProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the source for Quill.js and related libraries.
+    /// Default is Bundled for offline support.
+    /// </summary>
+    public QuillJsSource QuillSource
+    {
+        get => (QuillJsSource)GetValue(QuillSourceProperty);
+        set => SetValue(QuillSourceProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the custom Quill CSS URL when QuillSource is Custom.
+    /// </summary>
+    public string? CustomQuillCssUrl
+    {
+        get => (string?)GetValue(CustomQuillCssUrlProperty);
+        set => SetValue(CustomQuillCssUrlProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the custom Quill JS URL when QuillSource is Custom.
+    /// </summary>
+    public string? CustomQuillJsUrl
+    {
+        get => (string?)GetValue(CustomQuillJsUrlProperty);
+        set => SetValue(CustomQuillJsUrlProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the custom Turndown JS URL when QuillSource is Custom.
+    /// </summary>
+    public string? CustomTurndownJsUrl
+    {
+        get => (string?)GetValue(CustomTurndownJsUrlProperty);
+        set => SetValue(CustomTurndownJsUrlProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the custom Marked JS URL when QuillSource is Custom.
+    /// </summary>
+    public string? CustomMarkedJsUrl
+    {
+        get => (string?)GetValue(CustomMarkedJsUrlProperty);
+        set => SetValue(CustomMarkedJsUrlProperty, value);
     }
 
     /// <summary>
@@ -791,15 +883,15 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         var textColor = isDark ? "#FFFFFF" : "#212121";
         var placeholderColor = isDark ? "#808080" : "#9E9E9E";
 
+        var urls = GetQuillUrls();
+        var resourcesHtml = GenerateResourceIncludes(urls);
+
         return $@"
 <!DOCTYPE html>
 <html>
 <head>
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"">
-    <link href=""{QuillCdn}/quill.snow.css"" rel=""stylesheet"">
-    <script src=""{QuillCdn}/quill.min.js""></script>
-    <script src=""{TurndownCdn}""></script>
-    <script src=""{MarkedCdn}""></script>
+    {resourcesHtml}
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{
@@ -912,6 +1004,69 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         if (value == null) return "";
         return value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "\\r");
+    }
+
+    private QuillJsUrls GetQuillUrls()
+    {
+        return QuillSource switch
+        {
+            QuillJsSource.Cdn => QuillJsResources.CdnUrls,
+            QuillJsSource.Bundled => GetBundledOrFallbackUrls(),
+            QuillJsSource.Custom => new QuillJsUrls
+            {
+                QuillCss = CustomQuillCssUrl ?? QuillJsResources.CdnUrls.QuillCss,
+                QuillJs = CustomQuillJsUrl ?? QuillJsResources.CdnUrls.QuillJs,
+                TurndownJs = CustomTurndownJsUrl ?? QuillJsResources.CdnUrls.TurndownJs,
+                MarkedJs = CustomMarkedJsUrl ?? QuillJsResources.CdnUrls.MarkedJs
+            },
+            _ => QuillJsResources.CdnUrls
+        };
+    }
+
+    private static QuillJsUrls GetBundledOrFallbackUrls()
+    {
+        // Try local files first, fallback to CDN
+        try
+        {
+            if (QuillJsResources.AreLocalResourcesAvailable())
+            {
+                return QuillJsResources.GetLocalUrls();
+            }
+
+            // Try to extract bundled resources
+            QuillJsResources.EnsureResourcesExtracted();
+            if (QuillJsResources.AreLocalResourcesAvailable())
+            {
+                return QuillJsResources.GetLocalUrls();
+            }
+        }
+        catch
+        {
+            // Extraction failed, fall through to CDN
+        }
+
+        // Fallback to CDN if local resources aren't available
+        return QuillJsResources.CdnUrls;
+    }
+
+    private static string GenerateResourceIncludes(QuillJsUrls urls)
+    {
+        if (urls.IsInline)
+        {
+            // Inline CSS/JS (not currently used, but supported)
+            return $@"
+    <style>{urls.QuillCss}</style>
+    <script>{urls.QuillJs}</script>
+    <script>{urls.TurndownJs}</script>
+    <script>{urls.MarkedJs}</script>";
+        }
+
+        // External URLs (file:// or https://)
+        return $@"
+    <link href=""{urls.QuillCss}"" rel=""stylesheet"">
+    <script src=""{urls.QuillJs}""></script>
+    <script src=""{urls.TurndownJs}""></script>
+    <script src=""{urls.MarkedJs}""></script>";
     }
 
     #endregion

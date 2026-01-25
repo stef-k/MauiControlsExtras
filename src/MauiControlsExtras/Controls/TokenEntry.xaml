@@ -12,7 +12,7 @@
                 Stroke="{Binding CurrentBorderColor, Source={x:Reference thisControl}}"
                 BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}"
                 Padding="8,6"
-                MinHeightRequest="48">
+                MinimumHeightRequest="48">
             <Border.StrokeShape>
                 <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
             </Border.StrokeShape>

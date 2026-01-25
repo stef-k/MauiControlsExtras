@@ -102,3 +102,24 @@ public enum ToolbarPosition
     /// </summary>
     None
 }
+
+/// <summary>
+/// Specifies the source for Quill.js and related libraries.
+/// </summary>
+public enum QuillJsSource
+{
+    /// <summary>
+    /// Load Quill.js from CDN (requires internet connection).
+    /// </summary>
+    Cdn,
+
+    /// <summary>
+    /// Load Quill.js from bundled embedded resources (works offline).
+    /// </summary>
+    Bundled,
+
+    /// <summary>
+    /// Load Quill.js from custom URLs specified by the user.
+    /// </summary>
+    Custom
+}
