@@ -14,7 +14,7 @@
         </Border.StrokeShape>
 
         <ScrollView Orientation="Vertical"
-                    VerticalScrollBarVisibility="Auto">
+                    VerticalScrollBarVisibility="Default">
             <VerticalStackLayout x:Name="itemsContainer"
                                  Spacing="0">
                 <!-- Accordion items are added dynamically -->

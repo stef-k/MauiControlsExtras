@@ -39,7 +39,7 @@
             <!-- Properties List -->
             <ScrollView Grid.Row="1"
                         Orientation="Vertical"
-                        VerticalScrollBarVisibility="Auto">
+                        VerticalScrollBarVisibility="Default">
                 <VerticalStackLayout x:Name="propertiesContainer"
                                      Spacing="0">
                     <!-- Properties are added dynamically -->
