@@ -1,0 +1,116 @@
+# TokenEntry
+
+A tag/token input control with autocomplete support.
+
+## Features
+
+- **Token Display** - Displays values as removable chips/tags
+- **Autocomplete** - Suggestions as you type
+- **Validation** - Validate tokens before adding
+- **Custom Tokens** - Allow or disallow free-text tokens
+- **Keyboard Navigation** - Full keyboard support
+
+## Basic Usage
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags, Mode=TwoWay}"
+    Placeholder="Add tags..." />
+```
+
+## Autocomplete
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding SelectedTags}"
+    SuggestionsSource="{Binding AvailableTags}"
+    DisplayMemberPath="Name"
+    SuggestionThreshold="2" />
+```
+
+## Restrict to Suggestions
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding SelectedItems}"
+    SuggestionsSource="{Binding AllItems}"
+    AllowFreeText="False" />
+```
+
+## Token Separators
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags}"
+    TokenSeparators=",;|"
+    CreateTokenOnSeparator="True" />
+```
+
+## Maximum Tokens
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags}"
+    MaxTokens="5"
+    MaxTokensReachedMessage="Maximum 5 tags allowed" />
+```
+
+## Token Validation
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags}"
+    ValidateTokenCommand="{Binding ValidateTagCommand}" />
+```
+
+```csharp
+public ICommand ValidateTagCommand => new Command<TokenValidationEventArgs>(e =>
+{
+    if (e.Token.Length < 2)
+    {
+        e.IsValid = false;
+        e.ErrorMessage = "Tag must be at least 2 characters";
+    }
+});
+```
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| Enter | Add token |
+| Backspace | Remove last token (when input empty) |
+| Delete | Remove selected token |
+| ← / → | Navigate tokens |
+| Escape | Clear input / deselect |
+| Ctrl+A | Select all tokens |
+| ↑ / ↓ | Navigate suggestions |
+
+## Events
+
+| Event | Description |
+|-------|-------------|
+| TokenAdded | Token was added |
+| TokenRemoved | Token was removed |
+| TokenValidating | Token about to be added |
+| TextChanged | Input text changed |
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| TokenAddedCommand | Execute when token added |
+| TokenRemovedCommand | Execute when token removed |
+| ValidateTokenCommand | Validate before adding |
+
+## Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Tokens | IList | Current tokens |
+| SuggestionsSource | IEnumerable | Autocomplete suggestions |
+| DisplayMemberPath | string | Property to display |
+| AllowFreeText | bool | Allow non-suggestion tokens |
+| MaxTokens | int | Maximum token count |
+| TokenSeparators | string | Characters that create tokens |
+| Placeholder | string | Input placeholder text |

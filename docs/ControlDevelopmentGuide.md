@@ -10,6 +10,8 @@ Before creating a new control, verify:
 - [ ] You've identified the correct base class
 - [ ] You've identified which interfaces to implement
 - [ ] You understand the control's events and corresponding commands
+- [ ] **MANDATORY**: You've planned keyboard navigation support (see [IKeyboardNavigable](#55-implementing-ikeyboardnavigable))
+- [ ] **MANDATORY**: You've planned mouse interaction support for desktop platforms
 
 ## Step 1: Choose the Base Class
 
@@ -695,6 +697,421 @@ public class BatchUndoableAction : UndoableAction
 }
 ```
 
+### 5.5 Implementing IKeyboardNavigable (MANDATORY)
+
+**All interactive controls MUST implement keyboard navigation for desktop platform support.**
+
+```csharp
+using MauiControlsExtras.Base;
+using MauiControlsExtras.Behaviors;
+using System.Windows.Input;
+
+public partial class MyControl : TextStyledControlBase, IKeyboardNavigable
+{
+    #region Keyboard Fields
+
+    private KeyboardBehavior? _keyboardBehavior;
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<KeyboardShortcut> _keyboardShortcuts = new();
+
+    #endregion
+
+    #region IKeyboardNavigable Properties
+
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    public bool HasKeyboardFocus => IsFocused;
+
+    #endregion
+
+    #region IKeyboardNavigable Commands
+
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(MyControl));
+
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(MyControl));
+
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(MyControl));
+
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    #endregion
+
+    #region IKeyboardNavigable Events
+
+    public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusGained;
+    public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusLost;
+    public event EventHandler<KeyEventArgs>? KeyPressed;
+    public event EventHandler<KeyEventArgs>? KeyReleased;
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    public bool HandleKeyPress(KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first - allows external handlers to process
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        // Handle standard keys
+        return e.Key switch
+        {
+            "Enter" => HandleEnterKey(e),
+            "Escape" => HandleEscapeKey(e),
+            "Up" => HandleUpKey(e),
+            "Down" => HandleDownKey(e),
+            "Left" => HandleLeftKey(e),
+            "Right" => HandleRightKey(e),
+            "Tab" => HandleTabKey(e),
+            "Home" => HandleHomeKey(e),
+            "End" => HandleEndKey(e),
+            "PageUp" => HandlePageUpKey(e),
+            "PageDown" => HandlePageDownKey(e),
+            "A" when e.IsPlatformCommandPressed => HandleSelectAllKey(e),
+            "C" when e.IsPlatformCommandPressed => HandleCopyKey(e),
+            "V" when e.IsPlatformCommandPressed => HandlePasteKey(e),
+            "X" when e.IsPlatformCommandPressed => HandleCutKey(e),
+            "Z" when e.IsPlatformCommandPressed => HandleUndoKey(e),
+            "Y" when e.IsPlatformCommandPressed => HandleRedoKey(e),
+            _ => false
+        };
+    }
+
+    public IReadOnlyList<KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            // Initialize shortcuts - customize for your control
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new KeyboardShortcut { Key = "Enter", Description = "Activate item", Category = "General" },
+                new KeyboardShortcut { Key = "Escape", Description = "Cancel / Close", Category = "General" },
+                new KeyboardShortcut { Key = "Up", Description = "Move up", Category = "Navigation" },
+                new KeyboardShortcut { Key = "Down", Description = "Move down", Category = "Navigation" },
+                new KeyboardShortcut { Key = "A", Modifiers = "Ctrl", Description = "Select all", Category = "Selection" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
+    }
+
+    #endregion
+
+    #region Key Handlers (override in derived classes)
+
+    protected virtual bool HandleEnterKey(KeyEventArgs e) => false;
+    protected virtual bool HandleEscapeKey(KeyEventArgs e) => false;
+    protected virtual bool HandleUpKey(KeyEventArgs e) => false;
+    protected virtual bool HandleDownKey(KeyEventArgs e) => false;
+    protected virtual bool HandleLeftKey(KeyEventArgs e) => false;
+    protected virtual bool HandleRightKey(KeyEventArgs e) => false;
+    protected virtual bool HandleTabKey(KeyEventArgs e) => false;
+    protected virtual bool HandleHomeKey(KeyEventArgs e) => false;
+    protected virtual bool HandleEndKey(KeyEventArgs e) => false;
+    protected virtual bool HandlePageUpKey(KeyEventArgs e) => false;
+    protected virtual bool HandlePageDownKey(KeyEventArgs e) => false;
+
+    protected virtual bool HandleSelectAllKey(KeyEventArgs e)
+    {
+        if (this is ISelectable selectable)
+        {
+            selectable.SelectAll();
+            return true;
+        }
+        return false;
+    }
+
+    protected virtual bool HandleCopyKey(KeyEventArgs e)
+    {
+        if (this is IClipboardSupport clipboard && clipboard.CanCopy)
+        {
+            clipboard.Copy();
+            return true;
+        }
+        return false;
+    }
+
+    protected virtual bool HandlePasteKey(KeyEventArgs e)
+    {
+        if (this is IClipboardSupport clipboard && clipboard.CanPaste)
+        {
+            clipboard.Paste();
+            return true;
+        }
+        return false;
+    }
+
+    protected virtual bool HandleCutKey(KeyEventArgs e)
+    {
+        if (this is IClipboardSupport clipboard && clipboard.CanCut)
+        {
+            clipboard.Cut();
+            return true;
+        }
+        return false;
+    }
+
+    protected virtual bool HandleUndoKey(KeyEventArgs e)
+    {
+        if (this is IUndoRedo undoRedo && undoRedo.CanUndo)
+        {
+            undoRedo.Undo();
+            return true;
+        }
+        return false;
+    }
+
+    protected virtual bool HandleRedoKey(KeyEventArgs e)
+    {
+        if (this is IUndoRedo undoRedo && undoRedo.CanRedo)
+        {
+            undoRedo.Redo();
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
+
+    #region Keyboard Setup
+
+    private void SetupKeyboardBehavior()
+    {
+        _keyboardBehavior = new KeyboardBehavior();
+        _keyboardBehavior.KeyPressed += OnKeyboardBehaviorKeyPressed;
+        this.Behaviors.Add(_keyboardBehavior);
+    }
+
+    private void OnKeyboardBehaviorKeyPressed(object? sender, KeyEventArgs e)
+    {
+        HandleKeyPress(e);
+    }
+
+    #endregion
+
+    #region Focus Event Handlers
+
+    // Wire these up in your constructor or OnApplyTemplate
+    private void OnControlFocused(object? sender, FocusEventArgs e)
+    {
+        KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
+        GotFocusCommand?.Execute(this);
+    }
+
+    private void OnControlUnfocused(object? sender, FocusEventArgs e)
+    {
+        KeyboardFocusLost?.Invoke(this, new KeyboardFocusEventArgs(false));
+        LostFocusCommand?.Execute(this);
+    }
+
+    #endregion
+}
+```
+
+#### Standard Keyboard Shortcuts Reference
+
+All controls should support these shortcuts where applicable:
+
+| Category | Key | Action |
+|----------|-----|--------|
+| **Navigation** | ↑ / ↓ | Move up/down |
+| | ← / → | Move left/right |
+| | Home / End | First/last item |
+| | Page Up/Down | Page navigation |
+| | Tab | Next focusable element |
+| | Shift+Tab | Previous focusable element |
+| **Selection** | Enter / Space | Activate/select item |
+| | Ctrl+A | Select all |
+| | Escape | Cancel/close |
+| **Clipboard** | Ctrl+C | Copy |
+| | Ctrl+X | Cut |
+| | Ctrl+V | Paste |
+| **Undo/Redo** | Ctrl+Z | Undo |
+| | Ctrl+Y | Redo |
+| **Editing** | F2 | Begin edit |
+| | Delete | Delete selected |
+
+**Note**: On macOS, Ctrl shortcuts use Command (⌘) instead.
+
+### 5.6 Mouse Interaction Requirements (MANDATORY)
+
+All controls must support proper mouse interactions for desktop platforms:
+
+```csharp
+public partial class MyControl : TextStyledControlBase
+{
+    #region Mouse Event Properties
+
+    public static readonly BindableProperty MouseDoubleClickCommandProperty = BindableProperty.Create(
+        nameof(MouseDoubleClickCommand),
+        typeof(ICommand),
+        typeof(MyControl));
+
+    public static readonly BindableProperty MouseRightClickCommandProperty = BindableProperty.Create(
+        nameof(MouseRightClickCommand),
+        typeof(ICommand),
+        typeof(MyControl));
+
+    public ICommand? MouseDoubleClickCommand
+    {
+        get => (ICommand?)GetValue(MouseDoubleClickCommandProperty);
+        set => SetValue(MouseDoubleClickCommandProperty, value);
+    }
+
+    public ICommand? MouseRightClickCommand
+    {
+        get => (ICommand?)GetValue(MouseRightClickCommandProperty);
+        set => SetValue(MouseRightClickCommandProperty, value);
+    }
+
+    #endregion
+
+    #region Mouse Events
+
+    public event EventHandler<MouseEventArgs>? MouseDoubleClick;
+    public event EventHandler<MouseEventArgs>? MouseRightClick;
+    public event EventHandler<MouseWheelEventArgs>? MouseWheelScrolled;
+    public event EventHandler<PointerEventArgs>? PointerEntered;
+    public event EventHandler<PointerEventArgs>? PointerExited;
+
+    #endregion
+
+    #region Mouse Setup
+
+    private void SetupMouseHandling()
+    {
+        // Double-tap gesture for activation
+        var doubleTapGesture = new TapGestureRecognizer
+        {
+            NumberOfTapsRequired = 2
+        };
+        doubleTapGesture.Tapped += OnDoubleTapped;
+        this.GestureRecognizers.Add(doubleTapGesture);
+
+        // Pointer handlers for hover effects
+        var pointerGesture = new PointerGestureRecognizer();
+        pointerGesture.PointerEntered += OnPointerEntered;
+        pointerGesture.PointerExited += OnPointerExited;
+        this.GestureRecognizers.Add(pointerGesture);
+    }
+
+    private void OnDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        var args = new MouseEventArgs(MouseButton.Left, e.GetPosition(this));
+        MouseDoubleClick?.Invoke(this, args);
+
+        if (MouseDoubleClickCommand?.CanExecute(args) == true)
+            MouseDoubleClickCommand.Execute(args);
+    }
+
+    private void OnPointerEntered(object? sender, PointerEventArgs e)
+    {
+        // Update visual state for hover
+        VisualStateManager.GoToState(this, "PointerOver");
+        PointerEntered?.Invoke(this, e);
+    }
+
+    private void OnPointerExited(object? sender, PointerEventArgs e)
+    {
+        // Reset visual state
+        VisualStateManager.GoToState(this, "Normal");
+        PointerExited?.Invoke(this, e);
+    }
+
+    #endregion
+}
+
+// Supporting class for mouse events
+public class MouseEventArgs : EventArgs
+{
+    public MouseButton Button { get; }
+    public Point? Position { get; }
+
+    public MouseEventArgs(MouseButton button, Point? position = null)
+    {
+        Button = button;
+        Position = position;
+    }
+}
+
+public enum MouseButton { Left, Right, Middle }
+
+public class MouseWheelEventArgs : EventArgs
+{
+    public double Delta { get; }
+    public bool Handled { get; set; }
+
+    public MouseWheelEventArgs(double delta) => Delta = delta;
+}
+```
+
+#### Required Mouse Behaviors
+
+| Interaction | Expected Behavior |
+|-------------|-------------------|
+| **Left Click** | Select item, set focus |
+| **Double Click** | Activate item (e.g., begin edit, expand) |
+| **Right Click** | Show context menu |
+| **Mouse Wheel** | Scroll content |
+| **Hover** | Visual feedback (highlight, tooltip) |
+| **Drag** | Selection, resize, reorder |
+
 ## Step 6: XAML Best Practices
 
 ### 6.1 Use Effective Properties
@@ -951,6 +1368,10 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable
 | Theme changes not reflected | Ensure control implements `IThemeAware` and subscribes to `ThemeChanged` |
 | Null reference in XAML | Use `Effective*` properties instead of nullable properties |
 | Validation not showing errors | Bind to `IsValid` and `ValidationErrors` properties |
+| Keyboard events not firing | Ensure `KeyboardBehavior` is attached and control is focusable |
+| Mouse hover not working | Add `PointerGestureRecognizer` to control's GestureRecognizers |
+| Context menu not showing | Implement right-click/long-press gesture handling |
+| Focus ring not visible | Set `VisualStateManager` states for Focused state |
 
 ### Debugging Tips
 

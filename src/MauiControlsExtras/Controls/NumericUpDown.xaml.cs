@@ -23,7 +23,7 @@ public enum ButtonPlacement
 /// <summary>
 /// A numeric input control with increment/decrement buttons.
 /// </summary>
-public partial class NumericUpDown : TextStyledControlBase, IValidatable
+public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
 {
     #region Fields
 
@@ -33,6 +33,8 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable
     private Grid? _mainGrid;
     private bool _isUpdatingText;
     private readonly List<string> _validationErrors = new();
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     // Long-press repeat support
     private CancellationTokenSource? _repeatCts;
@@ -897,6 +899,194 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable
         }
 
         OnPropertyChanged(nameof(CurrentBorderColor));
+    }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(NumericUpDown));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(NumericUpDown));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(NumericUpDown));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        return e.Key switch
+        {
+            "Up" => HandleIncrementKey(),
+            "Down" => HandleDecrementKey(),
+            "PageUp" => HandleLargeIncrementKey(),
+            "PageDown" => HandleLargeDecrementKey(),
+            "Home" => HandleHomeKey(),
+            "End" => HandleEndKey(),
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Up", Description = "Increment value by step", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Down", Description = "Decrement value by step", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "PageUp", Description = "Increment by large step (10x)", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "PageDown", Description = "Decrement by large step (10x)", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Home", Description = "Set to minimum value", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "End", Description = "Set to maximum value", Category = "Value" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    /// <inheritdoc />
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = _entry?.Focus() ?? base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
+    }
+
+    private bool HandleIncrementKey()
+    {
+        Increment();
+        return true;
+    }
+
+    private bool HandleDecrementKey()
+    {
+        Decrement();
+        return true;
+    }
+
+    private bool HandleLargeIncrementKey()
+    {
+        var largeStep = Step * 10;
+        Value = Math.Min((Value ?? 0) + largeStep, Maximum);
+        return true;
+    }
+
+    private bool HandleLargeDecrementKey()
+    {
+        var largeStep = Step * 10;
+        Value = Math.Max((Value ?? 0) - largeStep, Minimum);
+        return true;
+    }
+
+    private bool HandleHomeKey()
+    {
+        if (Minimum != double.MinValue)
+        {
+            Value = Minimum;
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleEndKey()
+    {
+        if (Maximum != double.MaxValue)
+        {
+            Value = Maximum;
+            return true;
+        }
+        return false;
     }
 
     #endregion

@@ -93,7 +93,7 @@ public class DataGridSortingEventArgs : EventArgs
 /// <summary>
 /// A data grid control with column sorting, selection, editing, filtering, and data binding.
 /// </summary>
-public partial class DataGridView : StyledControlBase, Base.IUndoRedo, Base.IClipboardSupport
+public partial class DataGridView : StyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable
 {
     #region Private Fields
 
@@ -4328,6 +4328,693 @@ public partial class DataGridView : StyledControlBase, Base.IUndoRedo, Base.ICli
             SelectionChangedCommand.Execute(SelectedItem);
         }
     }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        // Handle editing keys when in edit mode
+        if (_editingItem != null)
+        {
+            return e.Key switch
+            {
+                "Escape" => HandleEscapeInEdit(),
+                "Enter" => HandleEnterInEdit(),
+                "Tab" => HandleTabInEdit(e.IsShiftPressed),
+                _ => false
+            };
+        }
+
+        // Handle navigation and action keys
+        return e.Key switch
+        {
+            "Up" => HandleUpKey(e),
+            "Down" => HandleDownKey(e),
+            "Left" => HandleLeftKey(e),
+            "Right" => HandleRightKey(e),
+            "Home" => HandleHomeKey(e),
+            "End" => HandleEndKey(e),
+            "PageUp" => HandlePageUpKey(e),
+            "PageDown" => HandlePageDownKey(e),
+            "Enter" => HandleEnterKey(e),
+            "Space" => HandleSpaceKey(e),
+            "Escape" => HandleEscapeKey(e),
+            "F2" => HandleF2Key(),
+            "Delete" => HandleDeleteKey(e),
+            "A" when e.IsPlatformCommandPressed => HandleSelectAllKey(),
+            "C" when e.IsPlatformCommandPressed => HandleCopyKey(),
+            "X" when e.IsPlatformCommandPressed => HandleCutKey(),
+            "V" when e.IsPlatformCommandPressed => HandlePasteKey(),
+            "Z" when e.IsPlatformCommandPressed => HandleUndoKey(),
+            "Y" when e.IsPlatformCommandPressed => HandleRedoKey(),
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous row", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Down", Description = "Move to next row", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Left", Description = "Move to previous column", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Right", Description = "Move to next column", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Home", Description = "Move to first column", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "End", Description = "Move to last column", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Home", Modifiers = "Ctrl", Description = "Move to first cell", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "End", Modifiers = "Ctrl", Description = "Move to last cell", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "PageUp", Description = "Move up one page", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "PageDown", Description = "Move down one page", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Enter", Description = "Commit edit and move down", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "Tab", Description = "Commit edit and move right", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "Escape", Description = "Cancel edit", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "F2", Description = "Begin editing", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "Delete", Description = "Delete selected rows", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "Space", Description = "Toggle row selection", Category = "Selection" },
+                new Base.KeyboardShortcut { Key = "A", Modifiers = "Ctrl", Description = "Select all", Category = "Selection" },
+                new Base.KeyboardShortcut { Key = "C", Modifiers = "Ctrl", Description = "Copy", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "X", Modifiers = "Ctrl", Description = "Cut", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "V", Modifiers = "Ctrl", Description = "Paste", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Z", Modifiers = "Ctrl", Description = "Undo", Category = "Undo/Redo" },
+                new Base.KeyboardShortcut { Key = "Y", Modifiers = "Ctrl", Description = "Redo", Category = "Undo/Redo" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    /// <inheritdoc />
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+
+            // If no current cell, select first cell
+            if (_focusedRowIndex < 0 && _sortedItems?.Count > 0)
+            {
+                _focusedRowIndex = 0;
+                _focusedColumnIndex = 0;
+                UpdateCurrentCellVisual();
+            }
+        }
+        return result;
+    }
+
+    #region Keyboard Navigation Handlers
+
+    private bool HandleUpKey(Base.KeyEventArgs e)
+    {
+        if (_sortedItems == null || _sortedItems.Count == 0) return false;
+
+        if (e.IsShiftPressed && SelectionMode == DataGridSelectionMode.Multiple)
+        {
+            // Extend selection upward
+            if (_focusedRowIndex > 0)
+            {
+                _focusedRowIndex--;
+                ToggleRowSelection(_sortedItems[_focusedRowIndex]!);
+                ScrollToRow(_focusedRowIndex);
+                UpdateCurrentCellVisual();
+            }
+        }
+        else
+        {
+            // Simple move up
+            if (_focusedRowIndex > 0)
+            {
+                _focusedRowIndex--;
+                if (SelectionMode != DataGridSelectionMode.None)
+                {
+                    SelectItem(_sortedItems[_focusedRowIndex]);
+                }
+                ScrollToRow(_focusedRowIndex);
+                UpdateCurrentCellVisual();
+            }
+        }
+        return true;
+    }
+
+    private bool HandleDownKey(Base.KeyEventArgs e)
+    {
+        if (_sortedItems == null || _sortedItems.Count == 0) return false;
+
+        if (e.IsShiftPressed && SelectionMode == DataGridSelectionMode.Multiple)
+        {
+            // Extend selection downward
+            if (_focusedRowIndex < _sortedItems.Count - 1)
+            {
+                _focusedRowIndex++;
+                ToggleRowSelection(_sortedItems[_focusedRowIndex]!);
+                ScrollToRow(_focusedRowIndex);
+                UpdateCurrentCellVisual();
+            }
+        }
+        else
+        {
+            // Simple move down
+            if (_focusedRowIndex < _sortedItems.Count - 1)
+            {
+                _focusedRowIndex++;
+                if (SelectionMode != DataGridSelectionMode.None)
+                {
+                    SelectItem(_sortedItems[_focusedRowIndex]);
+                }
+                ScrollToRow(_focusedRowIndex);
+                UpdateCurrentCellVisual();
+            }
+        }
+        return true;
+    }
+
+    private bool HandleLeftKey(Base.KeyEventArgs e)
+    {
+        if (_focusedColumnIndex > 0)
+        {
+            _focusedColumnIndex--;
+            UpdateCurrentCellVisual();
+        }
+        return true;
+    }
+
+    private bool HandleRightKey(Base.KeyEventArgs e)
+    {
+        var visibleColumns = Columns.Where(c => c.IsVisible).ToList();
+        if (_focusedColumnIndex < visibleColumns.Count - 1)
+        {
+            _focusedColumnIndex++;
+            UpdateCurrentCellVisual();
+        }
+        return true;
+    }
+
+    private bool HandleHomeKey(Base.KeyEventArgs e)
+    {
+        if (e.IsPlatformCommandPressed)
+        {
+            // Go to first cell
+            _focusedRowIndex = 0;
+            _focusedColumnIndex = 0;
+            if (SelectionMode != DataGridSelectionMode.None && _sortedItems?.Count > 0)
+            {
+                SelectItem(_sortedItems[0]);
+            }
+            ScrollToRow(0);
+        }
+        else
+        {
+            // Go to first column in current row
+            _focusedColumnIndex = 0;
+        }
+        UpdateCurrentCellVisual();
+        return true;
+    }
+
+    private bool HandleEndKey(Base.KeyEventArgs e)
+    {
+        var visibleColumns = Columns.Where(c => c.IsVisible).ToList();
+        if (e.IsPlatformCommandPressed && _sortedItems != null)
+        {
+            // Go to last cell
+            _focusedRowIndex = _sortedItems.Count - 1;
+            _focusedColumnIndex = visibleColumns.Count - 1;
+            if (SelectionMode != DataGridSelectionMode.None)
+            {
+                SelectItem(_sortedItems[_focusedRowIndex]);
+            }
+            ScrollToRow(_focusedRowIndex);
+        }
+        else
+        {
+            // Go to last column in current row
+            _focusedColumnIndex = visibleColumns.Count - 1;
+        }
+        UpdateCurrentCellVisual();
+        return true;
+    }
+
+    private bool HandlePageUpKey(Base.KeyEventArgs e)
+    {
+        if (_sortedItems == null || _sortedItems.Count == 0) return false;
+
+        var pageSize = Math.Max(1, (int)(dataScrollView?.Height ?? 400) / (int)RowHeight);
+        _focusedRowIndex = Math.Max(0, _focusedRowIndex - pageSize);
+        if (SelectionMode != DataGridSelectionMode.None)
+        {
+            SelectItem(_sortedItems[_focusedRowIndex]);
+        }
+        ScrollToRow(_focusedRowIndex);
+        UpdateCurrentCellVisual();
+        return true;
+    }
+
+    private bool HandlePageDownKey(Base.KeyEventArgs e)
+    {
+        if (_sortedItems == null || _sortedItems.Count == 0) return false;
+
+        var pageSize = Math.Max(1, (int)(dataScrollView?.Height ?? 400) / (int)RowHeight);
+        _focusedRowIndex = Math.Min(_sortedItems.Count - 1, _focusedRowIndex + pageSize);
+        if (SelectionMode != DataGridSelectionMode.None)
+        {
+            SelectItem(_sortedItems[_focusedRowIndex]);
+        }
+        ScrollToRow(_focusedRowIndex);
+        UpdateCurrentCellVisual();
+        return true;
+    }
+
+    private bool HandleEnterKey(Base.KeyEventArgs e)
+    {
+        if (CanUserEdit && _focusedRowIndex >= 0 && _focusedColumnIndex >= 0 && _sortedItems != null)
+        {
+            var visibleColumns = Columns.Where(c => c.IsVisible).ToList();
+            if (_focusedColumnIndex < visibleColumns.Count && _focusedRowIndex < _sortedItems.Count)
+            {
+                var column = visibleColumns[_focusedColumnIndex];
+                var item = _sortedItems[_focusedRowIndex];
+                if (!column.IsReadOnly && item != null)
+                {
+                    BeginEdit(item, column);
+                }
+            }
+        }
+        return true;
+    }
+
+    private bool HandleSpaceKey(Base.KeyEventArgs e)
+    {
+        if (SelectionMode == DataGridSelectionMode.Multiple && _sortedItems != null && _focusedRowIndex >= 0)
+        {
+            ToggleRowSelection(_sortedItems[_focusedRowIndex]!);
+        }
+        return true;
+    }
+
+    private bool HandleEscapeKey(Base.KeyEventArgs e)
+    {
+        if (_selectedItems.Count > 0)
+        {
+            ClearSelection();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleF2Key()
+    {
+        if (CanUserEdit && _focusedRowIndex >= 0 && _focusedColumnIndex >= 0 && _sortedItems != null)
+        {
+            var visibleColumns = Columns.Where(c => c.IsVisible).ToList();
+            if (_focusedColumnIndex < visibleColumns.Count && _focusedRowIndex < _sortedItems.Count)
+            {
+                var column = visibleColumns[_focusedColumnIndex];
+                var item = _sortedItems[_focusedRowIndex];
+                if (!column.IsReadOnly && item != null)
+                {
+                    BeginEdit(item, column);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private bool HandleDeleteKey(Base.KeyEventArgs e)
+    {
+        if (CanUserEdit && _selectedItems.Count > 0)
+        {
+            DeleteSelectedRows();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleSelectAllKey()
+    {
+        if (SelectionMode == DataGridSelectionMode.Multiple)
+        {
+            SelectAll();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleCopyKey()
+    {
+        if (CanCopy)
+        {
+            Copy();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleCutKey()
+    {
+        if (CanCut)
+        {
+            Cut();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandlePasteKey()
+    {
+        if (CanPaste)
+        {
+            Paste();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleUndoKey()
+    {
+        if (CanUndo)
+        {
+            Undo();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleRedoKey()
+    {
+        if (CanRedo)
+        {
+            Redo();
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
+
+    #region Edit Mode Key Handlers
+
+    private bool HandleEscapeInEdit()
+    {
+        CancelEdit();
+        return true;
+    }
+
+    private bool HandleEnterInEdit()
+    {
+        EndEdit();
+        // Move to next row
+        if (_sortedItems != null && _focusedRowIndex < _sortedItems.Count - 1)
+        {
+            _focusedRowIndex++;
+            ScrollToRow(_focusedRowIndex);
+            UpdateCurrentCellVisual();
+        }
+        return true;
+    }
+
+    private bool HandleTabInEdit(bool shiftPressed)
+    {
+        EndEdit();
+        var visibleColumns = Columns.Where(c => c.IsVisible).ToList();
+
+        if (shiftPressed)
+        {
+            // Move left/up
+            if (_focusedColumnIndex > 0)
+            {
+                _focusedColumnIndex--;
+            }
+            else if (_focusedRowIndex > 0)
+            {
+                _focusedRowIndex--;
+                _focusedColumnIndex = visibleColumns.Count - 1;
+            }
+        }
+        else
+        {
+            // Move right/down
+            if (_focusedColumnIndex < visibleColumns.Count - 1)
+            {
+                _focusedColumnIndex++;
+            }
+            else if (_sortedItems != null && _focusedRowIndex < _sortedItems.Count - 1)
+            {
+                _focusedRowIndex++;
+                _focusedColumnIndex = 0;
+            }
+        }
+
+        ScrollToRow(_focusedRowIndex);
+        UpdateCurrentCellVisual();
+
+        // Start editing next cell if editable
+        if (CanUserEdit && _sortedItems != null && _focusedColumnIndex < visibleColumns.Count && _focusedRowIndex < _sortedItems.Count)
+        {
+            var column = visibleColumns[_focusedColumnIndex];
+            var item = _sortedItems[_focusedRowIndex];
+            if (!column.IsReadOnly && item != null)
+            {
+                BeginEdit(item, column);
+            }
+        }
+
+        return true;
+    }
+
+    #endregion
+
+    #region Visual Helpers
+
+    private void UpdateSelectionVisuals()
+    {
+        // Trigger rebuild of data rows to reflect selection changes
+        // For better performance, could update individual row visuals
+        BuildDataRows();
+    }
+
+    private void SelectRow(int rowIndex)
+    {
+        if (_sortedItems == null || rowIndex < 0 || rowIndex >= _sortedItems.Count) return;
+
+        var item = _sortedItems[rowIndex];
+        if (item == null) return;
+
+        if (SelectionMode == DataGridSelectionMode.Single)
+        {
+            _selectedItems.Clear();
+        }
+
+        if (!_selectedItems.Contains(item))
+        {
+            _selectedItems.Add(item);
+        }
+
+        SelectedItem = item;
+        RaiseSelectionChanged();
+        UpdateSelectionVisuals();
+    }
+
+    private void ToggleRowSelection(object item)
+    {
+        if (_selectedItems.Contains(item))
+        {
+            _selectedItems.Remove(item);
+        }
+        else
+        {
+            _selectedItems.Add(item);
+        }
+        RaiseSelectionChanged();
+        UpdateSelectionVisuals();
+    }
+
+    private void ClearSelection()
+    {
+        _selectedItems.Clear();
+        SelectedItem = null;
+        RaiseSelectionChanged();
+        UpdateSelectionVisuals();
+    }
+
+    private void SelectAll()
+    {
+        if (_sortedItems == null) return;
+
+        _selectedItems.Clear();
+        foreach (var item in _sortedItems)
+        {
+            if (item != null)
+                _selectedItems.Add(item);
+        }
+        RaiseSelectionChanged();
+        UpdateSelectionVisuals();
+    }
+
+    private void ScrollToRow(int rowIndex)
+    {
+        if (dataScrollView == null) return;
+
+        var targetY = rowIndex * RowHeight;
+        var viewportHeight = dataScrollView.Height;
+        var currentScrollY = dataScrollView.ScrollY;
+
+        // Check if row is above viewport
+        if (targetY < currentScrollY)
+        {
+            dataScrollView.ScrollToAsync(0, targetY, false);
+        }
+        // Check if row is below viewport
+        else if (targetY + RowHeight > currentScrollY + viewportHeight)
+        {
+            dataScrollView.ScrollToAsync(0, targetY + RowHeight - viewportHeight, false);
+        }
+    }
+
+    private void UpdateCurrentCellVisual()
+    {
+        // This would update visual indicators for the current cell
+        // Implementation depends on how cells are rendered
+        // For now, we'll rely on selection visual
+    }
+
+    private void DeleteSelectedRows()
+    {
+        if (_selectedItems.Count == 0 || ItemsSource == null) return;
+
+        if (ItemsSource is IList list)
+        {
+            BeginBatchOperation("Delete rows");
+            try
+            {
+                var itemsToRemove = _selectedItems.ToList();
+                foreach (var item in itemsToRemove)
+                {
+                    list.Remove(item);
+                }
+                _selectedItems.Clear();
+                SelectedItem = null;
+
+                // Reset current position
+                if (_sortedItems != null)
+                {
+                    _focusedRowIndex = Math.Min(_focusedRowIndex, _sortedItems.Count - 1);
+                }
+                _focusedRowIndex = Math.Max(0, _focusedRowIndex);
+
+                RaiseSelectionChanged();
+                BuildDataRows();
+            }
+            finally
+            {
+                EndBatchOperation();
+            }
+        }
+    }
+
+    #endregion
 
     #endregion
 }

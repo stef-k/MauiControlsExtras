@@ -398,6 +398,257 @@ public interface IUndoRedo
 - Respect `UndoLimit` to prevent memory issues
 - Clear history when loading new data
 
+## Keyboard, Mouse & Focus Support (MANDATORY)
+
+All controls in this library MUST support keyboard navigation, mouse interactions, and proper focus management. This is NOT optional - controls without desktop platform support are considered incomplete.
+
+### Target Platforms
+
+The library targets all MAUI-supported platforms:
+- **Windows** (desktop) - Full keyboard + mouse
+- **macOS** (via Mac Catalyst) - Full keyboard + mouse
+- **iOS** (tablet/phone) - Touch + external keyboard
+- **Android** (tablet/phone) - Touch + external keyboard
+
+### IKeyboardNavigable Interface (MANDATORY)
+
+All interactive controls MUST implement `IKeyboardNavigable`:
+
+```csharp
+public interface IKeyboardNavigable
+{
+    /// <summary>
+    /// Gets whether this control can receive keyboard focus.
+    /// </summary>
+    bool CanReceiveFocus { get; }
+
+    /// <summary>
+    /// Gets or sets whether keyboard navigation is enabled.
+    /// </summary>
+    bool IsKeyboardNavigationEnabled { get; set; }
+
+    /// <summary>
+    /// Handles a key press event. Returns true if handled.
+    /// </summary>
+    bool HandleKeyPress(KeyEventArgs e);
+
+    /// <summary>
+    /// Gets the keyboard shortcuts supported by this control.
+    /// </summary>
+    IReadOnlyList<KeyboardShortcut> GetKeyboardShortcuts();
+}
+```
+
+### Standard Keyboard Shortcuts
+
+Controls MUST support these standard shortcuts where applicable:
+
+| Shortcut | Action | Applicable Controls |
+|----------|--------|---------------------|
+| `Tab` | Move focus to next control | All |
+| `Shift+Tab` | Move focus to previous control | All |
+| `Enter` | Activate/confirm | Buttons, ComboBox, DataGrid |
+| `Escape` | Cancel/close | Popups, Dropdowns, Edit mode |
+| `Space` | Toggle/select | CheckBox, Toggle, TreeView |
+| `Ctrl+A` | Select all | Text, DataGrid, Lists |
+| `Ctrl+C` | Copy | IClipboardSupport controls |
+| `Ctrl+X` | Cut | IClipboardSupport controls |
+| `Ctrl+V` | Paste | IClipboardSupport controls |
+| `Ctrl+Z` | Undo | IUndoRedo controls |
+| `Ctrl+Y` | Redo | IUndoRedo controls |
+| `Delete` | Delete selection | DataGrid, TokenEntry, Lists |
+| `F2` | Enter edit mode | DataGrid, Editable cells |
+| `Arrow Keys` | Navigate | All navigable controls |
+| `Home/End` | Navigate to start/end | Lists, DataGrid, Text |
+| `Page Up/Down` | Page navigation | Lists, DataGrid |
+
+### Control-Specific Keyboard Requirements
+
+#### DataGridView
+- `Arrow Up/Down` - Navigate rows
+- `Arrow Left/Right` - Navigate columns
+- `Tab` - Move to next cell
+- `Shift+Tab` - Move to previous cell
+- `Enter` - Commit edit and move down
+- `Escape` - Cancel edit
+- `F2` - Enter edit mode
+- `Delete` - Delete selected rows (if allowed)
+- `Ctrl+C/X/V/Z/Y` - Clipboard and undo
+
+#### TreeView
+- `Arrow Up/Down` - Navigate items
+- `Arrow Right` - Expand node / move to first child
+- `Arrow Left` - Collapse node / move to parent
+- `Enter` - Activate item
+- `Space` - Toggle selection (multi-select mode)
+- `+/-` or `*` - Expand/collapse
+
+#### ComboBox / MultiSelectComboBox
+- `Arrow Up/Down` - Navigate items in dropdown
+- `Enter` - Select item and close
+- `Escape` - Close without selecting
+- `Space` - Toggle selection (multi-select)
+- `Type-ahead` - Filter/search items
+- `Alt+Down` - Open dropdown
+- `Home/End` - Jump to first/last item
+
+#### NumericUpDown
+- `Arrow Up` - Increment value
+- `Arrow Down` - Decrement value
+- `Page Up` - Increment by large step
+- `Page Down` - Decrement by large step
+- `Home` - Set to minimum
+- `End` - Set to maximum
+
+#### TokenEntry
+- `Enter` - Confirm current token
+- `Backspace` - Delete last token (when input empty)
+- `Delete` - Delete selected token
+- `Arrow Left/Right` - Navigate tokens
+- `Ctrl+A` - Select all tokens
+
+#### RangeSlider
+- `Arrow Left/Right` - Move selected thumb
+- `Tab` - Switch between thumbs
+- `Home/End` - Move to min/max
+- `Page Up/Down` - Large step movement
+
+#### Rating
+- `Arrow Left/Right` - Decrease/increase rating
+- `1-5` (or `1-N`) - Set specific rating
+- `0` or `Delete` - Clear rating
+
+### Mouse Interaction Requirements
+
+#### All Controls
+- **Focus on click** - Clicking a control MUST focus it
+- **Visual focus indicator** - Focused controls MUST show clear visual feedback
+- **Hover states** - Desktop controls SHOULD show hover feedback
+
+#### Context Menus (Right-Click)
+Controls with actions MUST support right-click context menus:
+- DataGridView - Copy, Paste, Delete, Undo/Redo
+- TreeView - Expand All, Collapse All, actions
+- TokenEntry - Copy, Delete token
+- Text controls - Cut, Copy, Paste, Select All
+
+#### Mouse Wheel
+- **DataGridView** - Scroll vertically
+- **ComboBox dropdown** - Scroll items
+- **NumericUpDown** - Increment/decrement value
+- **RangeSlider** - Adjust value (when focused)
+- **Rating** - Adjust rating (when focused)
+
+#### Double-Click
+- **DataGridView** - Enter edit mode
+- **TreeView** - Expand/collapse or activate
+- **ComboBox** - Open dropdown
+
+### Focus Management
+
+#### Focus Visual States
+All focusable controls MUST define these visual states:
+```csharp
+// Required focus-related properties (inherited from StyledControlBase)
+FocusBorderColor      // Border color when focused
+FocusBackgroundColor  // Background when focused (optional)
+```
+
+#### Tab Order
+- Controls MUST participate in tab navigation
+- Use `TabIndex` for custom ordering
+- `IsTabStop="False"` only for non-interactive elements
+
+#### Focus Trap
+Modal controls (popups, dialogs) MUST trap focus:
+- Tab cycles within the control
+- Escape closes and returns focus
+
+### Implementation Pattern
+
+```csharp
+public partial class MyControl : StyledControlBase, IKeyboardNavigable
+{
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+    public bool IsKeyboardNavigationEnabled { get; set; } = true;
+
+    public MyControl()
+    {
+        InitializeComponent();
+
+        // Attach keyboard behavior
+        Behaviors.Add(new KeyboardBehavior
+        {
+            KeyPressedCommand = new Command<KeyEventArgs>(OnKeyPressed)
+        });
+    }
+
+    public bool HandleKeyPress(KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        switch (e.Key)
+        {
+            case Keys.Enter:
+                Activate();
+                return true;
+            case Keys.Escape:
+                Cancel();
+                return true;
+            // ... handle other keys
+        }
+
+        // Handle shortcuts
+        if (e.Modifiers.HasFlag(KeyModifiers.Control))
+        {
+            switch (e.Key)
+            {
+                case Keys.C when this is IClipboardSupport cs:
+                    cs.Copy();
+                    return true;
+                case Keys.V when this is IClipboardSupport cs:
+                    cs.Paste();
+                    return true;
+                case Keys.Z when this is IUndoRedo ur:
+                    ur.Undo();
+                    return true;
+                case Keys.Y when this is IUndoRedo ur:
+                    ur.Redo();
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    public IReadOnlyList<KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        var shortcuts = new List<KeyboardShortcut>
+        {
+            new("Enter", "Activate control"),
+            new("Escape", "Cancel operation"),
+        };
+
+        if (this is IClipboardSupport)
+        {
+            shortcuts.Add(new("Ctrl+C", "Copy"));
+            shortcuts.Add(new("Ctrl+V", "Paste"));
+        }
+
+        return shortcuts;
+    }
+}
+```
+
+### Testing Requirements
+
+Controls MUST be tested for:
+1. **All keyboard shortcuts** - Verify each shortcut works
+2. **Tab navigation** - Verify focus moves correctly
+3. **Focus visuals** - Verify focus indicator is visible
+4. **Mouse interactions** - Verify click, right-click, hover, wheel
+5. **Cross-platform** - Test on Windows, macOS minimum
+
 ## XAML Conventions
 
 ### Control Root Element

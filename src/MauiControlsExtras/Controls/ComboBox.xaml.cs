@@ -58,12 +58,15 @@ namespace MauiControlsExtras.Controls;
 /// </code>
 /// </example>
 /// </remarks>
-public partial class ComboBox : TextStyledControlBase, IValidatable
+public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
 {
     private bool _isExpanded;
     private bool _isUpdatingFromSelection;
     private CancellationTokenSource? _debounceTokenSource;
     private List<string> _validationErrors = new();
+    private int _highlightedIndex = -1;
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     #region Bindable Properties
 
@@ -1183,6 +1186,242 @@ public partial class ComboBox : TextStyledControlBase, IValidatable
         var property = item.GetType().GetProperty(propertyPath);
         return property?.GetValue(item);
     }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(ComboBox));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(ComboBox));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(ComboBox));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        return e.Key switch
+        {
+            "Down" => HandleDownKey(),
+            "Up" => HandleUpKey(),
+            "Enter" or "Space" => HandleEnterKey(),
+            "Escape" => HandleEscapeKey(),
+            "Home" => HandleHomeKey(),
+            "End" => HandleEndKey(),
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Down", Description = "Open dropdown / Move to next item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Enter", Description = "Select highlighted item / Open dropdown", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Space", Description = "Open dropdown", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Escape", Description = "Close dropdown", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Home", Description = "Move to first item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "End", Description = "Move to last item", Category = "Navigation" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    /// <inheritdoc />
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
+    }
+
+    #region Keyboard Handlers
+
+    private bool HandleDownKey()
+    {
+        if (!_isExpanded)
+        {
+            Open();
+            _highlightedIndex = FilteredItems.IndexOf(SelectedItem ?? new object());
+            if (_highlightedIndex < 0) _highlightedIndex = 0;
+            return true;
+        }
+
+        if (FilteredItems.Count > 0)
+        {
+            _highlightedIndex = (_highlightedIndex + 1) % FilteredItems.Count;
+            UpdateHighlightVisual();
+        }
+        return true;
+    }
+
+    private bool HandleUpKey()
+    {
+        if (!_isExpanded)
+        {
+            return false;
+        }
+
+        if (FilteredItems.Count > 0)
+        {
+            _highlightedIndex = _highlightedIndex <= 0 ? FilteredItems.Count - 1 : _highlightedIndex - 1;
+            UpdateHighlightVisual();
+        }
+        return true;
+    }
+
+    private bool HandleEnterKey()
+    {
+        if (!_isExpanded)
+        {
+            Open();
+            return true;
+        }
+
+        if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+        {
+            SelectItem(FilteredItems[_highlightedIndex]);
+        }
+        return true;
+    }
+
+    private bool HandleEscapeKey()
+    {
+        if (_isExpanded)
+        {
+            Close();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleHomeKey()
+    {
+        if (_isExpanded && FilteredItems.Count > 0)
+        {
+            _highlightedIndex = 0;
+            UpdateHighlightVisual();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleEndKey()
+    {
+        if (_isExpanded && FilteredItems.Count > 0)
+        {
+            _highlightedIndex = FilteredItems.Count - 1;
+            UpdateHighlightVisual();
+            return true;
+        }
+        return false;
+    }
+
+    private void UpdateHighlightVisual()
+    {
+        // Scroll the highlighted item into view
+        if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+        {
+            itemsList.ScrollTo(_highlightedIndex, position: ScrollToPosition.MakeVisible, animate: false);
+        }
+    }
+
+    #endregion
 
     #endregion
 }
