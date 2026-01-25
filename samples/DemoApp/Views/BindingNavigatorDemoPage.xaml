@@ -21,16 +21,13 @@
                     <Label Text="Navigate through employee records using the toolbar buttons." Style="{StaticResource SectionDescriptionStyle}" />
 
                     <extras:BindingNavigator ItemsSource="{Binding Employees}"
-                                             CurrentIndex="{Binding CurrentIndex}"
-                                             MoveFirstCommand="{Binding MoveFirstCommand}"
-                                             MovePreviousCommand="{Binding MovePreviousCommand}"
-                                             MoveNextCommand="{Binding MoveNextCommand}"
-                                             MoveLastCommand="{Binding MoveLastCommand}"
-                                             AddNewCommand="{Binding AddNewCommand}"
+                                             Position="{Binding CurrentIndex, Mode=TwoWay}"
+                                             AddCommand="{Binding AddNewCommand}"
                                              DeleteCommand="{Binding DeleteCommand}"
                                              SaveCommand="{Binding SaveCommand}"
                                              RefreshCommand="{Binding RefreshCommand}"
-                                             HasChanges="{Binding HasChanges}" />
+                                             ShowSaveButtons="True"
+                                             ShowRefreshButton="True" />
                 </VerticalStackLayout>
             </Frame>
 

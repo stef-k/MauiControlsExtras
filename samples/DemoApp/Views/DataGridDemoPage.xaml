@@ -65,7 +65,7 @@
                 <extras:DataGridView.Columns>
                     <extras:DataGridColumn Header="ID" PropertyName="Id" Width="60" IsReadOnly="True" />
                     <extras:DataGridColumn Header="Name" PropertyName="Name" Width="150" />
-                    <extras:DataGridComboBoxColumn Header="Department" PropertyName="Department" Width="120" ItemsSource="{Binding Source={RelativeSource AncestorType={x:Type vm:DataGridDemoViewModel}}, Path=Departments}" />
+                    <extras:DataGridComboBoxColumn x:Name="departmentColumn" Header="Department" PropertyName="Department" Width="120" />
                     <extras:DataGridColumn Header="Salary" PropertyName="Salary" Width="100" StringFormat="${0:N0}" />
                     <extras:DataGridColumn Header="Hire Date" PropertyName="HireDate" Width="100" StringFormat="{0:d}" />
                     <extras:DataGridColumn Header="Active" PropertyName="IsActive" Width="70" />
