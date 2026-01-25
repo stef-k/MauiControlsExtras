@@ -7,7 +7,7 @@ namespace DemoApp.ViewModels;
 public partial class PropertyGridDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private Product _selectedObject;
+    private Product _selectedObject = null!;
 
     [ObservableProperty]
     private bool _showCategories = true;
@@ -18,7 +18,7 @@ public partial class PropertyGridDemoViewModel : BaseViewModel
     public PropertyGridDemoViewModel()
     {
         Title = "PropertyGrid Demo";
-        _selectedObject = SampleData.SampleProduct;
+        SelectedObject = SampleData.SampleProduct;
     }
 
     partial void OnShowCategoriesChanged(bool value)

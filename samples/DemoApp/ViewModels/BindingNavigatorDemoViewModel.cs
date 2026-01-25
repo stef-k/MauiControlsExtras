@@ -8,7 +8,7 @@ namespace DemoApp.ViewModels;
 public partial class BindingNavigatorDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<Employee> _employees;
+    private ObservableCollection<Employee> _employees = [];
 
     [ObservableProperty]
     private int _currentIndex;
@@ -22,12 +22,11 @@ public partial class BindingNavigatorDemoViewModel : BaseViewModel
     public BindingNavigatorDemoViewModel()
     {
         Title = "BindingNavigator Demo";
-        _employees = new ObservableCollection<Employee>(SampleData.Employees.Take(10));
+        Employees = new ObservableCollection<Employee>(SampleData.Employees.Take(10));
 
-        if (_employees.Count > 0)
+        if (Employees.Count > 0)
         {
-            CurrentIndex = 0;
-            CurrentEmployee = _employees[0];
+            CurrentEmployee = Employees[0];
         }
     }
 

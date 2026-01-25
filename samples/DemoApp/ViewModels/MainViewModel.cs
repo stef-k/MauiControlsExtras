@@ -8,7 +8,7 @@ namespace DemoApp.ViewModels;
 public partial class MainViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<ControlInfo> _controls;
+    private ObservableCollection<ControlInfo> _controls = [];
 
     [ObservableProperty]
     private string _searchText = string.Empty;
@@ -19,7 +19,7 @@ public partial class MainViewModel : BaseViewModel
     {
         Title = "Gallery";
         _allControls = SampleData.AllControls;
-        _controls = new ObservableCollection<ControlInfo>(_allControls);
+        Controls = new ObservableCollection<ControlInfo>(_allControls);
     }
 
     partial void OnSearchTextChanged(string value)

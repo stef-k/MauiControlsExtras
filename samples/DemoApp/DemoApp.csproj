@@ -11,6 +11,9 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
 
+		<!-- Suppress AOT warnings for field-based ObservableProperty in demo app -->
+		<NoWarn>$(NoWarn);MVVMTK0045</NoWarn>
+
 		<!-- Display name -->
 		<ApplicationTitle>MauiControlsExtras Demo</ApplicationTitle>
 

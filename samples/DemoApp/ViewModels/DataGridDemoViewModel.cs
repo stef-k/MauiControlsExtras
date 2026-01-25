@@ -8,7 +8,7 @@ namespace DemoApp.ViewModels;
 public partial class DataGridDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<Employee> _employees;
+    private ObservableCollection<Employee> _employees = [];
 
     [ObservableProperty]
     private Employee? _selectedEmployee;
@@ -30,7 +30,7 @@ public partial class DataGridDemoViewModel : BaseViewModel
     public DataGridDemoViewModel()
     {
         Title = "DataGridView Demo";
-        _employees = new ObservableCollection<Employee>(SampleData.Employees);
+        Employees = new ObservableCollection<Employee>(SampleData.Employees);
     }
 
     partial void OnSelectedEmployeeChanged(Employee? value)

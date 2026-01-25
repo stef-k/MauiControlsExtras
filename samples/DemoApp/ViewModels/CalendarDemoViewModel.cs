@@ -18,18 +18,21 @@ public partial class CalendarDemoViewModel : BaseViewModel
     private ObservableCollection<DateTime> _multipleDates = [];
 
     [ObservableProperty]
-    private DateTime _displayMonth = DateTime.Today;
+    private DateTime _displayMonth;
 
     [ObservableProperty]
-    private DateTime _minimumDate = DateTime.Today.AddYears(-1);
+    private DateTime _minimumDate;
 
     [ObservableProperty]
-    private DateTime _maximumDate = DateTime.Today.AddYears(1);
+    private DateTime _maximumDate;
 
     public CalendarDemoViewModel()
     {
         Title = "Calendar Demo";
         SelectedDate = DateTime.Today;
+        DisplayMonth = DateTime.Today;
+        MinimumDate = DateTime.Today.AddYears(-1);
+        MaximumDate = DateTime.Today.AddYears(1);
     }
 
     partial void OnSelectedDateChanged(DateTime? value)

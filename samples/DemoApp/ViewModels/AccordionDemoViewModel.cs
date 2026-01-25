@@ -5,7 +5,7 @@ namespace DemoApp.ViewModels;
 public partial class AccordionDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private int _singleExpandIndex = 0;
+    private int _singleExpandIndex;
 
     [ObservableProperty]
     private bool _section1Expanded = true;

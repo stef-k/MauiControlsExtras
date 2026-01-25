@@ -6,17 +6,7 @@ namespace DemoApp.ViewModels;
 public partial class RichTextEditorDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private string _htmlContent = @"<h1>Welcome to RichTextEditor</h1>
-<p>This is a <strong>rich text editor</strong> control built with <em>Quill.js</em>.</p>
-<h2>Features</h2>
-<ul>
-    <li>Bold, italic, underline formatting</li>
-    <li>Headers and paragraphs</li>
-    <li>Ordered and unordered lists</li>
-    <li>Links and images</li>
-    <li>Code blocks</li>
-</ul>
-<p>Try editing this content!</p>";
+    private string _htmlContent = string.Empty;
 
     [ObservableProperty]
     private string _plainText = string.Empty;
@@ -33,6 +23,17 @@ public partial class RichTextEditorDemoViewModel : BaseViewModel
     public RichTextEditorDemoViewModel()
     {
         Title = "RichTextEditor Demo";
+        HtmlContent = @"<h1>Welcome to RichTextEditor</h1>
+<p>This is a <strong>rich text editor</strong> control built with <em>Quill.js</em>.</p>
+<h2>Features</h2>
+<ul>
+    <li>Bold, italic, underline formatting</li>
+    <li>Headers and paragraphs</li>
+    <li>Ordered and unordered lists</li>
+    <li>Links and images</li>
+    <li>Code blocks</li>
+</ul>
+<p>Try editing this content!</p>";
     }
 
     partial void OnHtmlContentChanged(string value)

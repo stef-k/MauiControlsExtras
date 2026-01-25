@@ -7,7 +7,7 @@ namespace DemoApp.ViewModels;
 public partial class TreeViewDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<FolderItem> _folders;
+    private ObservableCollection<FolderItem> _folders = [];
 
     [ObservableProperty]
     private FolderItem? _selectedItem;
@@ -15,7 +15,7 @@ public partial class TreeViewDemoViewModel : BaseViewModel
     public TreeViewDemoViewModel()
     {
         Title = "TreeView Demo";
-        _folders = new ObservableCollection<FolderItem>(SampleData.Folders);
+        Folders = new ObservableCollection<FolderItem>(SampleData.Folders);
     }
 
     partial void OnSelectedItemChanged(FolderItem? value)

@@ -7,7 +7,7 @@ namespace DemoApp.ViewModels;
 public partial class ComboBoxDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<Country> _countries;
+    private ObservableCollection<Country> _countries = [];
 
     [ObservableProperty]
     private Country? _selectedCountry;
@@ -19,20 +19,20 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     private string? _selectedDepartment;
 
     [ObservableProperty]
-    private ObservableCollection<string> _departments;
+    private ObservableCollection<string> _departments = [];
 
     [ObservableProperty]
     private Employee? _selectedEmployee;
 
     [ObservableProperty]
-    private ObservableCollection<Employee> _employees;
+    private ObservableCollection<Employee> _employees = [];
 
     public ComboBoxDemoViewModel()
     {
         Title = "ComboBox Demo";
-        _countries = new ObservableCollection<Country>(SampleData.Countries);
-        _departments = new ObservableCollection<string>(SampleData.Departments);
-        _employees = new ObservableCollection<Employee>(SampleData.Employees.Take(10));
+        Countries = new ObservableCollection<Country>(SampleData.Countries);
+        Departments = new ObservableCollection<string>(SampleData.Departments);
+        Employees = new ObservableCollection<Employee>(SampleData.Employees.Take(10));
     }
 
     partial void OnSelectedCountryChanged(Country? value)

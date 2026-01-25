@@ -32,8 +32,6 @@ public partial class TokenEntryDemoViewModel : BaseViewModel
     public TokenEntryDemoViewModel()
     {
         Title = "TokenEntry Demo";
-
-        // Initialize with some default tokens
         TagTokens = new ObservableCollection<string>(["MAUI", ".NET", "C#"]);
     }
 

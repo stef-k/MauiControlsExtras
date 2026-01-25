@@ -7,19 +7,19 @@ namespace DemoApp.ViewModels;
 public partial class MultiSelectDemoViewModel : BaseViewModel
 {
     [ObservableProperty]
-    private ObservableCollection<Country> _countries;
+    private ObservableCollection<Country> _countries = [];
 
     [ObservableProperty]
     private ObservableCollection<Country> _selectedCountries = [];
 
     [ObservableProperty]
-    private ObservableCollection<string> _departments;
+    private ObservableCollection<string> _departments = [];
 
     [ObservableProperty]
     private ObservableCollection<string> _selectedDepartments = [];
 
     [ObservableProperty]
-    private ObservableCollection<string> _skills;
+    private ObservableCollection<string> _skills = [];
 
     [ObservableProperty]
     private ObservableCollection<string> _selectedSkills = [];
@@ -27,9 +27,9 @@ public partial class MultiSelectDemoViewModel : BaseViewModel
     public MultiSelectDemoViewModel()
     {
         Title = "MultiSelectComboBox Demo";
-        _countries = new ObservableCollection<Country>(SampleData.Countries);
-        _departments = new ObservableCollection<string>(SampleData.Departments);
-        _skills = new ObservableCollection<string>([
+        Countries = new ObservableCollection<Country>(SampleData.Countries);
+        Departments = new ObservableCollection<string>(SampleData.Departments);
+        Skills = new ObservableCollection<string>([
             "C#", "JavaScript", "Python", "Java", "TypeScript",
             "React", "Angular", "Vue.js", ".NET", "Node.js",
             "SQL", "MongoDB", "Docker", "Kubernetes", "AWS"
