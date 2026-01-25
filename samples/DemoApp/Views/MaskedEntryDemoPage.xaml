@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.MaskedEntryDemoPage"
+             x:DataType="vm:MaskedEntryDemoViewModel"
+             Title="MaskedEntry">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="MaskedEntry Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="Text input with formatting masks for phone numbers, dates, SSN, and more."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Phone Number -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Phone Number" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="US phone format: (XXX) XXX-XXXX" Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MaskedEntry Mask="(000) 000-0000"
+                                        Text="{Binding PhoneNumber}"
+                                        Placeholder="(555) 123-4567"
+                                        Keyboard="Telephone"
+                                        WidthRequest="250"
+                                        HorizontalOptions="Start" />
+
+                    <Label Text="{Binding PhoneNumber, StringFormat='Unmasked value: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Date -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Date Input" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Date format: MM/DD/YYYY" Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MaskedEntry Mask="00/00/0000"
+                                        Text="{Binding DateValue}"
+                                        Placeholder="01/15/2025"
+                                        Keyboard="Numeric"
+                                        WidthRequest="200"
+                                        HorizontalOptions="Start" />
+
+                    <Label Text="{Binding DateValue, StringFormat='Entered date: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- SSN -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Social Security Number" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="SSN format: XXX-XX-XXXX" Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MaskedEntry Mask="000-00-0000"
+                                        Text="{Binding SsnValue}"
+                                        Placeholder="123-45-6789"
+                                        Keyboard="Numeric"
+                                        WidthRequest="200"
+                                        HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SsnValue, StringFormat='SSN: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Credit Card -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Credit Card Number" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Card format: XXXX XXXX XXXX XXXX" Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MaskedEntry Mask="0000 0000 0000 0000"
+                                        Text="{Binding CreditCardValue}"
+                                        Placeholder="4111 1111 1111 1111"
+                                        Keyboard="Numeric"
+                                        WidthRequest="280"
+                                        HorizontalOptions="Start" />
+
+                    <Label Text="{Binding CreditCardValue, StringFormat='Card: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- ZIP Code -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="ZIP Code (ZIP+4)" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Extended ZIP format: XXXXX-XXXX" Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MaskedEntry Mask="00000-0000"
+                                        Text="{Binding ZipCodeValue}"
+                                        Placeholder="12345-6789"
+                                        Keyboard="Numeric"
+                                        WidthRequest="180"
+                                        HorizontalOptions="Start" />
+
+                    <Label Text="{Binding ZipCodeValue, StringFormat='ZIP: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- IP Address -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="IP Address" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="IPv4 format: XXX.XXX.XXX.XXX" Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MaskedEntry Mask="000.000.000.000"
+                                        Text="{Binding IpAddressValue}"
+                                        Placeholder="192.168.001.001"
+                                        Keyboard="Numeric"
+                                        WidthRequest="220"
+                                        HorizontalOptions="Start" />
+
+                    <Label Text="{Binding IpAddressValue, StringFormat='IP: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Primary Colors -->
+    <Color x:Key="Primary">#512BD4</Color>
+    <Color x:Key="PrimaryDark">#3B1F9B</Color>
+    <Color x:Key="PrimaryDarkText">White</Color>
+    <Color x:Key="Secondary">#DFD8F7</Color>
+    <Color x:Key="SecondaryDarkText">#9880e5</Color>
+    <Color x:Key="Tertiary">#2B0B98</Color>
+
+    <!-- Light Theme Colors -->
+    <Color x:Key="LightPageBackground">#F5F5F5</Color>
+    <Color x:Key="LightCardBackground">White</Color>
+    <Color x:Key="LightText">#1F1F1F</Color>
+    <Color x:Key="LightTextSecondary">#666666</Color>
+    <Color x:Key="LightBorder">#E0E0E0</Color>
+
+    <!-- Dark Theme Colors -->
+    <Color x:Key="DarkPageBackground">#1C1C1E</Color>
+    <Color x:Key="DarkCardBackground">#2C2C2E</Color>
+    <Color x:Key="DarkText">#FFFFFF</Color>
+    <Color x:Key="DarkTextSecondary">#A0A0A0</Color>
+    <Color x:Key="DarkBorder">#3A3A3C</Color>
+
+    <!-- Semantic Colors -->
+    <Color x:Key="Gray100">#E1E1E1</Color>
+    <Color x:Key="Gray200">#C8C8C8</Color>
+    <Color x:Key="Gray300">#ACACAC</Color>
+    <Color x:Key="Gray400">#919191</Color>
+    <Color x:Key="Gray500">#6E6E6E</Color>
+    <Color x:Key="Gray600">#404040</Color>
+    <Color x:Key="Gray900">#212121</Color>
+    <Color x:Key="Gray950">#141414</Color>
+
+    <!-- Status Colors -->
+    <Color x:Key="Success">#4CAF50</Color>
+    <Color x:Key="Warning">#FF9800</Color>
+    <Color x:Key="Error">#F44336</Color>
+    <Color x:Key="Info">#2196F3</Color>
+
+    <!-- Accent Colors for Categories -->
+    <Color x:Key="InputControlsAccent">#2196F3</Color>
+    <Color x:Key="SelectionControlsAccent">#4CAF50</Color>
+    <Color x:Key="LayoutControlsAccent">#FF9800</Color>
+    <Color x:Key="DataControlsAccent">#9C27B0</Color>
+    <Color x:Key="NavigationControlsAccent">#00BCD4</Color>
+
+</ResourceDictionary>

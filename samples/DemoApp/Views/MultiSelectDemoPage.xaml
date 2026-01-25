@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:models="clr-namespace:DemoApp.Models"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.MultiSelectDemoPage"
+             x:DataType="vm:MultiSelectDemoViewModel"
+             Title="MultiSelectComboBox">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="MultiSelectComboBox Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A multi-selection dropdown with chips display and search capability."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Basic Multi-Select -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Department Filter" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Select multiple departments to filter." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MultiSelectComboBox ItemsSource="{Binding Departments}"
+                                                SelectedItems="{Binding SelectedDepartments}"
+                                                Placeholder="Select departments..."
+                                                WidthRequest="350"
+                                                HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedDepartments.Count, StringFormat='Selected: {0} departments'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Country Multi-Select with Icons -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Country Selection" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Multi-select with custom item template." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MultiSelectComboBox ItemsSource="{Binding Countries}"
+                                                SelectedItems="{Binding SelectedCountries}"
+                                                DisplayMemberPath="Name"
+                                                Placeholder="Select countries..."
+                                                IsSearchEnabled="True"
+                                                WidthRequest="350"
+                                                HorizontalOptions="Start">
+                        <extras:MultiSelectComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:Country">
+                                <HorizontalStackLayout Spacing="10" Padding="5">
+                                    <Label Text="{Binding FlagEmoji}" FontSize="18" VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:MultiSelectComboBox.ItemTemplate>
+                    </extras:MultiSelectComboBox>
+
+                    <Label Text="{Binding SelectedCountries.Count, StringFormat='Selected: {0} countries'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Skills Selection -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Skills Selection" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Select required skills with search." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MultiSelectComboBox ItemsSource="{Binding Skills}"
+                                                SelectedItems="{Binding SelectedSkills}"
+                                                Placeholder="Select skills..."
+                                                IsSearchEnabled="True"
+                                                MaxSelections="5"
+                                                WidthRequest="350"
+                                                HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedSkills.Count, StringFormat='Selected: {0}/5 skills (max)'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

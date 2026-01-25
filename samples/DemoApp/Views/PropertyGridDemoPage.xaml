@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls.PropertyGrid;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.PropertyGridDemoPage"
+             x:DataType="vm:PropertyGridDemoViewModel"
+             Title="PropertyGrid">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+        <!-- Title -->
+        <VerticalStackLayout Grid.Row="0" Spacing="5" Margin="0,0,0,20">
+            <Label Text="PropertyGrid Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="An object property editor with automatic type detection and categories."
+                   Style="{StaticResource PageDescriptionStyle}" />
+        </VerticalStackLayout>
+
+        <!-- PropertyGrid -->
+        <Frame Grid.Row="1" Style="{StaticResource DemoCardStyle}">
+            <Grid RowDefinitions="Auto,*">
+                <!-- Options -->
+                <HorizontalStackLayout Grid.Row="0" Spacing="20" Margin="0,0,0,15">
+                    <HorizontalStackLayout Spacing="5">
+                        <CheckBox IsChecked="{Binding ShowCategories}" />
+                        <Label Text="Show Categories" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="5">
+                        <CheckBox IsChecked="{Binding IsReadOnly}" />
+                        <Label Text="Read Only" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <Button Text="Reset" Command="{Binding ResetProductCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                </HorizontalStackLayout>
+
+                <!-- Property Grid -->
+                <extras:PropertyGrid Grid.Row="1"
+                                     SelectedObject="{Binding SelectedObject}"
+                                     ShowCategories="{Binding ShowCategories}"
+                                     IsReadOnly="{Binding IsReadOnly}"
+                                     PropertyValueChanged="OnPropertyValueChanged" />
+            </Grid>
+        </Frame>
+
+        <!-- Status and Preview -->
+        <Frame Grid.Row="2" Style="{StaticResource DemoCardStyle}" Margin="0,20,0,0" Padding="15">
+            <Grid ColumnDefinitions="*,Auto">
+                <VerticalStackLayout Grid.Column="0" Spacing="5">
+                    <Label Text="Current Values:" FontAttributes="Bold" />
+                    <Label Text="{Binding SelectedObject.Name, StringFormat='Name: {0}'}" FontSize="12" />
+                    <Label Text="{Binding SelectedObject.Price, StringFormat='Price: ${0:F2}'}" FontSize="12" />
+                    <Label Text="{Binding SelectedObject.Quantity, StringFormat='Qty: {0}'}" FontSize="12" />
+                    <Label Text="{Binding SelectedObject.IsAvailable, StringFormat='Available: {0}'}" FontSize="12" />
+                </VerticalStackLayout>
+                <Label Grid.Column="1" Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" VerticalOptions="End" />
+            </Grid>
+        </Frame>
+    </Grid>
+
+</ContentPage>

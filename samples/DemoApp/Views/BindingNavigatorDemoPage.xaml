@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls.BindingNavigator;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.BindingNavigatorDemoPage"
+             x:DataType="vm:BindingNavigatorDemoViewModel"
+             Title="BindingNavigator">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="BindingNavigator Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A record navigation control with add, delete, and save functionality."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- BindingNavigator -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Employee Navigator" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Navigate through employee records using the toolbar buttons." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:BindingNavigator ItemsSource="{Binding Employees}"
+                                             CurrentIndex="{Binding CurrentIndex}"
+                                             MoveFirstCommand="{Binding MoveFirstCommand}"
+                                             MovePreviousCommand="{Binding MovePreviousCommand}"
+                                             MoveNextCommand="{Binding MoveNextCommand}"
+                                             MoveLastCommand="{Binding MoveLastCommand}"
+                                             AddNewCommand="{Binding AddNewCommand}"
+                                             DeleteCommand="{Binding DeleteCommand}"
+                                             SaveCommand="{Binding SaveCommand}"
+                                             RefreshCommand="{Binding RefreshCommand}"
+                                             HasChanges="{Binding HasChanges}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Current Record Display -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Current Record" Style="{StaticResource SectionTitleStyle}" />
+
+                    <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="15" RowSpacing="12">
+                        <Label Grid.Row="0" Grid.Column="0" Text="ID:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Label Grid.Row="0" Grid.Column="1" Text="{Binding CurrentEmployee.Id}" VerticalOptions="Center" />
+
+                        <Label Grid.Row="1" Grid.Column="0" Text="Name:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Entry Grid.Row="1" Grid.Column="1" Text="{Binding CurrentEmployee.Name}" />
+
+                        <Label Grid.Row="2" Grid.Column="0" Text="Department:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Entry Grid.Row="2" Grid.Column="1" Text="{Binding CurrentEmployee.Department}" />
+
+                        <Label Grid.Row="3" Grid.Column="0" Text="Salary:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Entry Grid.Row="3" Grid.Column="1" Text="{Binding CurrentEmployee.Salary}" Keyboard="Numeric" />
+
+                        <Label Grid.Row="4" Grid.Column="0" Text="Hire Date:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <DatePicker Grid.Row="4" Grid.Column="1" Date="{Binding CurrentEmployee.HireDate}" />
+
+                        <Label Grid.Row="5" Grid.Column="0" Text="Email:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <Entry Grid.Row="5" Grid.Column="1" Text="{Binding CurrentEmployee.Email}" Keyboard="Email" />
+
+                        <Label Grid.Row="6" Grid.Column="0" Text="Active:" FontAttributes="Bold" VerticalOptions="Center" />
+                        <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding CurrentEmployee.IsActive}" />
+                    </Grid>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Position Indicator -->
+            <Frame Style="{StaticResource DemoCardStyle}" Padding="15">
+                <HorizontalStackLayout Spacing="20" HorizontalOptions="Center">
+                    <Label Text="{Binding CurrentIndex, StringFormat='Position: {0}'}" />
+                    <Label Text="{Binding Employees.Count, StringFormat='Total Records: {0}'}" />
+                    <Label Text="{Binding HasChanges, StringFormat='Has Changes: {0}'}" TextColor="{StaticResource Warning}" />
+                </HorizontalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:models="clr-namespace:DemoApp.Models"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.ComboBoxDemoPage"
+             x:DataType="vm:ComboBoxDemoViewModel"
+             Title="ComboBox">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="ComboBox Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A feature-rich dropdown control with search, icons, and custom templates."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Basic ComboBox -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Basic ComboBox" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Simple dropdown with string items." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:ComboBox ItemsSource="{Binding Departments}"
+                                     SelectedItem="{Binding SelectedDepartment}"
+                                     Placeholder="Select a department..."
+                                     WidthRequest="300"
+                                     HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedDepartment, StringFormat='Selected: {0}', TargetNullValue='None selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Country Selector with Icons -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Country Selector" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="ComboBox with flag emojis and country names." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:ComboBox ItemsSource="{Binding Countries}"
+                                     SelectedItem="{Binding SelectedCountry}"
+                                     DisplayMemberPath="Name"
+                                     Placeholder="Select a country..."
+                                     WidthRequest="300"
+                                     HorizontalOptions="Start">
+                        <extras:ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:Country">
+                                <HorizontalStackLayout Spacing="10" Padding="5">
+                                    <Label Text="{Binding FlagEmoji}" FontSize="20" VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                    <Label Text="{Binding Code, StringFormat='({0})'}"
+                                           TextColor="{StaticResource Gray400}"
+                                           VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:ComboBox.ItemTemplate>
+                    </extras:ComboBox>
+
+                    <Label Text="{Binding SelectedCountry.Name, StringFormat='Selected: {0}', TargetNullValue='None selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Searchable ComboBox -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Searchable ComboBox" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Type to filter countries by name." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:ComboBox ItemsSource="{Binding Countries}"
+                                     SelectedItem="{Binding SearchableCountry}"
+                                     DisplayMemberPath="Name"
+                                     IsSearchEnabled="True"
+                                     Placeholder="Search countries..."
+                                     WidthRequest="300"
+                                     HorizontalOptions="Start">
+                        <extras:ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:Country">
+                                <HorizontalStackLayout Spacing="10" Padding="5">
+                                    <Label Text="{Binding FlagEmoji}" FontSize="20" VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:ComboBox.ItemTemplate>
+                    </extras:ComboBox>
+
+                    <Label Text="{Binding SearchableCountry.Name, StringFormat='Found: {0}', TargetNullValue='Type to search...'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Employee Selector -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Employee Selector" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Complex object binding with custom template." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:ComboBox ItemsSource="{Binding Employees}"
+                                     SelectedItem="{Binding SelectedEmployee}"
+                                     DisplayMemberPath="Name"
+                                     IsSearchEnabled="True"
+                                     Placeholder="Select an employee..."
+                                     WidthRequest="350"
+                                     HorizontalOptions="Start">
+                        <extras:ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:Employee">
+                                <Grid ColumnDefinitions="*,Auto" Padding="5">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Name}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Department}"
+                                               FontSize="12"
+                                               TextColor="{StaticResource Gray400}" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Salary, StringFormat='${0:N0}'}"
+                                           VerticalOptions="Center"
+                                           TextColor="{StaticResource Success}" />
+                                </Grid>
+                            </DataTemplate>
+                        </extras:ComboBox.ItemTemplate>
+                    </extras:ComboBox>
+
+                    <Label Text="{Binding SelectedEmployee.Name, StringFormat='Selected: {0}', TargetNullValue='None selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

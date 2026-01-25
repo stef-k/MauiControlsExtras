@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls.Accordion;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.AccordionDemoPage"
+             x:DataType="vm:AccordionDemoViewModel"
+             Title="Accordion">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="Accordion Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="Collapsible sections with single or multiple expand modes."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Single Expand Mode -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Single Expand Mode" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Only one section can be expanded at a time." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Accordion ExpandMode="Single">
+                        <extras:AccordionItem Header="Personal Information" IsExpanded="True">
+                            <VerticalStackLayout Padding="15" Spacing="10">
+                                <Label Text="Enter your personal details here." />
+                                <Entry Placeholder="Full Name" />
+                                <Entry Placeholder="Email Address" Keyboard="Email" />
+                                <Entry Placeholder="Phone Number" Keyboard="Telephone" />
+                            </VerticalStackLayout>
+                        </extras:AccordionItem>
+
+                        <extras:AccordionItem Header="Address Information">
+                            <VerticalStackLayout Padding="15" Spacing="10">
+                                <Label Text="Enter your address details." />
+                                <Entry Placeholder="Street Address" />
+                                <Entry Placeholder="City" />
+                                <Entry Placeholder="State/Province" />
+                                <Entry Placeholder="ZIP/Postal Code" />
+                            </VerticalStackLayout>
+                        </extras:AccordionItem>
+
+                        <extras:AccordionItem Header="Payment Details">
+                            <VerticalStackLayout Padding="15" Spacing="10">
+                                <Label Text="Enter your payment information." />
+                                <Entry Placeholder="Card Number" Keyboard="Numeric" />
+                                <HorizontalStackLayout Spacing="10">
+                                    <Entry Placeholder="MM/YY" WidthRequest="100" />
+                                    <Entry Placeholder="CVV" WidthRequest="80" Keyboard="Numeric" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+                        </extras:AccordionItem>
+                    </extras:Accordion>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Multiple Expand Mode -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Multiple Expand Mode" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Multiple sections can be expanded simultaneously." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Accordion ExpandMode="Multiple">
+                        <extras:AccordionItem Header="What is MAUI?" IsExpanded="{Binding Section1Expanded}">
+                            <Label Padding="15"
+                                   Text=".NET MAUI is a cross-platform framework for creating native mobile and desktop apps with C# and XAML. It lets you develop apps that can run on Android, iOS, macOS, and Windows from a single shared codebase." />
+                        </extras:AccordionItem>
+
+                        <extras:AccordionItem Header="Key Features" IsExpanded="{Binding Section2Expanded}">
+                            <VerticalStackLayout Padding="15" Spacing="5">
+                                <Label Text="- Single project structure" />
+                                <Label Text="- Hot Reload for XAML and C#" />
+                                <Label Text="- Native UI controls" />
+                                <Label Text="- Platform-specific APIs" />
+                                <Label Text="- Graphics and animations" />
+                            </VerticalStackLayout>
+                        </extras:AccordionItem>
+
+                        <extras:AccordionItem Header="Supported Platforms" IsExpanded="{Binding Section3Expanded}">
+                            <VerticalStackLayout Padding="15" Spacing="5">
+                                <Label Text="- Android 5.0+ (API 21)" />
+                                <Label Text="- iOS 11+" />
+                                <Label Text="- macOS 10.15+" />
+                                <Label Text="- Windows 10 version 1809+" />
+                            </VerticalStackLayout>
+                        </extras:AccordionItem>
+                    </extras:Accordion>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

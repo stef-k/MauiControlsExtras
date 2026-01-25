@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls.Calendar;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.CalendarDemoPage"
+             x:DataType="vm:CalendarDemoViewModel"
+             Title="Calendar">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="Calendar Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A date picker calendar with single, multiple, and range selection modes."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Single Date Selection -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Single Date Selection" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Click a date to select it." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Calendar SelectedDate="{Binding SelectedDate}"
+                                     SelectionMode="Single"
+                                     MinimumDate="{Binding MinimumDate}"
+                                     MaximumDate="{Binding MaximumDate}"
+                                     HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedDate, StringFormat='Selected: {0:D}', TargetNullValue='No date selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Range Selection -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Date Range Selection" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Click to select start date, then click again for end date." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Calendar RangeStartDate="{Binding RangeStartDate}"
+                                     RangeEndDate="{Binding RangeEndDate}"
+                                     SelectionMode="Range"
+                                     HorizontalOptions="Start" />
+
+                    <HorizontalStackLayout Spacing="20">
+                        <Label Text="{Binding RangeStartDate, StringFormat='From: {0:d}', TargetNullValue='From: -'}" />
+                        <Label Text="{Binding RangeEndDate, StringFormat='To: {0:d}', TargetNullValue='To: -'}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Multiple Selection -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Multiple Date Selection" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Click multiple dates to select them. Click again to deselect." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Calendar SelectedDates="{Binding MultipleDates}"
+                                     SelectionMode="Multiple"
+                                     HorizontalOptions="Start" />
+
+                    <Label Text="{Binding MultipleDates.Count, StringFormat='{0} dates selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

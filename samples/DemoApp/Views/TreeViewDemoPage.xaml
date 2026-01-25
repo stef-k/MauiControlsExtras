@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:models="clr-namespace:DemoApp.Models"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.TreeViewDemoPage"
+             x:DataType="vm:TreeViewDemoViewModel"
+             Title="TreeView">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="TreeView Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A hierarchical data display with expand/collapse functionality."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- File Explorer -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="File Explorer" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Browse folders with expand/collapse. Click to select." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TreeView ItemsSource="{Binding Folders}"
+                                     SelectedItem="{Binding SelectedItem}"
+                                     ChildrenPath="Children"
+                                     HeightRequest="400">
+                        <extras:TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FolderItem">
+                                <HorizontalStackLayout Spacing="8" Padding="4">
+                                    <Label Text="{Binding Icon, Converter={StaticResource IconConverter}}"
+                                           FontFamily="SegoeFluentIcons"
+                                           VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:TreeView.ItemTemplate>
+                    </extras:TreeView>
+
+                    <Label Text="{Binding SelectedItem.Name, StringFormat='Selected: {0}', TargetNullValue='No item selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
