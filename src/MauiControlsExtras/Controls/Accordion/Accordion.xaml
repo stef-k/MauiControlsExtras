@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                        x:Class="MauiControlsExtras.Controls.Accordion"
+                        x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <ScrollView Orientation="Vertical"
+                    VerticalScrollBarVisibility="Auto">
+            <VerticalStackLayout x:Name="itemsContainer"
+                                 Spacing="0">
+                <!-- Accordion items are added dynamically -->
+            </VerticalStackLayout>
+        </ScrollView>
+    </Border>
+</base:StyledControlBase>

@@ -1,0 +1,224 @@
+using System.ComponentModel;
+using System.Windows.Input;
+
+namespace MauiControlsExtras.Controls;
+
+/// <summary>
+/// Represents a single expandable/collapsible item in an Accordion.
+/// </summary>
+public class AccordionItem : ContentView, INotifyPropertyChanged
+{
+    #region Private Fields
+
+    private bool _isExpanded;
+
+    #endregion
+
+    #region Bindable Properties
+
+    /// <summary>
+    /// Identifies the <see cref="Header"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty HeaderProperty = BindableProperty.Create(
+        nameof(Header),
+        typeof(string),
+        typeof(AccordionItem),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="HeaderTemplate"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty HeaderTemplateProperty = BindableProperty.Create(
+        nameof(HeaderTemplate),
+        typeof(DataTemplate),
+        typeof(AccordionItem),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="Icon"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IconProperty = BindableProperty.Create(
+        nameof(Icon),
+        typeof(string),
+        typeof(AccordionItem),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="IsEnabled"/> bindable property.
+    /// </summary>
+    public static new readonly BindableProperty IsEnabledProperty = BindableProperty.Create(
+        nameof(IsEnabled),
+        typeof(bool),
+        typeof(AccordionItem),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="ExpandCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ExpandCommandProperty = BindableProperty.Create(
+        nameof(ExpandCommand),
+        typeof(ICommand),
+        typeof(AccordionItem),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="CollapseCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CollapseCommandProperty = BindableProperty.Create(
+        nameof(CollapseCommand),
+        typeof(ICommand),
+        typeof(AccordionItem),
+        null);
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets or sets the header text.
+    /// </summary>
+    public string? Header
+    {
+        get => (string?)GetValue(HeaderProperty);
+        set => SetValue(HeaderProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets a template for the header.
+    /// </summary>
+    public DataTemplate? HeaderTemplate
+    {
+        get => (DataTemplate?)GetValue(HeaderTemplateProperty);
+        set => SetValue(HeaderTemplateProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the header icon.
+    /// </summary>
+    public string? Icon
+    {
+        get => (string?)GetValue(IconProperty);
+        set => SetValue(IconProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether this item is enabled.
+    /// </summary>
+    public new bool IsEnabled
+    {
+        get => (bool)GetValue(IsEnabledProperty);
+        set => SetValue(IsEnabledProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when expanding.
+    /// </summary>
+    public ICommand? ExpandCommand
+    {
+        get => (ICommand?)GetValue(ExpandCommandProperty);
+        set => SetValue(ExpandCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when collapsing.
+    /// </summary>
+    public ICommand? CollapseCommand
+    {
+        get => (ICommand?)GetValue(CollapseCommandProperty);
+        set => SetValue(CollapseCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether this item is expanded.
+    /// </summary>
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded != value)
+            {
+                _isExpanded = value;
+                OnPropertyChanged(nameof(IsExpanded));
+                OnPropertyChanged(nameof(ExpanderIcon));
+                IsExpandedChanged?.Invoke(this, value);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the expander icon based on expansion state.
+    /// </summary>
+    public string ExpanderIcon => IsExpanded ? "▼" : "▶";
+
+    /// <summary>
+    /// Gets the item index within the accordion.
+    /// </summary>
+    public int Index { get; internal set; }
+
+    #endregion
+
+    #region Events
+
+    /// <summary>
+    /// Occurs when the expansion state changes.
+    /// </summary>
+    internal event Action<AccordionItem, bool>? IsExpandedChanged;
+
+    /// <summary>
+    /// Occurs when the item is expanded.
+    /// </summary>
+    public event EventHandler? Expanded;
+
+    /// <summary>
+    /// Occurs when the item is collapsed.
+    /// </summary>
+    public event EventHandler? Collapsed;
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>
+    /// Expands the item.
+    /// </summary>
+    public void Expand()
+    {
+        if (!IsExpanded && IsEnabled)
+        {
+            IsExpanded = true;
+            Expanded?.Invoke(this, EventArgs.Empty);
+            ExpandCommand?.Execute(this);
+        }
+    }
+
+    /// <summary>
+    /// Collapses the item.
+    /// </summary>
+    public void Collapse()
+    {
+        if (IsExpanded)
+        {
+            IsExpanded = false;
+            Collapsed?.Invoke(this, EventArgs.Empty);
+            CollapseCommand?.Execute(this);
+        }
+    }
+
+    /// <summary>
+    /// Toggles the expansion state.
+    /// </summary>
+    public void Toggle()
+    {
+        if (IsExpanded)
+        {
+            Collapse();
+        }
+        else
+        {
+            Expand();
+        }
+    }
+
+    #endregion
+}
