@@ -21,20 +21,20 @@
                 <!-- Options -->
                 <FlexLayout Grid.Row="0" Grid.Column="0" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
                     <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
-                        <CheckBox IsChecked="{Binding AllowSorting}" />
+                        <CheckBox IsChecked="{Binding CanUserSort}" />
                         <Label Text="Sorting" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                     <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
-                        <CheckBox IsChecked="{Binding AllowFiltering}" />
+                        <CheckBox IsChecked="{Binding CanUserFilter}" />
                         <Label Text="Filtering" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                     <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
-                        <CheckBox IsChecked="{Binding AllowEditing}" />
+                        <CheckBox IsChecked="{Binding CanUserEdit}" />
                         <Label Text="Editing" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                     <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
-                        <CheckBox IsChecked="{Binding ShowRowNumbers}" />
-                        <Label Text="Row Numbers" VerticalOptions="Center" />
+                        <CheckBox IsChecked="{Binding EnablePagination}" />
+                        <Label Text="Pagination" VerticalOptions="Center" />
                     </HorizontalStackLayout>
                 </FlexLayout>
 
@@ -57,10 +57,10 @@
         <Frame Grid.Row="2" Style="{StaticResource DemoCardStyle}" Padding="0">
             <extras:DataGridView ItemsSource="{Binding Employees}"
                                  SelectedItem="{Binding SelectedEmployee}"
-                                 AllowSorting="{Binding AllowSorting}"
-                                 AllowFiltering="{Binding AllowFiltering}"
-                                 AllowEditing="{Binding AllowEditing}"
-                                 ShowRowNumbers="{Binding ShowRowNumbers}"
+                                 CanUserSort="{Binding CanUserSort}"
+                                 CanUserFilter="{Binding CanUserFilter}"
+                                 CanUserEdit="{Binding CanUserEdit}"
+                                 EnablePagination="{Binding EnablePagination}"
                                  SelectionChanged="OnSelectionChanged">
                 <extras:DataGridView.Columns>
                     <extras:DataGridColumn Header="ID" PropertyName="Id" Width="60" IsReadOnly="True" />

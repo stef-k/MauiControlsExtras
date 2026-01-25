@@ -14,16 +14,16 @@ public partial class DataGridDemoViewModel : BaseViewModel
     private Employee? _selectedEmployee;
 
     [ObservableProperty]
-    private bool _allowSorting = true;
+    private bool _canUserSort = true;
 
     [ObservableProperty]
-    private bool _allowFiltering = true;
+    private bool _canUserFilter = true;
 
     [ObservableProperty]
-    private bool _allowEditing = true;
+    private bool _canUserEdit = true;
 
     [ObservableProperty]
-    private bool _showRowNumbers = true;
+    private bool _enablePagination;
 
     public List<string> Departments => SampleData.Departments;
 

@@ -22,8 +22,8 @@
 
                     <extras:Calendar SelectedDate="{Binding SelectedDate}"
                                      SelectionMode="Single"
-                                     MinimumDate="{Binding MinimumDate}"
-                                     MaximumDate="{Binding MaximumDate}"
+                                     MinDate="{Binding MinimumDate}"
+                                     MaxDate="{Binding MaximumDate}"
                                      HorizontalOptions="Start" />
 
                     <Label Text="{Binding SelectedDate, StringFormat='Selected: {0:D}', TargetNullValue='No date selected'}" />
@@ -36,9 +36,9 @@
                     <Label Text="Date Range Selection" Style="{StaticResource SectionTitleStyle}" />
                     <Label Text="Click to select start date, then click again for end date." Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:Calendar RangeStartDate="{Binding RangeStartDate}"
-                                     RangeEndDate="{Binding RangeEndDate}"
+                    <extras:Calendar x:Name="rangeCalendar"
                                      SelectionMode="Range"
+                                     DateSelected="OnRangeDateSelected"
                                      HorizontalOptions="Start" />
 
                     <HorizontalStackLayout Spacing="20">
@@ -54,11 +54,12 @@
                     <Label Text="Multiple Date Selection" Style="{StaticResource SectionTitleStyle}" />
                     <Label Text="Click multiple dates to select them. Click again to deselect." Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:Calendar SelectedDates="{Binding MultipleDates}"
+                    <extras:Calendar x:Name="multipleCalendar"
                                      SelectionMode="Multiple"
+                                     DateSelected="OnMultipleDateSelected"
                                      HorizontalOptions="Start" />
 
-                    <Label Text="{Binding MultipleDates.Count, StringFormat='{0} dates selected'}" />
+                    <Label x:Name="multipleDatesLabel" Text="0 dates selected" />
                 </VerticalStackLayout>
             </Frame>
 

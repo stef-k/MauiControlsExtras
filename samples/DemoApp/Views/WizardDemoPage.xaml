@@ -17,7 +17,7 @@
 
         <!-- Wizard -->
         <Frame Grid.Row="1" Style="{StaticResource DemoCardStyle}" Padding="0">
-            <extras:Wizard CurrentStepIndex="{Binding CurrentStep}"
+            <extras:Wizard x:Name="wizard"
                            StepChanged="OnStepChanged"
                            Finished="OnWizardFinished">
                 <!-- Step 1: Personal Info -->
@@ -88,7 +88,7 @@
         <!-- Status and Reset -->
         <HorizontalStackLayout Grid.Row="2" Spacing="15" Margin="0,20,0,0">
             <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" HorizontalOptions="FillAndExpand" />
-            <Button Text="Reset" Command="{Binding ResetCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+            <Button Text="Reset" Clicked="OnResetClicked" Style="{StaticResource SecondaryButtonStyle}" />
         </HorizontalStackLayout>
     </Grid>
 

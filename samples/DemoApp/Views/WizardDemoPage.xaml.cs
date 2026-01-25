@@ -22,4 +22,10 @@ public partial class WizardDemoPage : ContentPage
     {
         _viewModel.CompleteCommand.Execute(null);
     }
+
+    private void OnResetClicked(object? sender, EventArgs e)
+    {
+        wizard.Reset();
+        _viewModel.ResetCommand.Execute(null);
+    }
 }

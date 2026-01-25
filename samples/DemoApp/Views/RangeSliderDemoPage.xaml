@@ -20,8 +20,8 @@
                     <Label Text="Price Filter" Style="{StaticResource SectionTitleStyle}" />
                     <Label Text="Filter products by price range." Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:RangeSlider MinimumValue="{Binding PriceMin}"
-                                        MaximumValue="{Binding PriceMax}"
+                    <extras:RangeSlider LowerValue="{Binding PriceMin}"
+                                        UpperValue="{Binding PriceMax}"
                                         Minimum="0"
                                         Maximum="1000"
                                         Step="10"
@@ -42,8 +42,8 @@
                     <Label Text="Age Range" Style="{StaticResource SectionTitleStyle}" />
                     <Label Text="Select target demographic age range." Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:RangeSlider MinimumValue="{Binding AgeMin}"
-                                        MaximumValue="{Binding AgeMax}"
+                    <extras:RangeSlider LowerValue="{Binding AgeMin}"
+                                        UpperValue="{Binding AgeMax}"
                                         Minimum="0"
                                         Maximum="100"
                                         Step="1"
@@ -64,8 +64,8 @@
                     <Label Text="Temperature Range" Style="{StaticResource SectionTitleStyle}" />
                     <Label Text="Set comfortable temperature range with decimal precision." Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:RangeSlider MinimumValue="{Binding TemperatureMin}"
-                                        MaximumValue="{Binding TemperatureMax}"
+                    <extras:RangeSlider LowerValue="{Binding TemperatureMin}"
+                                        UpperValue="{Binding TemperatureMax}"
                                         Minimum="-10"
                                         Maximum="40"
                                         Step="0.5"
@@ -86,8 +86,8 @@
                     <Label Text="Business Hours" Style="{StaticResource SectionTitleStyle}" />
                     <Label Text="Select operating hours range." Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:RangeSlider MinimumValue="{Binding TimeMin}"
-                                        MaximumValue="{Binding TimeMax}"
+                    <extras:RangeSlider LowerValue="{Binding TimeMin}"
+                                        UpperValue="{Binding TimeMax}"
                                         Minimum="0"
                                         Maximum="24"
                                         Step="1"
