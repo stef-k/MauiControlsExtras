@@ -133,7 +133,8 @@
                 <CollectionView x:Name="itemsList"
                                 Grid.Row="1"
                                 ItemsSource="{Binding FilteredItems, Source={x:Reference thisControl}}"
-                                SelectionMode="None"
+                                SelectionMode="Single"
+                                SelectionChanged="OnItemsListSelectionChanged"
                                 MaximumHeightRequest="{Binding ListMaxHeight, Source={x:Reference thisControl}}">
                     <CollectionView.EmptyView>
                         <Grid Padding="12,16">

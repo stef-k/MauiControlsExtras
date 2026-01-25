@@ -721,18 +721,28 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         try
         {
             SelectedItems.Remove(item);
+
+            // Immediately update the checkbox for this item if it's in the dictionary
+            if (_itemCheckboxes.TryGetValue(item, out var checkBox))
+            {
+                checkBox.IsChecked = false;
+                checkBox.IsEnabled = true;
+                checkBox.Opacity = 1.0;
+            }
+
             UpdateChipsDisplay();
             UpdateCheckboxStates();
             UpdateSelectAllState();
             OnPropertyChanged(nameof(SelectedCount));
             OnPropertyChanged(nameof(IsMaxReached));
-            RaiseItemDeselected(item);
-            RaiseSelectionChanged();
         }
         finally
         {
             _isUpdatingSelection = false;
         }
+
+        RaiseItemDeselected(item);
+        RaiseSelectionChanged();
     }
 
     /// <summary>
@@ -1011,13 +1021,27 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         var maxReached = IsMaxReached;
 
-        foreach (var kvp in _itemCheckboxes)
+        // Update all tracked checkboxes
+        foreach (var kvp in _itemCheckboxes.ToList()) // ToList to avoid modification issues
         {
             var item = kvp.Key;
             var checkBox = kvp.Value;
+
+            // Skip if checkbox is no longer valid
+            if (checkBox.Parent == null) continue;
+
             var isSelected = IsItemSelected(item);
 
-            checkBox.IsChecked = isSelected;
+            _isUpdatingSelection = true;
+            try
+            {
+                checkBox.IsChecked = isSelected;
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
+            }
+
             checkBox.IsEnabled = isSelected || !maxReached;
             checkBox.Opacity = checkBox.IsEnabled ? 1.0 : 0.5;
         }
