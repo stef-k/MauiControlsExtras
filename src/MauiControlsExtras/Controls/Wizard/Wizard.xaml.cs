@@ -11,6 +11,7 @@ namespace MauiControlsExtras.Controls;
 /// A wizard/stepper control for multi-step workflows.
 /// Provides step indicators, navigation, validation, and customization options.
 /// </summary>
+[ContentProperty(nameof(Steps))]
 public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
 {
     #region Private Fields

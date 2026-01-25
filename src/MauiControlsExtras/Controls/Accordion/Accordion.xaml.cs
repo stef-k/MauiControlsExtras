@@ -10,6 +10,7 @@ namespace MauiControlsExtras.Controls;
 /// An accordion control with expandable/collapsible sections.
 /// Supports single or multiple expansion modes.
 /// </summary>
+[ContentProperty(nameof(Items))]
 public partial class Accordion : StyledControlBase, IKeyboardNavigable
 {
     #region Private Fields

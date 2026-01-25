@@ -758,6 +758,28 @@ public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboa
     {
         InitializeComponent();
         SizeChanged += OnSizeChanged;
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object? sender, EventArgs e)
+    {
+        // Ensure track dimensions are properly initialized after layout
+        Dispatcher.Dispatch(() =>
+        {
+            if (Orientation == SliderOrientation.Horizontal)
+            {
+                _trackWidth = sliderGrid?.Width ?? Width;
+                if (_trackWidth <= 0)
+                    _trackWidth = sliderGrid?.DesiredSize.Width ?? 200;
+            }
+            else
+            {
+                _trackHeight = verticalSliderGrid?.Height ?? Height;
+                if (_trackHeight <= 0)
+                    _trackHeight = verticalSliderGrid?.DesiredSize.Height ?? 200;
+            }
+            UpdateThumbPositions();
+        });
     }
 
     #endregion
@@ -925,14 +947,35 @@ public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboa
     {
         if (Orientation == SliderOrientation.Horizontal)
         {
-            _trackWidth = sliderGrid?.Width ?? Width;
+            var width = sliderGrid?.Width ?? Width;
+            if (width > 0)
+                _trackWidth = width;
         }
         else
         {
-            _trackHeight = verticalSliderGrid?.Height ?? Height;
+            var height = verticalSliderGrid?.Height ?? Height;
+            if (height > 0)
+                _trackHeight = height;
         }
 
         UpdateThumbPositions();
+    }
+
+    private void EnsureTrackDimensions()
+    {
+        // Fallback to get dimensions if they haven't been set yet
+        if (Orientation == SliderOrientation.Horizontal && _trackWidth <= 0)
+        {
+            _trackWidth = sliderGrid?.Width ?? Width;
+            if (_trackWidth <= 0)
+                _trackWidth = sliderGrid?.DesiredSize.Width ?? 0;
+        }
+        else if (Orientation == SliderOrientation.Vertical && _trackHeight <= 0)
+        {
+            _trackHeight = verticalSliderGrid?.Height ?? Height;
+            if (_trackHeight <= 0)
+                _trackHeight = verticalSliderGrid?.DesiredSize.Height ?? 0;
+        }
     }
 
     private void OnLowerThumbPanUpdated(object? sender, PanUpdatedEventArgs e)
@@ -957,6 +1000,9 @@ public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboa
 
     private void HandleLowerThumbPan(PanUpdatedEventArgs e, bool isVertical)
     {
+        // Ensure track dimensions are available
+        EnsureTrackDimensions();
+
         switch (e.StatusType)
         {
             case GestureStatus.Started:
@@ -1023,6 +1069,9 @@ public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboa
 
     private void HandleUpperThumbPan(PanUpdatedEventArgs e, bool isVertical)
     {
+        // Ensure track dimensions are available
+        EnsureTrackDimensions();
+
         switch (e.StatusType)
         {
             case GestureStatus.Started:
