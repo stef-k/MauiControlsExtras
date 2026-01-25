@@ -4,15 +4,22 @@
   - [Quick Start](quickstart.md)
 
 - Controls
+  - [Accordion](controls/accordion.md)
+  - [BindingNavigator](controls/bindingnavigator.md)
+  - [Breadcrumb](controls/breadcrumb.md)
+  - [Calendar](controls/calendar.md)
   - [ComboBox](controls/combobox.md)
+  - [DataGridView](controls/datagridview.md)
+  - [MaskedEntry](controls/maskedentry.md)
   - [MultiSelectComboBox](controls/multiselectcombobox.md)
   - [NumericUpDown](controls/numericupdown.md)
-  - [MaskedEntry](controls/maskedentry.md)
-  - [TokenEntry](controls/tokenentry.md)
+  - [PropertyGrid](controls/propertygrid.md)
   - [RangeSlider](controls/rangeslider.md)
   - [Rating](controls/rating.md)
+  - [RichTextEditor](controls/richtexteditor.md)
+  - [TokenEntry](controls/tokenentry.md)
   - [TreeView](controls/treeview.md)
-  - [DataGridView](controls/datagridview.md)
+  - [Wizard](controls/wizard.md)
 
 - Platform Support
   - [Desktop (Windows/macOS)](platform/desktop.md)

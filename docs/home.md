@@ -10,15 +10,22 @@ MAUI Controls Extras is a library that provides additional UI controls for .NET 
 
 | Control | Description |
 |---------|-------------|
+| [Accordion](controls/accordion.md) | Expandable/collapsible sections |
+| [BindingNavigator](controls/bindingnavigator.md) | Data navigation toolbar |
+| [Breadcrumb](controls/breadcrumb.md) | Hierarchical navigation path |
+| [Calendar](controls/calendar.md) | Date picker with single, multiple, and range selection |
 | [ComboBox](controls/combobox.md) | Searchable dropdown with complex object support |
+| [DataGridView](controls/datagridview.md) | Feature-rich data grid with sorting, filtering, editing |
+| [MaskedEntry](controls/maskedentry.md) | Text input with format masks (phone, date, etc.) |
 | [MultiSelectComboBox](controls/multiselectcombobox.md) | Multi-selection dropdown with checkboxes |
 | [NumericUpDown](controls/numericupdown.md) | Numeric input with increment/decrement buttons |
-| [MaskedEntry](controls/maskedentry.md) | Text input with format masks (phone, date, etc.) |
-| [TokenEntry](controls/tokenentry.md) | Tag/token input with autocomplete |
+| [PropertyGrid](controls/propertygrid.md) | Property editor similar to Visual Studio |
 | [RangeSlider](controls/rangeslider.md) | Dual-thumb slider for range selection |
 | [Rating](controls/rating.md) | Star/icon-based rating control |
+| [RichTextEditor](controls/richtexteditor.md) | WYSIWYG HTML/Markdown editor |
+| [TokenEntry](controls/tokenentry.md) | Tag/token input with autocomplete |
 | [TreeView](controls/treeview.md) | Hierarchical tree with expand/collapse |
-| [DataGridView](controls/datagridview.md) | Feature-rich data grid with sorting, filtering, editing |
+| [Wizard](controls/wizard.md) | Step-by-step wizard/stepper |
 
 ## Key Features
 
