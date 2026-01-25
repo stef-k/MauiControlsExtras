@@ -308,7 +308,7 @@ public class TreeViewNode : INotifyPropertyChanged
 /// <summary>
 /// A hierarchical list control for displaying and interacting with tree-structured data.
 /// </summary>
-public partial class TreeView : StyledControlBase, Base.IKeyboardNavigable
+public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNavigable
 {
     #region Private Fields
 

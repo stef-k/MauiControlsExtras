@@ -93,7 +93,7 @@ public class DataGridSortingEventArgs : EventArgs
 /// <summary>
 /// A data grid control with column sorting, selection, editing, filtering, and data binding.
 /// </summary>
-public partial class DataGridView : StyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable
+public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable
 {
     #region Private Fields
 
@@ -249,15 +249,6 @@ public partial class DataGridView : StyledControlBase, Base.IUndoRedo, Base.ICli
         typeof(double),
         typeof(DataGridView),
         48.0);
-
-    /// <summary>
-    /// Identifies the <see cref="AlternatingRowColor"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty AlternatingRowColorProperty = BindableProperty.Create(
-        nameof(AlternatingRowColor),
-        typeof(Color),
-        typeof(DataGridView),
-        null);
 
     /// <summary>
     /// Identifies the <see cref="GridLinesVisibility"/> bindable property.
@@ -769,15 +760,6 @@ public partial class DataGridView : StyledControlBase, Base.IUndoRedo, Base.ICli
     {
         get => (double)GetValue(HeaderHeightProperty);
         set => SetValue(HeaderHeightProperty, value);
-    }
-
-    /// <summary>
-    /// Gets or sets the alternating row color.
-    /// </summary>
-    public Color? AlternatingRowColor
-    {
-        get => (Color?)GetValue(AlternatingRowColorProperty);
-        set => SetValue(AlternatingRowColorProperty, value);
     }
 
     /// <summary>
