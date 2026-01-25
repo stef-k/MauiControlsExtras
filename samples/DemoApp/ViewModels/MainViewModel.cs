@@ -48,7 +48,7 @@ public partial class MainViewModel : BaseViewModel
     private async Task NavigateToControl(ControlInfo? control)
     {
         if (control is null) return;
-        await Shell.Current.GoToAsync(control.Route);
+        await Shell.Current.GoToAsync($"///{control.Route}");
     }
 
     [RelayCommand]
