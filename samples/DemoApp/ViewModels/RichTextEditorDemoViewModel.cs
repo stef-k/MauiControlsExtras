@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MauiControlsExtras.Controls;
 
 namespace DemoApp.ViewModels;
 
@@ -15,10 +16,16 @@ public partial class RichTextEditorDemoViewModel : BaseViewModel
     private bool _isReadOnly;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ToolbarPosition))]
     private bool _showToolbar = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThemeMode))]
     private bool _isDarkTheme;
+
+    public ToolbarPosition ToolbarPosition => ShowToolbar ? ToolbarPosition.Top : ToolbarPosition.None;
+
+    public EditorThemeMode ThemeMode => IsDarkTheme ? EditorThemeMode.Dark : EditorThemeMode.Light;
 
     public RichTextEditorDemoViewModel()
     {
