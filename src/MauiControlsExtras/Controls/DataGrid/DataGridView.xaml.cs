@@ -93,6 +93,7 @@ public class DataGridSortingEventArgs : EventArgs
 /// <summary>
 /// A data grid control with column sorting, selection, editing, filtering, and data binding.
 /// </summary>
+[ContentProperty(nameof(Columns))]
 public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable
 {
     #region Private Fields

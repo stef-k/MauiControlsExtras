@@ -426,6 +426,17 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         {
             var newRawText = ExtractRawText(e.NewTextValue);
             Text = newRawText;
+
+            // Immediately update entry to show masked text (filtered)
+            // This must be done here because OnTextChanged won't run while _isUpdatingText is true
+            if (entry != null)
+            {
+                var maskedText = DisplayText;
+                entry.Text = maskedText;
+
+                // Position cursor at end of valid input
+                entry.CursorPosition = maskedText.Length;
+            }
         }
         finally
         {

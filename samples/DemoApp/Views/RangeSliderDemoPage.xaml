@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.RangeSliderDemoPage"
+             x:DataType="vm:RangeSliderDemoViewModel"
+             Title="RangeSlider">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="RangeSlider Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A dual-thumb slider for selecting a range of values."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Price Filter -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Price Filter" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Filter products by price range." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:RangeSlider LowerValue="{Binding PriceMin}"
+                                        UpperValue="{Binding PriceMax}"
+                                        Minimum="0"
+                                        Maximum="1000"
+                                        Step="10"
+                                        TrackColor="{StaticResource Gray200}"
+                                        RangeColor="{StaticResource Primary}" />
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="{Binding PriceMin, StringFormat='${0:F0}'}" FontAttributes="Bold" />
+                        <Label Text="-" />
+                        <Label Text="{Binding PriceMax, StringFormat='${0:F0}'}" FontAttributes="Bold" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Age Range -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Age Range" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Select target demographic age range." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:RangeSlider LowerValue="{Binding AgeMin}"
+                                        UpperValue="{Binding AgeMax}"
+                                        Minimum="0"
+                                        Maximum="100"
+                                        Step="1"
+                                        TrackColor="{StaticResource Gray200}"
+                                        RangeColor="{StaticResource Success}" />
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="{Binding AgeMin, StringFormat='{0:F0} years'}" FontAttributes="Bold" />
+                        <Label Text="-" />
+                        <Label Text="{Binding AgeMax, StringFormat='{0:F0} years'}" FontAttributes="Bold" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Temperature Range -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Temperature Range" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Set comfortable temperature range with decimal precision." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:RangeSlider LowerValue="{Binding TemperatureMin}"
+                                        UpperValue="{Binding TemperatureMax}"
+                                        Minimum="-10"
+                                        Maximum="40"
+                                        Step="0.5"
+                                        TrackColor="{StaticResource Gray200}"
+                                        RangeColor="{StaticResource Warning}" />
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="{Binding TemperatureMin, StringFormat='{0:F1}°C'}" FontAttributes="Bold" />
+                        <Label Text="-" />
+                        <Label Text="{Binding TemperatureMax, StringFormat='{0:F1}°C'}" FontAttributes="Bold" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Time Range -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Business Hours" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Select operating hours range." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:RangeSlider LowerValue="{Binding TimeMin}"
+                                        UpperValue="{Binding TimeMax}"
+                                        Minimum="0"
+                                        Maximum="24"
+                                        Step="1"
+                                        TrackColor="{StaticResource Gray200}"
+                                        RangeColor="{StaticResource Info}" />
+
+                    <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                        <Label Text="{Binding TimeMin, StringFormat='{0:F0}:00'}" FontAttributes="Bold" />
+                        <Label Text="-" />
+                        <Label Text="{Binding TimeMax, StringFormat='{0:F0}:00'}" FontAttributes="Bold" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

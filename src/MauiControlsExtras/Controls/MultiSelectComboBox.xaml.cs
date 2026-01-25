@@ -443,7 +443,83 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         UpdateListMaxHeight();
         SetupItemTemplate();
         UpdateChipsDisplay();
+        searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
     }
+
+    private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (searchEntry.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (searchEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+        {
+            textBox.KeyDown += OnWindowsTextBoxKeyDown;
+        }
+#endif
+    }
+
+#if WINDOWS
+    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (!_isExpanded) return;
+
+        switch (e.Key)
+        {
+            case Windows.System.VirtualKey.Down:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = (_highlightedIndex + 1) % FilteredItems.Count;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Up:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = _highlightedIndex <= 0 ? FilteredItems.Count - 1 : _highlightedIndex - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Space:
+                if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+                {
+                    var item = FilteredItems[_highlightedIndex];
+                    if (IsItemSelected(item))
+                        DeselectItem(item);
+                    else
+                        SelectItem(item);
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Escape:
+                Close();
+                e.Handled = true;
+                break;
+
+            case Windows.System.VirtualKey.Home:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = 0;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.End:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = FilteredItems.Count - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+        }
+    }
+#endif
 
     #endregion
 
@@ -721,18 +797,28 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         try
         {
             SelectedItems.Remove(item);
+
+            // Immediately update the checkbox for this item if it's in the dictionary
+            if (_itemCheckboxes.TryGetValue(item, out var checkBox))
+            {
+                checkBox.IsChecked = false;
+                checkBox.IsEnabled = true;
+                checkBox.Opacity = 1.0;
+            }
+
             UpdateChipsDisplay();
             UpdateCheckboxStates();
             UpdateSelectAllState();
             OnPropertyChanged(nameof(SelectedCount));
             OnPropertyChanged(nameof(IsMaxReached));
-            RaiseItemDeselected(item);
-            RaiseSelectionChanged();
         }
         finally
         {
             _isUpdatingSelection = false;
         }
+
+        RaiseItemDeselected(item);
+        RaiseSelectionChanged();
     }
 
     /// <summary>
@@ -786,9 +872,16 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
+            _highlightedIndex = -1;
             UpdateCheckboxStates();
             UpdateSelectAllState();
             RaiseOpened();
+
+            // Focus the search entry when dropdown opens
+            if (IsSearchable)
+            {
+                Dispatcher.Dispatch(() => searchEntry?.Focus());
+            }
         }
         else
         {
@@ -1011,13 +1104,27 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         var maxReached = IsMaxReached;
 
-        foreach (var kvp in _itemCheckboxes)
+        // Update all tracked checkboxes
+        foreach (var kvp in _itemCheckboxes.ToList()) // ToList to avoid modification issues
         {
             var item = kvp.Key;
             var checkBox = kvp.Value;
+
+            // Skip if checkbox is no longer valid
+            if (checkBox.Parent == null) continue;
+
             var isSelected = IsItemSelected(item);
 
-            checkBox.IsChecked = isSelected;
+            _isUpdatingSelection = true;
+            try
+            {
+                checkBox.IsChecked = isSelected;
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
+            }
+
             checkBox.IsEnabled = isSelected || !maxReached;
             checkBox.Opacity = checkBox.IsEnabled ? 1.0 : 0.5;
         }

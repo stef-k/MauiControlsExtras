@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:models="clr-namespace:DemoApp.Models"
+             x:Class="DemoApp.Views.MainPage"
+             x:DataType="vm:MainViewModel"
+             Title="Gallery">
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- Header with search and theme toggle -->
+        <Grid Grid.Row="0" Padding="20,15" ColumnDefinitions="*,Auto">
+            <SearchBar Grid.Column="0"
+                       Placeholder="Search controls..."
+                       Text="{Binding SearchText}"
+                       BackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" />
+            <Button Grid.Column="1"
+                    Text="Theme"
+                    Command="{Binding ToggleThemeCommand}"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Margin="10,0,0,0" />
+        </Grid>
+
+        <!-- Controls Grid -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Padding="20,0,20,20" Spacing="10">
+                <!-- Welcome Banner -->
+                <Frame Style="{StaticResource DemoCardStyle}" BackgroundColor="{StaticResource Primary}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="MauiControlsExtras"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White" />
+                        <Label Text="A collection of 16 enhanced UI controls for .NET MAUI applications. Tap any control below to see it in action."
+                               FontSize="14"
+                               TextColor="White"
+                               Opacity="0.9" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Controls Collection -->
+                <CollectionView ItemsSource="{Binding Controls}"
+                                SelectionMode="Single"
+                                SelectionChangedCommand="{Binding NavigateToControlCommand}"
+                                SelectionChangedCommandParameter="{Binding Source={RelativeSource Self}, Path=SelectedItem}">
+                    <CollectionView.ItemsLayout>
+                        <GridItemsLayout Orientation="Vertical"
+                                         Span="{OnIdiom Phone=1, Tablet=2, Desktop=3}"
+                                         HorizontalItemSpacing="15"
+                                         VerticalItemSpacing="15" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:ControlInfo">
+                            <Frame Style="{StaticResource ControlCardStyle}">
+                                <Grid RowDefinitions="Auto,*,Auto" ColumnDefinitions="*,Auto">
+                                    <!-- Control Name -->
+                                    <Label Grid.Row="0" Grid.Column="0"
+                                           Text="{Binding Name}"
+                                           FontSize="16"
+                                           FontAttributes="Bold" />
+
+                                    <!-- Category Badge -->
+                                    <Frame Grid.Row="0" Grid.Column="1"
+                                           BackgroundColor="{Binding AccentColor}"
+                                           CornerRadius="4"
+                                           Padding="8,4"
+                                           HasShadow="False">
+                                        <Label Text="{Binding Category}"
+                                               FontSize="10"
+                                               TextColor="White" />
+                                    </Frame>
+
+                                    <!-- Description -->
+                                    <Label Grid.Row="1" Grid.ColumnSpan="2"
+                                           Text="{Binding Description}"
+                                           FontSize="12"
+                                           TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
+                                           LineBreakMode="WordWrap"
+                                           MaxLines="2"
+                                           Margin="0,8,0,0" />
+
+                                    <!-- Arrow indicator -->
+                                    <Label Grid.Row="2" Grid.ColumnSpan="2"
+                                           Text="Tap to explore"
+                                           FontSize="11"
+                                           TextColor="{StaticResource Primary}"
+                                           HorizontalOptions="End"
+                                           Margin="0,8,0,0" />
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Footer -->
+                <Label Text="Version 1.0.0 - MIT License"
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light={StaticResource LightTextSecondary}, Dark={StaticResource DarkTextSecondary}}"
+                       HorizontalOptions="Center"
+                       Margin="0,20,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+
+</ContentPage>

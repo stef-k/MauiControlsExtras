@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.RatingDemoPage"
+             x:DataType="vm:RatingDemoViewModel"
+             Title="Rating">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="Rating Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A star rating control with customizable icons, colors, and precision."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Basic Rating -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Basic Rating" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Default 5-star rating with whole star precision." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Rating Value="{Binding BasicRating}"
+                                   Maximum="5"
+                                   HorizontalOptions="Start" />
+
+                    <Label Text="{Binding BasicRating, StringFormat='Rating: {0} / 5 stars'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Half-Star Precision -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Half-Star Precision" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Allow half-star selections for more precise ratings." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Rating Value="{Binding ProductRating}"
+                                   Maximum="5"
+                                   AllowHalfStars="True"
+                                   HorizontalOptions="Start" />
+
+                    <Label Text="{Binding ProductRating, StringFormat='Product rating: {0:F1} / 5 stars'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Feedback Rating -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Feedback Rating" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Larger stars for easier touch interaction." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Rating Value="{Binding FeedbackRating}"
+                                   Maximum="5"
+                                   StarSize="40"
+                                   FilledColor="{StaticResource Success}"
+                                   HorizontalOptions="Start" />
+
+                    <HorizontalStackLayout Spacing="10">
+                        <Label Text="{Binding FeedbackRating, StringFormat='Your feedback: {0} stars'}" />
+                        <Label Text="(Tap to rate)" TextColor="{StaticResource Gray400}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Custom Maximum -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Custom Maximum (10 Stars)" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Rating scale with 10 stars instead of 5." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Rating Value="{Binding CustomRating}"
+                                   Maximum="10"
+                                   StarSize="25"
+                                   FilledColor="{StaticResource Warning}"
+                                   HorizontalOptions="Start" />
+
+                    <Label Text="{Binding CustomRating, StringFormat='Rating: {0} / 10'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Read-Only Display -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Read-Only Display" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Display average ratings without user interaction." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <HorizontalStackLayout Spacing="10">
+                        <extras:Rating Value="{Binding ReadOnlyRating}"
+                                       Maximum="5"
+                                       AllowHalfStars="True"
+                                       IsEnabled="False"
+                                       HorizontalOptions="Start" />
+                        <Label Text="{Binding ReadOnlyRating, StringFormat='({0:F1})'}"
+                               VerticalOptions="Center"
+                               TextColor="{StaticResource Gray400}" />
+                        <Label Text="1,234 reviews"
+                               VerticalOptions="Center"
+                               TextColor="{StaticResource Gray400}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

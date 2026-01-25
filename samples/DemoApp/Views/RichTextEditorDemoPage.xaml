@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.RichTextEditorDemoPage"
+             x:DataType="vm:RichTextEditorDemoViewModel"
+             Title="RichTextEditor">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="20" RowSpacing="15">
+        <!-- Title -->
+        <VerticalStackLayout Grid.Row="0" Spacing="5">
+            <Label Text="RichTextEditor Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A full-featured rich text editor built with Quill.js."
+                   Style="{StaticResource PageDescriptionStyle}" />
+        </VerticalStackLayout>
+
+        <!-- Options Toolbar -->
+        <Frame Grid.Row="1" Style="{StaticResource DemoCardStyle}" Padding="15">
+            <Grid ColumnDefinitions="*,Auto">
+                <FlexLayout Grid.Column="0" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                    <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
+                        <CheckBox IsChecked="{Binding ShowToolbar}" />
+                        <Label Text="Show Toolbar" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
+                        <CheckBox IsChecked="{Binding IsReadOnly}" />
+                        <Label Text="Read Only" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                    <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
+                        <CheckBox IsChecked="{Binding IsDarkTheme}" />
+                        <Label Text="Dark Theme" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+                </FlexLayout>
+
+                <HorizontalStackLayout Grid.Column="1" Spacing="10">
+                    <Button Text="Sample" Command="{Binding LoadSampleContentCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                    <Button Text="Clear" Command="{Binding ClearContentCommand}" Style="{StaticResource SecondaryButtonStyle}" />
+                </HorizontalStackLayout>
+            </Grid>
+        </Frame>
+
+        <!-- Rich Text Editor -->
+        <Frame Grid.Row="2" Style="{StaticResource DemoCardStyle}" Padding="0">
+            <extras:RichTextEditor HtmlContent="{Binding HtmlContent}"
+                                   IsReadOnly="{Binding IsReadOnly}"
+                                   ToolbarPosition="{Binding ToolbarPosition}"
+                                   ThemeMode="{Binding ThemeMode}"
+                                   ContentChanged="OnContentChanged" />
+        </Frame>
+
+        <!-- Status -->
+        <Label Grid.Row="3" Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+    </Grid>
+
+</ContentPage>

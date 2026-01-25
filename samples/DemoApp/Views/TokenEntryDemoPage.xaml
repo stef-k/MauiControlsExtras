@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.TokenEntryDemoPage"
+             x:DataType="vm:TokenEntryDemoViewModel"
+             Title="TokenEntry">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="TokenEntry Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A tag/token input control with auto-complete suggestions and chip display."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Basic Token Entry -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Basic Token Entry" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Type text and press Enter or comma to add tokens." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TokenEntry Tokens="{Binding BasicTokens}"
+                                       Placeholder="Add tags..."
+                                       TokenAdded="OnTokenAdded"
+                                       TokenRemoved="OnTokenRemoved" />
+
+                    <Label Text="{Binding BasicTokens.Count, StringFormat='Token count: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Email Recipients -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Email Recipients" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Enter email addresses as tokens." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TokenEntry Tokens="{Binding EmailTokens}"
+                                       Placeholder="Enter email addresses..."
+                                       Keyboard="Email"
+                                       TokenAdded="OnTokenAdded"
+                                       TokenRemoved="OnTokenRemoved" />
+
+                    <Label Text="{Binding EmailTokens.Count, StringFormat='Recipients: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Tags with Suggestions -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Tags with Auto-Complete" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Start typing to see tag suggestions from a predefined list." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TokenEntry Tokens="{Binding TagTokens}"
+                                       Suggestions="{Binding AvailableTags}"
+                                       Placeholder="Add tags..."
+                                       ShowSuggestions="True"
+                                       TokenAdded="OnTokenAdded"
+                                       TokenRemoved="OnTokenRemoved" />
+
+                    <HorizontalStackLayout Spacing="5" FlexLayout.Wrap="Wrap">
+                        <Label Text="Selected:" FontAttributes="Bold" />
+                        <Label Text="{Binding TagTokens.Count, StringFormat='{0} tags'}" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Skills Input -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Skills Input" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Add programming skills with auto-complete." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TokenEntry Tokens="{Binding SkillTokens}"
+                                       Suggestions="{Binding AvailableSkills}"
+                                       Placeholder="Add skills..."
+                                       ShowSuggestions="True"
+                                       MaxTokens="10"
+                                       TokenAdded="OnTokenAdded"
+                                       TokenRemoved="OnTokenRemoved" />
+
+                    <Label Text="{Binding SkillTokens.Count, StringFormat='Skills added: {0}/10'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.NumericUpDownDemoPage"
+             x:DataType="vm:NumericUpDownDemoViewModel"
+             Title="NumericUpDown">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="NumericUpDown Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A numeric input control with increment/decrement buttons and customizable step values."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Basic NumericUpDown -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Basic NumericUpDown" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Default configuration with buttons on the right." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:NumericUpDown Value="{Binding BasicValue}"
+                                          Minimum="0"
+                                          Maximum="100"
+                                          Step="1"
+                                          WidthRequest="200"
+                                          HorizontalOptions="Start" />
+
+                    <Label Text="{Binding BasicValue, StringFormat='Current value: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Quantity Selector -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Quantity Selector" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Buttons on both sides, common for e-commerce." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:NumericUpDown Value="{Binding QuantityValue}"
+                                          Minimum="1"
+                                          Maximum="99"
+                                          Step="1"
+                                          ButtonPlacement="LeftAndRight"
+                                          WidthRequest="150"
+                                          HorizontalOptions="Start" />
+
+                    <Label Text="{Binding QuantityValue, StringFormat='Quantity: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Temperature Control -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Temperature Control" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Decimal step with custom range." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:NumericUpDown Value="{Binding TemperatureValue}"
+                                          Minimum="-40"
+                                          Maximum="50"
+                                          Step="0.5"
+                                          DecimalPlaces="1"
+                                          WidthRequest="200"
+                                          HorizontalOptions="Start" />
+
+                    <Label Text="{Binding TemperatureValue, StringFormat='Temperature: {0:F1}°C'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Percentage Slider Alternative -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Percentage Input" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Step of 5 for quick percentage selection." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:NumericUpDown Value="{Binding PercentageValue}"
+                                          Minimum="0"
+                                          Maximum="100"
+                                          Step="5"
+                                          WidthRequest="200"
+                                          HorizontalOptions="Start" />
+
+                    <Label Text="{Binding PercentageValue, StringFormat='Percentage: {0}%'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Price Input -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Price Input" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Decimal input for currency values." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:NumericUpDown Value="{Binding PriceValue}"
+                                          Minimum="0"
+                                          Maximum="10000"
+                                          Step="0.01"
+                                          DecimalPlaces="2"
+                                          WidthRequest="200"
+                                          HorizontalOptions="Start" />
+
+                    <Label Text="{Binding PriceValue, StringFormat='Price: ${0:F2}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.WizardDemoPage"
+             x:DataType="vm:WizardDemoViewModel"
+             Title="Wizard">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="20">
+        <!-- Title -->
+        <VerticalStackLayout Grid.Row="0" Spacing="5" Margin="0,0,0,20">
+            <Label Text="Wizard Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A step-by-step wizard with validation and navigation."
+                   Style="{StaticResource PageDescriptionStyle}" />
+        </VerticalStackLayout>
+
+        <!-- Wizard -->
+        <Frame Grid.Row="1" Style="{StaticResource DemoCardStyle}" Padding="0">
+            <extras:Wizard x:Name="wizard"
+                           StepChanged="OnStepChanged"
+                           Finished="OnWizardFinished">
+                <!-- Step 1: Personal Info -->
+                <extras:WizardStep Title="Personal Info" Description="Enter your name">
+                    <VerticalStackLayout Padding="20" Spacing="15">
+                        <Label Text="Step 1: Personal Information" FontSize="18" FontAttributes="Bold" />
+                        <Label Text="Please provide your basic personal details." />
+
+                        <Entry Placeholder="First Name" Text="{Binding FirstName}" />
+                        <Entry Placeholder="Last Name" Text="{Binding LastName}" />
+                    </VerticalStackLayout>
+                </extras:WizardStep>
+
+                <!-- Step 2: Contact Info -->
+                <extras:WizardStep Title="Contact" Description="Enter contact details">
+                    <VerticalStackLayout Padding="20" Spacing="15">
+                        <Label Text="Step 2: Contact Information" FontSize="18" FontAttributes="Bold" />
+                        <Label Text="How can we reach you?" />
+
+                        <Entry Placeholder="Email Address" Text="{Binding Email}" Keyboard="Email" />
+                        <Entry Placeholder="Phone Number" Text="{Binding Phone}" Keyboard="Telephone" />
+                    </VerticalStackLayout>
+                </extras:WizardStep>
+
+                <!-- Step 3: Address -->
+                <extras:WizardStep Title="Address" Description="Enter your address">
+                    <VerticalStackLayout Padding="20" Spacing="15">
+                        <Label Text="Step 3: Address" FontSize="18" FontAttributes="Bold" />
+                        <Label Text="Where do you live?" />
+
+                        <Entry Placeholder="Street Address" Text="{Binding Address}" />
+                        <Entry Placeholder="City" Text="{Binding City}" />
+                    </VerticalStackLayout>
+                </extras:WizardStep>
+
+                <!-- Step 4: Confirmation -->
+                <extras:WizardStep Title="Confirm" Description="Review and submit">
+                    <VerticalStackLayout Padding="20" Spacing="15">
+                        <Label Text="Step 4: Confirmation" FontSize="18" FontAttributes="Bold" />
+                        <Label Text="Please review your information:" />
+
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="15" RowSpacing="8">
+                            <Label Grid.Row="0" Grid.Column="0" Text="Name:" FontAttributes="Bold" />
+                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding FirstName, StringFormat='{0}'}" />
+
+                            <Label Grid.Row="1" Grid.Column="0" Text="Last Name:" FontAttributes="Bold" />
+                            <Label Grid.Row="1" Grid.Column="1" Text="{Binding LastName}" />
+
+                            <Label Grid.Row="2" Grid.Column="0" Text="Email:" FontAttributes="Bold" />
+                            <Label Grid.Row="2" Grid.Column="1" Text="{Binding Email}" />
+
+                            <Label Grid.Row="3" Grid.Column="0" Text="Phone:" FontAttributes="Bold" />
+                            <Label Grid.Row="3" Grid.Column="1" Text="{Binding Phone}" />
+
+                            <Label Grid.Row="4" Grid.Column="0" Text="Address:" FontAttributes="Bold" />
+                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding Address, StringFormat='{0}, '}" />
+                        </Grid>
+
+                        <HorizontalStackLayout Spacing="10" Margin="0,20,0,0">
+                            <CheckBox IsChecked="{Binding AcceptTerms}" />
+                            <Label Text="I accept the terms and conditions" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </extras:WizardStep>
+            </extras:Wizard>
+        </Frame>
+
+        <!-- Status and Reset -->
+        <HorizontalStackLayout Grid.Row="2" Spacing="15" Margin="0,20,0,0">
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" HorizontalOptions="FillAndExpand" />
+            <Button Text="Reset" Clicked="OnResetClicked" Style="{StaticResource SecondaryButtonStyle}" />
+        </HorizontalStackLayout>
+    </Grid>
+
+</ContentPage>

@@ -621,6 +621,106 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         SetupItemTemplate();
         UpdateDisplayState();
         UpdateListMaxHeight();
+
+        // Wire up keyboard events from search entry
+        searchEntry.Completed += OnSearchEntryCompleted;
+        searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
+    }
+
+    private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (searchEntry.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (searchEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+        {
+            textBox.KeyDown += OnWindowsTextBoxKeyDown;
+            textBox.PreviewKeyDown += OnWindowsTextBoxPreviewKeyDown;
+        }
+#endif
+    }
+
+#if WINDOWS
+    private void OnWindowsTextBoxPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        // Handle Tab key for autocomplete
+        if (e.Key == Windows.System.VirtualKey.Tab && _isExpanded)
+        {
+            // If single filtered result or highlighted item, select it
+            if (FilteredItems.Count == 1)
+            {
+                SelectItem(FilteredItems[0]);
+                e.Handled = true;
+            }
+            else if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+            {
+                SelectItem(FilteredItems[_highlightedIndex]);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (!_isExpanded) return;
+
+        switch (e.Key)
+        {
+            case Windows.System.VirtualKey.Down:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = (_highlightedIndex + 1) % FilteredItems.Count;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Up:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = _highlightedIndex <= 0 ? FilteredItems.Count - 1 : _highlightedIndex - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.Escape:
+                Close();
+                e.Handled = true;
+                break;
+
+            case Windows.System.VirtualKey.Home:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = 0;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+
+            case Windows.System.VirtualKey.End:
+                if (FilteredItems.Count > 0)
+                {
+                    _highlightedIndex = FilteredItems.Count - 1;
+                    UpdateHighlightVisual();
+                    e.Handled = true;
+                }
+                break;
+        }
+    }
+#endif
+
+    private void OnSearchEntryCompleted(object? sender, EventArgs e)
+    {
+        // Enter pressed in search entry - select highlighted item or single filtered item
+        if (FilteredItems.Count == 1)
+        {
+            SelectItem(FilteredItems[0]);
+        }
+        else if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+        {
+            SelectItem(FilteredItems[_highlightedIndex]);
+        }
     }
 
     #endregion
@@ -728,7 +828,25 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             if (!token.IsCancellationRequested)
             {
-                MainThread.BeginInvokeOnMainThread(() => UpdateFilteredItems(e.NewTextValue));
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    UpdateFilteredItems(e.NewTextValue);
+
+                    // Auto-highlight single result for easy Enter/Tab selection
+                    if (FilteredItems.Count == 1)
+                    {
+                        _highlightedIndex = 0;
+                    }
+                    else if (FilteredItems.Count > 0)
+                    {
+                        _highlightedIndex = 0; // Highlight first item by default
+                    }
+                    else
+                    {
+                        _highlightedIndex = -1;
+                    }
+                    UpdateHighlightVisual();
+                });
             }
         }, TaskContinuationOptions.OnlyOnRanToCompletion);
     }
@@ -742,6 +860,20 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     private void OnItemTapped(object? sender, TappedEventArgs e)
     {
         if (sender is Grid grid && grid.BindingContext is { } item)
+        {
+            SelectItem(item);
+        }
+    }
+
+    private bool _isUpdatingHighlight;
+
+    private void OnItemsListSelectionChanged(object? sender, Microsoft.Maui.Controls.SelectionChangedEventArgs e)
+    {
+        // Ignore programmatic selection changes for highlighting
+        if (_isUpdatingHighlight) return;
+
+        // When user clicks an item in the list, select it
+        if (e.CurrentSelection.Count > 0 && e.CurrentSelection[0] is { } item)
         {
             SelectItem(item);
         }
@@ -998,7 +1130,11 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
+            _highlightedIndex = -1;
             RaiseOpened();
+
+            // Focus the search entry when dropdown opens
+            Dispatcher.Dispatch(() => searchEntry?.Focus());
         }
         else
         {
@@ -1414,10 +1550,24 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
     private void UpdateHighlightVisual()
     {
-        // Scroll the highlighted item into view
-        if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+        _isUpdatingHighlight = true;
+        try
         {
-            itemsList.ScrollTo(_highlightedIndex, position: ScrollToPosition.MakeVisible, animate: false);
+            // Scroll the highlighted item into view and update visual selection
+            if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+            {
+                var highlightedItem = FilteredItems[_highlightedIndex];
+                itemsList.SelectedItem = highlightedItem;
+                itemsList.ScrollTo(_highlightedIndex, position: ScrollToPosition.MakeVisible, animate: false);
+            }
+            else
+            {
+                itemsList.SelectedItem = null;
+            }
+        }
+        finally
+        {
+            _isUpdatingHighlight = false;
         }
     }
 

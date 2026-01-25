@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DemoApp.ViewModels"
+             xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExtras"
+             x:Class="DemoApp.Views.BreadcrumbDemoPage"
+             x:DataType="vm:BreadcrumbDemoViewModel"
+             Title="Breadcrumb">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+            <!-- Title -->
+            <Label Text="Breadcrumb Demo" Style="{StaticResource PageTitleStyle}" />
+            <Label Text="A navigation breadcrumb trail showing the current location."
+                   Style="{StaticResource PageDescriptionStyle}" />
+
+            <!-- Interactive Breadcrumb -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Interactive Breadcrumb" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Click any item to navigate back to that level." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Breadcrumb x:Name="MainBreadcrumb"
+                                       ItemClicked="OnBreadcrumbItemClicked"
+                                       Separator="/"
+                                       HorizontalOptions="Start" />
+
+                    <Label Text="{Binding CurrentPath, StringFormat='Current path: {0}'}"
+                           TextColor="{StaticResource Gray400}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Navigation Buttons -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Navigation Actions" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Use these buttons to navigate the breadcrumb." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <FlexLayout Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+                        <Button Text="Home" Command="{Binding GoToHomeCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,10" />
+                        <Button Text="Reset" Command="{Binding ResetCommand}" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,10" />
+                    </FlexLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Custom Separator -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Custom Separator" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Breadcrumb with arrow separator." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Breadcrumb x:Name="ArrowBreadcrumb"
+                                       Separator=">"
+                                       HorizontalOptions="Start" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Styled Breadcrumb -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Styled Breadcrumb" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Custom colors and styling." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Breadcrumb x:Name="StyledBreadcrumb"
+                                       Separator="/"
+                                       TextColor="{StaticResource Primary}"
+                                       SeparatorColor="{StaticResource Gray300}"
+                                       ActiveItemColor="{StaticResource Tertiary}"
+                                       HorizontalOptions="Start" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Status -->
+            <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="DemoApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:DemoApp.Views"
+    Shell.FlyoutBehavior="Flyout"
+    Title="MauiControlsExtras Demo">
+
+    <Shell.FlyoutHeader>
+        <Grid HeightRequest="150" BackgroundColor="{StaticResource Primary}">
+            <VerticalStackLayout VerticalOptions="Center" Padding="20">
+                <Label Text="MauiControlsExtras"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       TextColor="White" />
+                <Label Text="Demo Application"
+                       FontSize="14"
+                       TextColor="White"
+                       Opacity="0.8" />
+            </VerticalStackLayout>
+        </Grid>
+    </Shell.FlyoutHeader>
+
+    <!-- Gallery (Home) -->
+    <FlyoutItem Title="Gallery" Icon="{OnPlatform 'home.png', Android='home.png', iOS='home.png'}">
+        <ShellContent ContentTemplate="{DataTemplate views:MainPage}" Route="MainPage" />
+    </FlyoutItem>
+
+    <!-- Input Controls -->
+    <FlyoutItem Title="Input Controls" Icon="{OnPlatform 'edit.png', Android='edit.png', iOS='edit.png'}">
+        <ShellContent Title="ComboBox" ContentTemplate="{DataTemplate views:ComboBoxDemoPage}" Route="ComboBoxDemo" />
+        <ShellContent Title="MultiSelectComboBox" ContentTemplate="{DataTemplate views:MultiSelectDemoPage}" Route="MultiSelectDemo" />
+        <ShellContent Title="NumericUpDown" ContentTemplate="{DataTemplate views:NumericUpDownDemoPage}" Route="NumericUpDownDemo" />
+        <ShellContent Title="MaskedEntry" ContentTemplate="{DataTemplate views:MaskedEntryDemoPage}" Route="MaskedEntryDemo" />
+        <ShellContent Title="TokenEntry" ContentTemplate="{DataTemplate views:TokenEntryDemoPage}" Route="TokenEntryDemo" />
+        <ShellContent Title="RichTextEditor" ContentTemplate="{DataTemplate views:RichTextEditorDemoPage}" Route="RichTextEditorDemo" />
+    </FlyoutItem>
+
+    <!-- Selection Controls -->
+    <FlyoutItem Title="Selection Controls" Icon="{OnPlatform 'checkbox.png', Android='checkbox.png', iOS='checkbox.png'}">
+        <ShellContent Title="Calendar" ContentTemplate="{DataTemplate views:CalendarDemoPage}" Route="CalendarDemo" />
+        <ShellContent Title="RangeSlider" ContentTemplate="{DataTemplate views:RangeSliderDemoPage}" Route="RangeSliderDemo" />
+        <ShellContent Title="Rating" ContentTemplate="{DataTemplate views:RatingDemoPage}" Route="RatingDemo" />
+    </FlyoutItem>
+
+    <!-- Layout Controls -->
+    <FlyoutItem Title="Layout Controls" Icon="{OnPlatform 'layout.png', Android='layout.png', iOS='layout.png'}">
+        <ShellContent Title="Accordion" ContentTemplate="{DataTemplate views:AccordionDemoPage}" Route="AccordionDemo" />
+        <ShellContent Title="TreeView" ContentTemplate="{DataTemplate views:TreeViewDemoPage}" Route="TreeViewDemo" />
+        <ShellContent Title="Wizard" ContentTemplate="{DataTemplate views:WizardDemoPage}" Route="WizardDemo" />
+    </FlyoutItem>
+
+    <!-- Data Controls -->
+    <FlyoutItem Title="Data Controls" Icon="{OnPlatform 'data.png', Android='data.png', iOS='data.png'}">
+        <ShellContent Title="DataGridView" ContentTemplate="{DataTemplate views:DataGridDemoPage}" Route="DataGridDemo" />
+        <ShellContent Title="PropertyGrid" ContentTemplate="{DataTemplate views:PropertyGridDemoPage}" Route="PropertyGridDemo" />
+        <ShellContent Title="BindingNavigator" ContentTemplate="{DataTemplate views:BindingNavigatorDemoPage}" Route="BindingNavigatorDemo" />
+    </FlyoutItem>
+
+    <!-- Navigation Controls -->
+    <FlyoutItem Title="Navigation Controls" Icon="{OnPlatform 'navigate.png', Android='navigate.png', iOS='navigate.png'}">
+        <ShellContent Title="Breadcrumb" ContentTemplate="{DataTemplate views:BreadcrumbDemoPage}" Route="BreadcrumbDemo" />
+    </FlyoutItem>
+
+</Shell>
