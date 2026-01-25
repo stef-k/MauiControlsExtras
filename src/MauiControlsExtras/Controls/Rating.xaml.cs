@@ -54,13 +54,15 @@ public enum RatingIcon
 /// <summary>
 /// A star rating input control for capturing user ratings or displaying average scores.
 /// </summary>
-public partial class Rating : StyledControlBase, IValidatable
+public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNavigable
 {
     #region Private Fields
 
     private readonly List<string> _validationErrors = new();
     private bool _isValid = true;
     private bool _isUpdatingIcons;
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     // Unicode characters for icons
     private const string StarFilled = "★";
@@ -840,6 +842,190 @@ public partial class Rating : StyledControlBase, IValidatable
         {
             ValueChangedCommand.Execute(parameter);
         }
+    }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(Rating));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(Rating));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(Rating));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled || IsReadOnly) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        var step = Precision == RatingPrecision.Half ? 0.5 : 1.0;
+
+        return e.Key switch
+        {
+            "Left" or "Down" => HandleDecrement(step),
+            "Right" or "Up" => HandleIncrement(step),
+            "Home" or "Delete" => HandleClear(),
+            "End" => HandleSetMax(),
+            "1" => HandleSetValue(1),
+            "2" => HandleSetValue(2),
+            "3" => HandleSetValue(3),
+            "4" => HandleSetValue(4),
+            "5" => HandleSetValue(5),
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Left/Down", Description = "Decrease rating", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Right/Up", Description = "Increase rating", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Home/Delete", Description = "Clear rating", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "End", Description = "Set to maximum", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "1-5", Description = "Set specific rating", Category = "Value" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    /// <inheritdoc />
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
+    }
+
+    private bool HandleIncrement(double step)
+    {
+        Value = Math.Min(Value + step, Maximum);
+        return true;
+    }
+
+    private bool HandleDecrement(double step)
+    {
+        Value = Math.Max(Value - step, AllowClear ? 0 : 1);
+        return true;
+    }
+
+    private bool HandleClear()
+    {
+        if (AllowClear)
+        {
+            Value = 0;
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleSetMax()
+    {
+        Value = Maximum;
+        return true;
+    }
+
+    private bool HandleSetValue(int rating)
+    {
+        if (rating <= Maximum)
+        {
+            Value = rating;
+            return true;
+        }
+        return false;
     }
 
     #endregion

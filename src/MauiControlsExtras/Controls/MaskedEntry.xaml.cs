@@ -8,7 +8,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A text entry control with input masking for formatted data.
 /// </summary>
-public partial class MaskedEntry : TextStyledControlBase, IValidatable
+public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
 {
     #region Predefined Masks
 
@@ -49,6 +49,8 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable
     private bool _isUpdatingText;
     private readonly List<string> _validationErrors = new();
     private List<MaskToken> _maskTokens = new();
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     #endregion
 
@@ -484,9 +486,17 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable
     /// <summary>
     /// Focuses the entry.
     /// </summary>
-    public new void Focus()
+    public new bool Focus()
     {
-        entry?.Focus();
+        if (!CanReceiveFocus) return false;
+
+        var result = entry?.Focus() ?? base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
     }
 
     /// <summary>
@@ -814,6 +824,124 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable
             Type = type;
             Character = character;
         }
+    }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(MaskedEntry));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(MaskedEntry));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(MaskedEntry));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        // MaskedEntry primarily delegates to the underlying Entry
+        // but we can handle special cases here
+        return false;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Tab", Description = "Move to next field", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Backspace", Description = "Delete previous character", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "Delete", Description = "Delete next character", Category = "Editing" },
+            });
+        }
+        return _keyboardShortcuts;
     }
 
     #endregion

@@ -11,7 +11,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A text entry control that converts typed values into removable tokens/chips.
 /// </summary>
-public partial class TokenEntry : TextStyledControlBase, IValidatable
+public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
 {
     #region Fields
 
@@ -19,6 +19,9 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable
     private bool _isUpdatingTokens;
     private readonly List<string> _validationErrors = new();
     private string _previousText = string.Empty;
+    private int _selectedTokenIndex = -1;
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     #endregion
 
@@ -527,9 +530,17 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable
     /// <summary>
     /// Focuses the input entry.
     /// </summary>
-    public new void Focus()
+    public new bool Focus()
     {
-        _inputEntry?.Focus();
+        if (!CanReceiveFocus) return false;
+
+        var result = _inputEntry?.Focus() ?? base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
     }
 
     #endregion
@@ -847,6 +858,216 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable
         {
             InvalidTokenAttemptedCommand.Execute(token);
         }
+    }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused || (_inputEntry?.IsFocused ?? false);
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(TokenEntry));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(TokenEntry));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(TokenEntry));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        // Handle backspace to select/delete tokens when input is empty
+        if (e.Key == "Back" && string.IsNullOrEmpty(Text))
+        {
+            return HandleBackspaceKey();
+        }
+
+        // Handle delete to remove selected token
+        if (e.Key == "Delete" && _selectedTokenIndex >= 0)
+        {
+            return HandleDeleteKey();
+        }
+
+        // Handle left arrow to select tokens
+        if (e.Key == "Left" && string.IsNullOrEmpty(Text))
+        {
+            return HandleLeftKey();
+        }
+
+        // Handle right arrow to deselect tokens
+        if (e.Key == "Right" && _selectedTokenIndex >= 0)
+        {
+            return HandleRightKey();
+        }
+
+        // Handle A for select all tokens
+        if (e.Key == "A" && e.IsPlatformCommandPressed)
+        {
+            return HandleSelectAllTokens();
+        }
+
+        return false;
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Enter", Description = "Create token from current text", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Backspace", Description = "Delete last token (when input empty)", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Delete", Description = "Delete selected token", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Left", Description = "Select previous token", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Right", Description = "Deselect token", Category = "Navigation" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    private bool HandleBackspaceKey()
+    {
+        if (Tokens != null && Tokens.Count > 0)
+        {
+            if (_selectedTokenIndex >= 0)
+            {
+                // Delete selected token
+                RemoveToken(Tokens[_selectedTokenIndex]);
+                _selectedTokenIndex = Math.Min(_selectedTokenIndex, Tokens.Count - 1);
+            }
+            else
+            {
+                // Select last token
+                _selectedTokenIndex = Tokens.Count - 1;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleDeleteKey()
+    {
+        if (Tokens != null && _selectedTokenIndex >= 0 && _selectedTokenIndex < Tokens.Count)
+        {
+            RemoveToken(Tokens[_selectedTokenIndex]);
+            _selectedTokenIndex = Math.Min(_selectedTokenIndex, Tokens.Count - 1);
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleLeftKey()
+    {
+        if (Tokens != null && Tokens.Count > 0)
+        {
+            _selectedTokenIndex = _selectedTokenIndex <= 0 ? Tokens.Count - 1 : _selectedTokenIndex - 1;
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleRightKey()
+    {
+        if (_selectedTokenIndex >= 0 && Tokens != null)
+        {
+            _selectedTokenIndex = _selectedTokenIndex >= Tokens.Count - 1 ? -1 : _selectedTokenIndex + 1;
+            if (_selectedTokenIndex == -1)
+            {
+                _inputEntry?.Focus();
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleSelectAllTokens()
+    {
+        // Select all is not really applicable for token entry
+        // but we can return true to prevent default browser behavior
+        return false;
     }
 
     #endregion

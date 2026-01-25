@@ -48,7 +48,7 @@ public class RangeChangedEventArgs : EventArgs
 /// <summary>
 /// A dual-thumb slider control for selecting a range of values (minimum and maximum).
 /// </summary>
-public partial class RangeSlider : StyledControlBase, IValidatable
+public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboardNavigable
 {
     #region Private Fields
 
@@ -59,9 +59,12 @@ public partial class RangeSlider : StyledControlBase, IValidatable
     private bool _isDragging;
     private double _trackWidth;
     private double _trackHeight;
+    private bool _lowerThumbActive = true; // Which thumb is active for keyboard control
 
     private readonly List<string> _validationErrors = new();
     private bool _isValid = true;
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     #endregion
 
@@ -1226,6 +1229,214 @@ public partial class RangeSlider : StyledControlBase, IValidatable
         {
             DragCompletedCommand.Execute(parameter);
         }
+    }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(RangeSlider));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(RangeSlider));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(RangeSlider));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        var step = Step > 0 ? Step : (Maximum - Minimum) / 100;
+        var largeStep = step * 10;
+
+        return e.Key switch
+        {
+            "Left" or "Down" => HandleDecrementKey(step),
+            "Right" or "Up" => HandleIncrementKey(step),
+            "PageDown" => HandleDecrementKey(largeStep),
+            "PageUp" => HandleIncrementKey(largeStep),
+            "Home" => HandleHomeKey(),
+            "End" => HandleEndKey(),
+            "Tab" when !e.IsShiftPressed => HandleSwitchThumb(false),
+            "Tab" when e.IsShiftPressed => HandleSwitchThumb(true),
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Left/Down", Description = "Decrease active thumb value", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Right/Up", Description = "Increase active thumb value", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "PageUp", Description = "Large increase", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "PageDown", Description = "Large decrease", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Home", Description = "Set to minimum", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "End", Description = "Set to maximum", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "Tab", Description = "Switch between thumbs", Category = "Navigation" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    /// <inheritdoc />
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+        }
+        return result;
+    }
+
+    private bool HandleIncrementKey(double step)
+    {
+        if (_lowerThumbActive)
+        {
+            var newValue = Math.Min(LowerValue + step, UpperValue - MinimumRange);
+            LowerValue = Math.Min(newValue, Maximum);
+        }
+        else
+        {
+            UpperValue = Math.Min(UpperValue + step, Maximum);
+        }
+        return true;
+    }
+
+    private bool HandleDecrementKey(double step)
+    {
+        if (_lowerThumbActive)
+        {
+            LowerValue = Math.Max(LowerValue - step, Minimum);
+        }
+        else
+        {
+            var newValue = Math.Max(UpperValue - step, LowerValue + MinimumRange);
+            UpperValue = Math.Max(newValue, Minimum);
+        }
+        return true;
+    }
+
+    private bool HandleHomeKey()
+    {
+        if (_lowerThumbActive)
+        {
+            LowerValue = Minimum;
+        }
+        else
+        {
+            UpperValue = LowerValue + MinimumRange;
+        }
+        return true;
+    }
+
+    private bool HandleEndKey()
+    {
+        if (_lowerThumbActive)
+        {
+            LowerValue = UpperValue - MinimumRange;
+        }
+        else
+        {
+            UpperValue = Maximum;
+        }
+        return true;
+    }
+
+    private bool HandleSwitchThumb(bool reverse)
+    {
+        _lowerThumbActive = !_lowerThumbActive;
+        return true;
     }
 
     #endregion

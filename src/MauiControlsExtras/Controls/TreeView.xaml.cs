@@ -308,13 +308,16 @@ public class TreeViewNode : INotifyPropertyChanged
 /// <summary>
 /// A hierarchical list control for displaying and interacting with tree-structured data.
 /// </summary>
-public partial class TreeView : StyledControlBase
+public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNavigable
 {
     #region Private Fields
 
     private readonly ObservableCollection<TreeViewNode> _flattenedItems = new();
     private readonly Dictionary<object, TreeViewNode> _nodeMap = new();
     private bool _isUpdating;
+    private int _focusedIndex = -1;
+    private bool _isKeyboardNavigationEnabled = true;
+    private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
     #endregion
 
@@ -1392,6 +1395,445 @@ public partial class TreeView : StyledControlBase
             ItemCheckedCommand.Execute(node.DataItem);
         }
     }
+
+    #endregion
+
+    #region IKeyboardNavigable Implementation
+
+    /// <inheritdoc />
+    public bool CanReceiveFocus => IsEnabled && IsVisible;
+
+    /// <inheritdoc />
+    public bool IsKeyboardNavigationEnabled
+    {
+        get => _isKeyboardNavigationEnabled;
+        set
+        {
+            _isKeyboardNavigationEnabled = value;
+            OnPropertyChanged(nameof(IsKeyboardNavigationEnabled));
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasKeyboardFocus => IsFocused;
+
+    /// <summary>
+    /// Identifies the GotFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
+        nameof(GotFocusCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the LostFocusCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
+        nameof(LostFocusCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the KeyPressCommand bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
+        nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
+    /// <inheritdoc />
+    public ICommand? GotFocusCommand
+    {
+        get => (ICommand?)GetValue(GotFocusCommandProperty);
+        set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? LostFocusCommand
+    {
+        get => (ICommand?)GetValue(LostFocusCommandProperty);
+        set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? KeyPressCommand
+    {
+        get => (ICommand?)GetValue(KeyPressCommandProperty);
+        set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public event EventHandler<Base.KeyEventArgs>? KeyPressed;
+
+    /// <inheritdoc />
+#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
+    public event EventHandler<Base.KeyEventArgs>? KeyReleased;
+#pragma warning restore CS0067
+
+    /// <inheritdoc />
+    public bool HandleKeyPress(Base.KeyEventArgs e)
+    {
+        if (!IsKeyboardNavigationEnabled) return false;
+
+        // Raise event first
+        KeyPressed?.Invoke(this, e);
+        if (e.Handled) return true;
+
+        // Execute command if set
+        if (KeyPressCommand?.CanExecute(e) == true)
+        {
+            KeyPressCommand.Execute(e);
+            if (e.Handled) return true;
+        }
+
+        // Handle navigation and action keys
+        return e.Key switch
+        {
+            "Up" => HandleUpKey(e),
+            "Down" => HandleDownKey(e),
+            "Left" => HandleLeftKey(e),
+            "Right" => HandleRightKey(e),
+            "Home" => HandleHomeKey(e),
+            "End" => HandleEndKey(e),
+            "PageUp" => HandlePageUpKey(),
+            "PageDown" => HandlePageDownKey(),
+            "Enter" => HandleEnterKey(),
+            "Space" => HandleSpaceKey(),
+            "Add" or "+" => HandleExpandKey(),
+            "Subtract" or "-" => HandleCollapseKey(),
+            "Multiply" or "*" => HandleExpandAllKey(),
+            _ => false
+        };
+    }
+
+    /// <inheritdoc />
+    public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
+    {
+        if (_keyboardShortcuts.Count == 0)
+        {
+            _keyboardShortcuts.AddRange(new[]
+            {
+                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Down", Description = "Move to next item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Left", Description = "Collapse node or move to parent", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Right", Description = "Expand node or move to first child", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Home", Description = "Move to first item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "End", Description = "Move to last item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "PageUp", Description = "Move up one page", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "PageDown", Description = "Move down one page", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Enter", Description = "Expand/collapse node", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Space", Description = "Toggle selection or checkbox", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "+", Description = "Expand current node", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "-", Description = "Collapse current node", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "*", Description = "Expand current node and all children", Category = "Action" },
+            });
+        }
+        return _keyboardShortcuts;
+    }
+
+    /// <inheritdoc />
+    public new bool Focus()
+    {
+        if (!CanReceiveFocus) return false;
+
+        var result = base.Focus();
+        if (result)
+        {
+            KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+            GotFocusCommand?.Execute(this);
+
+            // If no focused item, select first
+            if (_focusedIndex < 0 && _flattenedItems.Count > 0)
+            {
+                _focusedIndex = 0;
+                UpdateFocusVisual();
+            }
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// Gets the currently focused node.
+    /// </summary>
+    public TreeViewNode? FocusedNode => _focusedIndex >= 0 && _focusedIndex < _flattenedItems.Count
+        ? _flattenedItems[_focusedIndex]
+        : null;
+
+    #region Keyboard Navigation Handlers
+
+    private bool HandleUpKey(Base.KeyEventArgs e)
+    {
+        if (_flattenedItems.Count == 0) return false;
+
+        var newIndex = _focusedIndex <= 0 ? _flattenedItems.Count - 1 : _focusedIndex - 1;
+
+        if (e.IsShiftPressed && SelectionMode == TreeViewSelectionMode.Multiple)
+        {
+            // Extend selection
+            _focusedIndex = newIndex;
+            var node = _flattenedItems[newIndex];
+            node.IsSelected = true;
+            UpdateSelectedItems();
+        }
+        else
+        {
+            SetFocusedIndex(newIndex, !e.IsPlatformCommandPressed);
+        }
+
+        ScrollToFocused();
+        return true;
+    }
+
+    private bool HandleDownKey(Base.KeyEventArgs e)
+    {
+        if (_flattenedItems.Count == 0) return false;
+
+        var newIndex = _focusedIndex >= _flattenedItems.Count - 1 ? 0 : _focusedIndex + 1;
+
+        if (e.IsShiftPressed && SelectionMode == TreeViewSelectionMode.Multiple)
+        {
+            // Extend selection
+            _focusedIndex = newIndex;
+            var node = _flattenedItems[newIndex];
+            node.IsSelected = true;
+            UpdateSelectedItems();
+        }
+        else
+        {
+            SetFocusedIndex(newIndex, !e.IsPlatformCommandPressed);
+        }
+
+        ScrollToFocused();
+        return true;
+    }
+
+    private bool HandleLeftKey(Base.KeyEventArgs e)
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+
+        if (node.IsExpanded && node.HasChildren)
+        {
+            // Collapse the node
+            ToggleExpand(node);
+            return true;
+        }
+        else if (node.Parent != null)
+        {
+            // Move to parent
+            var parentIndex = _flattenedItems.IndexOf(node.Parent);
+            if (parentIndex >= 0)
+            {
+                SetFocusedIndex(parentIndex, !e.IsPlatformCommandPressed);
+                ScrollToFocused();
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool HandleRightKey(Base.KeyEventArgs e)
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+
+        if (!node.IsExpanded && node.HasChildren)
+        {
+            // Expand the node
+            ToggleExpand(node);
+            return true;
+        }
+        else if (node.IsExpanded && node.Children.Count > 0)
+        {
+            // Move to first child
+            var childIndex = _flattenedItems.IndexOf(node.Children[0]);
+            if (childIndex >= 0)
+            {
+                SetFocusedIndex(childIndex, !e.IsPlatformCommandPressed);
+                ScrollToFocused();
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool HandleHomeKey(Base.KeyEventArgs e)
+    {
+        if (_flattenedItems.Count == 0) return false;
+
+        SetFocusedIndex(0, !e.IsPlatformCommandPressed);
+        ScrollToFocused();
+        return true;
+    }
+
+    private bool HandleEndKey(Base.KeyEventArgs e)
+    {
+        if (_flattenedItems.Count == 0) return false;
+
+        SetFocusedIndex(_flattenedItems.Count - 1, !e.IsPlatformCommandPressed);
+        ScrollToFocused();
+        return true;
+    }
+
+    private bool HandlePageUpKey()
+    {
+        if (_flattenedItems.Count == 0) return false;
+
+        // Move approximately one page up (10 items)
+        var newIndex = Math.Max(0, _focusedIndex - 10);
+        SetFocusedIndex(newIndex, true);
+        ScrollToFocused();
+        return true;
+    }
+
+    private bool HandlePageDownKey()
+    {
+        if (_flattenedItems.Count == 0) return false;
+
+        // Move approximately one page down (10 items)
+        var newIndex = Math.Min(_flattenedItems.Count - 1, _focusedIndex + 10);
+        SetFocusedIndex(newIndex, true);
+        ScrollToFocused();
+        return true;
+    }
+
+    private bool HandleEnterKey()
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+        if (node.HasChildren)
+        {
+            ToggleExpand(node);
+        }
+        return true;
+    }
+
+    private bool HandleSpaceKey()
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+
+        if (ShowCheckBoxes)
+        {
+            ToggleCheckBox(node);
+        }
+        else if (SelectionMode != TreeViewSelectionMode.None)
+        {
+            SelectNode(node);
+        }
+
+        return true;
+    }
+
+    private bool HandleExpandKey()
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+        if (node.HasChildren && !node.IsExpanded)
+        {
+            ToggleExpand(node);
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleCollapseKey()
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+        if (node.IsExpanded)
+        {
+            ToggleExpand(node);
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleExpandAllKey()
+    {
+        if (_focusedIndex < 0 || _focusedIndex >= _flattenedItems.Count) return false;
+
+        var node = _flattenedItems[_focusedIndex];
+        ExpandNodeRecursively(node);
+        RebuildFlattenedList();
+        return true;
+    }
+
+    private void ExpandNodeRecursively(TreeViewNode node)
+    {
+        if (node.HasChildren)
+        {
+            node.IsExpanded = true;
+            foreach (var child in node.Children)
+            {
+                ExpandNodeRecursively(child);
+            }
+        }
+    }
+
+    private void SetFocusedIndex(int index, bool select)
+    {
+        if (index < 0 || index >= _flattenedItems.Count) return;
+
+        _focusedIndex = index;
+        UpdateFocusVisual();
+
+        if (select)
+        {
+            var node = _flattenedItems[index];
+            SelectNode(node);
+        }
+    }
+
+    private void UpdateFocusVisual()
+    {
+        // Update visual focus indicator (could be done via binding or direct manipulation)
+        for (int i = 0; i < _flattenedItems.Count; i++)
+        {
+            var node = _flattenedItems[i];
+            // The selection visual already serves as focus indicator
+            // If we want a separate focus ring, we'd need to add a FocusedBackgroundColor property
+        }
+    }
+
+    private void ScrollToFocused()
+    {
+        if (_focusedIndex >= 0 && _focusedIndex < _flattenedItems.Count)
+        {
+            flattenedList.ScrollTo(_focusedIndex, position: ScrollToPosition.MakeVisible, animate: true);
+        }
+    }
+
+    private void UpdateSelectedItems()
+    {
+        if (SelectedItems != null)
+        {
+            SelectedItems.Clear();
+            foreach (var node in _flattenedItems.Where(n => n.IsSelected))
+            {
+                SelectedItems.Add(node.DataItem);
+            }
+        }
+        RaiseSelectionChanged();
+    }
+
+    #endregion
 
     #endregion
 }
