@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                        x:Class="MauiControlsExtras.Controls.Breadcrumb"
+                        x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{Binding EffectiveBackgroundColor, Source={x:Reference thisControl}}"
+            Padding="{Binding Padding, Source={x:Reference thisControl}}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <ScrollView Orientation="Horizontal"
+                    HorizontalScrollBarVisibility="Never">
+            <HorizontalStackLayout x:Name="itemsContainer"
+                                   Spacing="0"
+                                   VerticalOptions="Center" />
+        </ScrollView>
+    </Border>
+</base:StyledControlBase>
