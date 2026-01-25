@@ -26,6 +26,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     private bool _isUpdatingContent;
     private string? _pendingContent;
     private bool _hasKeyboardFocus;
+    private bool _currentThemeIsDark;
 
     // Undo/Redo tracking (delegated to Quill's history module)
     private bool _canUndo;
@@ -196,6 +197,16 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(string),
         typeof(RichTextEditor),
         null);
+
+    /// <summary>
+    /// Identifies the <see cref="ThemeMode"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ThemeModeProperty = BindableProperty.Create(
+        nameof(ThemeMode),
+        typeof(EditorThemeMode),
+        typeof(RichTextEditor),
+        EditorThemeMode.Auto,
+        propertyChanged: OnThemeModeChanged);
 
     #endregion
 
@@ -447,10 +458,25 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     }
 
     /// <summary>
+    /// Gets or sets the theme mode for the editor.
+    /// When set to Auto, the editor follows the system/app theme.
+    /// </summary>
+    public EditorThemeMode ThemeMode
+    {
+        get => (EditorThemeMode)GetValue(ThemeModeProperty);
+        set => SetValue(ThemeModeProperty, value);
+    }
+
+    /// <summary>
     /// Gets the effective editor background color.
     /// </summary>
     public Color EffectiveEditorBackground =>
         EditorBackground ?? MauiControlsExtrasTheme.GetSurfaceColor();
+
+    /// <summary>
+    /// Gets whether the current effective theme is dark.
+    /// </summary>
+    public bool IsDarkTheme => GetEffectiveThemeIsDark();
 
     /// <summary>
     /// Gets whether the top toolbar should be visible.
@@ -832,6 +858,13 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 
         // Initialize WebView when loaded
         Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
+
+        // Subscribe to app theme changes for auto mode
+        if (Application.Current != null)
+        {
+            Application.Current.RequestedThemeChanged += OnAppThemeChanged;
+        }
     }
 
     #endregion
@@ -843,9 +876,55 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         await InitializeEditorAsync();
     }
 
+    private void OnUnloaded(object? sender, EventArgs e)
+    {
+        // Unsubscribe from theme changes to prevent memory leaks
+        if (Application.Current != null)
+        {
+            Application.Current.RequestedThemeChanged -= OnAppThemeChanged;
+        }
+    }
+
+    private async void OnAppThemeChanged(object? sender, AppThemeChangedEventArgs e)
+    {
+        // Only respond if ThemeMode is Auto
+        if (ThemeMode != EditorThemeMode.Auto) return;
+
+        var newThemeIsDark = e.RequestedTheme == AppTheme.Dark;
+        if (_currentThemeIsDark != newThemeIsDark)
+        {
+            await UpdateThemeAsync(newThemeIsDark);
+        }
+    }
+
+    private static void OnThemeModeChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is RichTextEditor editor && editor._isInitialized)
+        {
+            var isDark = editor.GetEffectiveThemeIsDark();
+            if (editor._currentThemeIsDark != isDark)
+            {
+                _ = editor.UpdateThemeAsync(isDark);
+            }
+        }
+    }
+
+    private bool GetEffectiveThemeIsDark()
+    {
+        return ThemeMode switch
+        {
+            EditorThemeMode.Light => false,
+            EditorThemeMode.Dark => true,
+            _ => Application.Current?.RequestedTheme == AppTheme.Dark
+        };
+    }
+
     private async Task InitializeEditorAsync()
     {
         if (_isInitialized) return;
+
+        // Set initial theme state
+        _currentThemeIsDark = GetEffectiveThemeIsDark();
 
         var html = GenerateEditorHtml();
         editorWebView.Source = new HtmlWebViewSource { Html = html };
@@ -878,35 +957,140 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 
     private string GenerateEditorHtml()
     {
-        var isDark = Application.Current?.RequestedTheme == AppTheme.Dark;
-        var bgColor = isDark ? "#1E1E1E" : "#FFFFFF";
-        var textColor = isDark ? "#FFFFFF" : "#212121";
-        var placeholderColor = isDark ? "#808080" : "#9E9E9E";
+        var isDark = _currentThemeIsDark;
+        var themeClass = isDark ? "dark-theme" : "light-theme";
 
         var urls = GetQuillUrls();
         var resourcesHtml = GenerateResourceIncludes(urls);
 
         return $@"
 <!DOCTYPE html>
-<html>
+<html class=""{themeClass}"">
 <head>
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"">
     {resourcesHtml}
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{
-            background: {bgColor};
-            color: {textColor};
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        /* CSS Variables for theming */
+        :root {{
+            --editor-bg: #FFFFFF;
+            --editor-text: #212121;
+            --editor-placeholder: #9E9E9E;
+            --editor-border: #CCCCCC;
+            --editor-link: #06C;
+            --editor-code-bg: #F0F0F0;
+            --editor-code-text: #333333;
+            --editor-blockquote-border: #CCCCCC;
+            --editor-selection-bg: rgba(0, 123, 255, 0.2);
         }}
-        .ql-container {{ border: none !important; font-size: {EffectiveFontSize}px; }}
+
+        html.dark-theme {{
+            --editor-bg: #1E1E1E;
+            --editor-text: #E0E0E0;
+            --editor-placeholder: #808080;
+            --editor-border: #424242;
+            --editor-link: #6DB3F2;
+            --editor-code-bg: #2D2D2D;
+            --editor-code-text: #E0E0E0;
+            --editor-blockquote-border: #616161;
+            --editor-selection-bg: rgba(100, 150, 255, 0.3);
+        }}
+
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+
+        body {{
+            background: var(--editor-bg);
+            color: var(--editor-text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }}
+
+        /* Quill container */
+        .ql-container {{
+            border: none !important;
+            font-size: {EffectiveFontSize}px;
+            color: var(--editor-text);
+        }}
+
+        .ql-container.ql-snow {{
+            border: none !important;
+        }}
+
+        /* Editor area */
         .ql-editor {{
             min-height: {MinHeight - 40}px;
             padding: 12px;
-            color: {textColor};
+            color: var(--editor-text);
+            background: var(--editor-bg);
         }}
-        .ql-editor.ql-blank::before {{ color: {placeholderColor}; }}
-        .ql-toolbar {{ display: none; }} /* We use MAUI toolbar */
+
+        /* Placeholder */
+        .ql-editor.ql-blank::before {{
+            color: var(--editor-placeholder);
+            font-style: italic;
+        }}
+
+        /* Links */
+        .ql-editor a {{
+            color: var(--editor-link);
+        }}
+
+        /* Code blocks */
+        .ql-editor pre.ql-syntax,
+        .ql-editor code,
+        .ql-editor pre {{
+            background-color: var(--editor-code-bg);
+            color: var(--editor-code-text);
+            border-radius: 4px;
+        }}
+
+        .ql-editor pre.ql-syntax {{
+            padding: 12px;
+            margin: 8px 0;
+            overflow-x: auto;
+        }}
+
+        .ql-editor code {{
+            padding: 2px 6px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }}
+
+        /* Blockquote */
+        .ql-editor blockquote {{
+            border-left: 4px solid var(--editor-blockquote-border);
+            padding-left: 16px;
+            margin: 8px 0;
+            color: var(--editor-text);
+            opacity: 0.85;
+        }}
+
+        /* Selection highlight */
+        .ql-editor ::selection {{
+            background: var(--editor-selection-bg);
+        }}
+
+        /* Hide default Quill toolbar - we use MAUI toolbar */
+        .ql-toolbar {{
+            display: none !important;
+        }}
+
+        /* Scrollbar styling for dark mode */
+        html.dark-theme ::-webkit-scrollbar {{
+            width: 8px;
+            height: 8px;
+        }}
+
+        html.dark-theme ::-webkit-scrollbar-track {{
+            background: var(--editor-bg);
+        }}
+
+        html.dark-theme ::-webkit-scrollbar-thumb {{
+            background: #555;
+            border-radius: 4px;
+        }}
+
+        html.dark-theme ::-webkit-scrollbar-thumb:hover {{
+            background: #666;
+        }}
     </style>
 </head>
 <body>
@@ -975,7 +1159,20 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
             blur: function() {{ quill.blur(); }},
             setReadOnly: function(readOnly) {{ quill.enable(!readOnly); }},
             canUndo: function() {{ return quill.history.stack.undo.length > 0; }},
-            canRedo: function() {{ return quill.history.stack.redo.length > 0; }}
+            canRedo: function() {{ return quill.history.stack.redo.length > 0; }},
+            setTheme: function(isDark) {{
+                var html = document.documentElement;
+                if (isDark) {{
+                    html.classList.remove('light-theme');
+                    html.classList.add('dark-theme');
+                }} else {{
+                    html.classList.remove('dark-theme');
+                    html.classList.add('light-theme');
+                }}
+            }},
+            getTheme: function() {{
+                return document.documentElement.classList.contains('dark-theme') ? 'dark' : 'light';
+            }}
         }};
 
         // Event handlers
@@ -1004,6 +1201,30 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         if (value == null) return "";
         return value.Replace("\\", "\\\\").Replace("'", "\\'").Replace("\n", "\\n").Replace("\r", "\\r");
+    }
+
+    /// <summary>
+    /// Updates the editor theme dynamically without reinitializing.
+    /// </summary>
+    /// <param name="isDark">True for dark theme, false for light theme.</param>
+    public async Task UpdateThemeAsync(bool isDark)
+    {
+        if (!_isInitialized) return;
+
+        _currentThemeIsDark = isDark;
+        OnPropertyChanged(nameof(IsDarkTheme));
+
+        var jsValue = isDark ? "true" : "false";
+        await ExecuteJavaScriptAsync($"RichTextBridge.setTheme({jsValue})");
+    }
+
+    /// <summary>
+    /// Refreshes the editor theme based on current ThemeMode setting.
+    /// </summary>
+    public Task RefreshThemeAsync()
+    {
+        var isDark = GetEffectiveThemeIsDark();
+        return UpdateThemeAsync(isDark);
     }
 
     private QuillJsUrls GetQuillUrls()

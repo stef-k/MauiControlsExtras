@@ -123,3 +123,24 @@ public enum QuillJsSource
     /// </summary>
     Custom
 }
+
+/// <summary>
+/// Specifies the theme mode for the RichTextEditor.
+/// </summary>
+public enum EditorThemeMode
+{
+    /// <summary>
+    /// Automatically follow the system/app theme.
+    /// </summary>
+    Auto,
+
+    /// <summary>
+    /// Always use light theme.
+    /// </summary>
+    Light,
+
+    /// <summary>
+    /// Always use dark theme.
+    /// </summary>
+    Dark
+}
