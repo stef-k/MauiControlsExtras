@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                        x:Class="MauiControlsExtras.Controls.BindingNavigator"
+                        x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+              Padding="4"
+              ColumnSpacing="2">
+
+            <!-- Add Button -->
+            <Button x:Name="addButton"
+                    Grid.Column="0"
+                    Text="{Binding AddButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    IsVisible="{Binding ShowAddButton, Source={x:Reference thisControl}}"
+                    Clicked="OnAddClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Delete Button -->
+            <Button x:Name="deleteButton"
+                    Grid.Column="1"
+                    Text="{Binding DeleteButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    IsVisible="{Binding ShowDeleteButton, Source={x:Reference thisControl}}"
+                    Clicked="OnDeleteClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Separator -->
+            <BoxView Grid.Column="2"
+                     WidthRequest="1"
+                     BackgroundColor="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+                     Opacity="0.5"
+                     Margin="4,6"
+                     IsVisible="{Binding ShowSeparators, Source={x:Reference thisControl}}" />
+
+            <!-- First Button -->
+            <Button x:Name="firstButton"
+                    Grid.Column="3"
+                    Text="{Binding FirstButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    Clicked="OnFirstClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Previous Button -->
+            <Button x:Name="previousButton"
+                    Grid.Column="4"
+                    Text="{Binding PreviousButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    HorizontalOptions="Start"
+                    Clicked="OnPreviousClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Position Display -->
+            <HorizontalStackLayout Grid.Column="5"
+                                   Spacing="4"
+                                   VerticalOptions="Center">
+                <Entry x:Name="positionEntry"
+                       Text="{Binding DisplayPosition, Source={x:Reference thisControl}}"
+                       WidthRequest="50"
+                       Keyboard="Numeric"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center"
+                       Completed="OnPositionEntryCompleted"
+                       BackgroundColor="Transparent" />
+                <Label Text="of"
+                       VerticalOptions="Center"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+                <Label x:Name="countLabel"
+                       Text="{Binding Count, Source={x:Reference thisControl}}"
+                       VerticalOptions="Center"
+                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+            </HorizontalStackLayout>
+
+            <!-- Next Button -->
+            <Button x:Name="nextButton"
+                    Grid.Column="6"
+                    Text="{Binding NextButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    Clicked="OnNextClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Last Button -->
+            <Button x:Name="lastButton"
+                    Grid.Column="7"
+                    Text="{Binding LastButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    Clicked="OnLastClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Separator -->
+            <BoxView Grid.Column="8"
+                     WidthRequest="1"
+                     BackgroundColor="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+                     Opacity="0.5"
+                     Margin="4,6"
+                     IsVisible="{Binding ShowSaveButtons, Source={x:Reference thisControl}}" />
+
+            <!-- Save Button -->
+            <Button x:Name="saveButton"
+                    Grid.Column="9"
+                    Text="{Binding SaveButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    IsVisible="{Binding ShowSaveButtons, Source={x:Reference thisControl}}"
+                    Clicked="OnSaveClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Cancel Button -->
+            <Button x:Name="cancelButton"
+                    Grid.Column="10"
+                    Text="{Binding CancelButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    IsVisible="{Binding ShowSaveButtons, Source={x:Reference thisControl}}"
+                    Clicked="OnCancelClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+
+            <!-- Refresh Button -->
+            <Button x:Name="refreshButton"
+                    Grid.Column="11"
+                    Text="{Binding RefreshButtonContent, Source={x:Reference thisControl}}"
+                    WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                    Padding="0"
+                    IsVisible="{Binding ShowRefreshButton, Source={x:Reference thisControl}}"
+                    Clicked="OnRefreshClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+        </Grid>
+    </Border>
+</base:StyledControlBase>
