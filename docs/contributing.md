@@ -6,7 +6,7 @@ Thank you for your interest in contributing to MauiControlsExtras! This document
 
 ### Prerequisites
 
-- .NET 8.0 SDK or later
+- .NET 10.0 SDK or later
 - Visual Studio 2022 (17.8+) or JetBrains Rider
 - .NET MAUI workload installed
 
