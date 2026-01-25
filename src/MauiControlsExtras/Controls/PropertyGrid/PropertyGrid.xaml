@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<base:HeaderedControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                          xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                          xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                          x:Class="MauiControlsExtras.Controls.PropertyGrid"
+                          x:Name="thisControl">
+
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <Grid RowDefinitions="Auto,*,Auto">
+            <!-- Search Box -->
+            <Border Grid.Row="0"
+                    IsVisible="{Binding ShowSearchBox, Source={x:Reference thisControl}}"
+                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}"
+                    Padding="8">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Entry x:Name="searchEntry"
+                           Placeholder="Search properties..."
+                           Text="{Binding SearchText, Source={x:Reference thisControl}, Mode=TwoWay}"
+                           TextChanged="OnSearchTextChanged"
+                           BackgroundColor="Transparent" />
+                    <Button Grid.Column="1"
+                            Text="✕"
+                            WidthRequest="32"
+                            HeightRequest="32"
+                            Padding="0"
+                            BackgroundColor="Transparent"
+                            IsVisible="{Binding HasSearchText, Source={x:Reference thisControl}}"
+                            Clicked="OnClearSearchClicked" />
+                </Grid>
+            </Border>
+
+            <!-- Properties List -->
+            <ScrollView Grid.Row="1"
+                        Orientation="Vertical"
+                        VerticalScrollBarVisibility="Auto">
+                <VerticalStackLayout x:Name="propertiesContainer"
+                                     Spacing="0">
+                    <!-- Properties are added dynamically -->
+                </VerticalStackLayout>
+            </ScrollView>
+
+            <!-- Description Panel -->
+            <Border Grid.Row="2"
+                    IsVisible="{Binding ShowDescription, Source={x:Reference thisControl}}"
+                    BackgroundColor="{AppThemeBinding Light=#F9F9F9, Dark=#252525}"
+                    Padding="12"
+                    MinimumHeightRequest="60">
+                <VerticalStackLayout Spacing="4">
+                    <Label x:Name="descriptionTitle"
+                           FontAttributes="Bold"
+                           FontSize="13"
+                           TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
+                    <Label x:Name="descriptionText"
+                           FontSize="12"
+                           LineBreakMode="WordWrap"
+                           TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Empty View -->
+            <Label Grid.Row="1"
+                   x:Name="emptyLabel"
+                   IsVisible="False"
+                   Text="No object selected"
+                   HorizontalOptions="Center"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=#999999, Dark=#666666}" />
+        </Grid>
+    </Border>
+</base:HeaderedControlBase>
