@@ -3554,6 +3554,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             cellContainer.Children.Clear();
             cellContainer.Children.Add(_currentEditControl);
 
+            // Set appropriate background for edit mode (ensure contrast)
+            cellContainer.BackgroundColor = Application.Current?.RequestedTheme == AppTheme.Dark
+                ? Color.FromArgb("#2D2D2D")
+                : Color.FromArgb("#FFFFFF");
+
+            // Apply theme-appropriate styling to edit controls
+            ApplyEditControlStyling(_currentEditControl);
+
             // Focus the edit control
             if (_currentEditControl is VisualElement ve)
             {
@@ -3575,10 +3583,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             else if (_currentEditControl is DatePicker datePicker)
             {
                 datePicker.Unfocused += OnEditControlUnfocused;
+                WireUpPickerEscapeKey(datePicker);
             }
             else if (_currentEditControl is TimePicker timePicker)
             {
                 timePicker.Unfocused += OnEditControlUnfocused;
+                WireUpPickerEscapeKey(timePicker);
+            }
+            else if (_currentEditControl is Picker picker)
+            {
+                picker.Unfocused += OnEditControlUnfocused;
             }
         }
 
@@ -3772,7 +3786,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private void WireUpEntryEscapeKey(Entry entry)
     {
 #if WINDOWS
-        entry.HandlerChanged += (s, e) =>
+        void WireUpKeyHandler()
         {
             if (entry.Handler?.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
             {
@@ -3780,15 +3794,82 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 {
                     if (args.Key == Windows.System.VirtualKey.Escape)
                     {
-                        CancelEdit();
+                        Dispatcher.Dispatch(() => CancelEdit());
                         args.Handled = true;
                     }
                 };
             }
-        };
+        }
+
+        // Handler might already be set, check immediately
+        if (entry.Handler != null)
+        {
+            WireUpKeyHandler();
+        }
+        else
+        {
+            // Wait for handler to be set
+            entry.HandlerChanged += (s, e) => WireUpKeyHandler();
+        }
 #elif MACCATALYST || IOS
         // On Mac/iOS, ESC key handling is typically done through keyboard commands
         // The default behavior should work through the keyboard handler
+#endif
+    }
+
+    private void ApplyEditControlStyling(View control)
+    {
+        var isDarkTheme = Application.Current?.RequestedTheme == AppTheme.Dark;
+        var textColor = isDarkTheme ? Colors.White : Colors.Black;
+        var bgColor = isDarkTheme ? Color.FromArgb("#2D2D2D") : Colors.White;
+
+        switch (control)
+        {
+            case Entry entry:
+                entry.TextColor = textColor;
+                entry.BackgroundColor = bgColor;
+                break;
+            case DatePicker datePicker:
+                datePicker.TextColor = textColor;
+                datePicker.BackgroundColor = bgColor;
+                break;
+            case TimePicker timePicker:
+                timePicker.TextColor = textColor;
+                timePicker.BackgroundColor = bgColor;
+                break;
+            case Picker picker:
+                picker.TextColor = textColor;
+                picker.BackgroundColor = bgColor;
+                break;
+        }
+    }
+
+    private void WireUpPickerEscapeKey(View picker)
+    {
+#if WINDOWS
+        void WireUpKeyHandler()
+        {
+            if (picker.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
+            {
+                element.KeyDown += (sender, args) =>
+                {
+                    if (args.Key == Windows.System.VirtualKey.Escape)
+                    {
+                        Dispatcher.Dispatch(() => CancelEdit());
+                        args.Handled = true;
+                    }
+                };
+            }
+        }
+
+        if (picker.Handler != null)
+        {
+            WireUpKeyHandler();
+        }
+        else
+        {
+            picker.HandlerChanged += (s, e) => WireUpKeyHandler();
+        }
 #endif
     }
 
