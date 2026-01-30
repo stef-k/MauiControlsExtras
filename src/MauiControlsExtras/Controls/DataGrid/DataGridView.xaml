@@ -6,14 +6,17 @@
                         x:Class="MauiControlsExtras.Controls.DataGridView"
                         x:Name="thisControl">
 
-    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+    <base:ListStyledControlBase.Content>
+        <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
             Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
-            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}">
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#1E1E1E}"
+            VerticalOptions="FillAndExpand"
+            HorizontalOptions="FillAndExpand">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
         </Border.StrokeShape>
 
-        <Grid RowDefinitions="Auto,*,Auto,Auto">
+        <Grid RowDefinitions="Auto,*,Auto,Auto" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
             <!-- Header Row (combined frozen + scrollable) -->
             <Grid x:Name="headerContainer" Grid.Row="0" ColumnDefinitions="Auto,*">
                 <!-- Frozen Headers -->
@@ -47,7 +50,7 @@
             </Grid>
 
             <!-- Data Rows (combined frozen + scrollable) -->
-            <Grid x:Name="dataContainer" Grid.Row="1" ColumnDefinitions="Auto,*">
+            <Grid x:Name="dataContainer" Grid.Row="1" ColumnDefinitions="Auto,*" VerticalOptions="FillAndExpand">
                 <!-- Frozen Data Columns -->
                 <ScrollView x:Name="frozenDataScrollView"
                             Grid.Column="0"
@@ -72,6 +75,8 @@
                 <ScrollView x:Name="dataScrollView"
                             Grid.Column="1"
                             Orientation="Both"
+                            VerticalOptions="FillAndExpand"
+                            HorizontalOptions="FillAndExpand"
                             Scrolled="OnDataScrollViewScrolled">
                     <Grid x:Name="dataGrid">
                         <!-- Rows are added dynamically -->
@@ -207,4 +212,5 @@
             </Grid>
         </Grid>
     </Border>
+    </base:ListStyledControlBase.Content>
 </base:ListStyledControlBase>

@@ -2618,7 +2618,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 Color = Colors.Gray.WithAlpha(0.3f),
                 WidthRequest = 4,
-                HeightRequest = double.PositiveInfinity,
                 VerticalOptions = LayoutOptions.Fill,
                 HorizontalOptions = LayoutOptions.End,
                 Margin = new Thickness(1, 4)

@@ -55,23 +55,18 @@
 
         <!-- DataGrid -->
         <Frame Grid.Row="2" Style="{StaticResource DemoCardStyle}" Padding="0">
-            <extras:DataGridView ItemsSource="{Binding Employees}"
+            <extras:DataGridView x:Name="dataGrid"
+                                 ItemsSource="{Binding Employees}"
                                  SelectedItem="{Binding SelectedEmployee}"
                                  CanUserSort="{Binding CanUserSort}"
                                  CanUserFilter="{Binding CanUserFilter}"
                                  CanUserEdit="{Binding CanUserEdit}"
                                  EnablePagination="{Binding EnablePagination}"
-                                 SelectionChanged="OnSelectionChanged">
-                <extras:DataGridView.Columns>
-                    <extras:DataGridColumn Header="ID" PropertyName="Id" Width="60" IsReadOnly="True" />
-                    <extras:DataGridColumn Header="Name" PropertyName="Name" Width="150" />
-                    <extras:DataGridComboBoxColumn x:Name="departmentColumn" Header="Department" PropertyName="Department" Width="120" />
-                    <extras:DataGridColumn Header="Salary" PropertyName="Salary" Width="100" StringFormat="${0:N0}" />
-                    <extras:DataGridColumn Header="Hire Date" PropertyName="HireDate" Width="100" StringFormat="{0:d}" />
-                    <extras:DataGridColumn Header="Active" PropertyName="IsActive" Width="70" />
-                    <extras:DataGridColumn Header="Email" PropertyName="Email" Width="200" />
-                </extras:DataGridView.Columns>
-            </extras:DataGridView>
+                                 AutoGenerateColumns="False"
+                                 VerticalOptions="FillAndExpand"
+                                 HorizontalOptions="FillAndExpand"
+                                 MinHeightRequest="300"
+                                 SelectionChanged="OnSelectionChanged" />
         </Frame>
 
         <!-- Status -->
