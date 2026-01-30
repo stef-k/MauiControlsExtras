@@ -112,7 +112,8 @@
                                TextColor="{AppThemeBinding Light=#212121, Dark=#FFFFFF}"
                                BackgroundColor="Transparent"
                                FontSize="14"
-                               TextChanged="OnSearchTextChanged" />
+                               TextChanged="OnSearchTextChanged"
+                               Completed="OnSearchEntryCompleted" />
 
                         <!-- Clear Search Button -->
                         <Label x:Name="clearSearchButton"

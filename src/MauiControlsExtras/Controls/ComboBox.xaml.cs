@@ -222,6 +222,15 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         typeof(ComboBox),
         false);
 
+    /// <summary>
+    /// Identifies the <see cref="PopupMode"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PopupModeProperty = BindableProperty.Create(
+        nameof(PopupMode),
+        typeof(bool),
+        typeof(ComboBox),
+        false);
+
     #endregion
 
     #region Command Bindable Properties
@@ -487,6 +496,17 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     }
 
     /// <summary>
+    /// Gets or sets whether the ComboBox uses popup mode.
+    /// When true, the dropdown raises PopupRequested instead of showing inline.
+    /// Used for constrained containers like DataGrid cells.
+    /// </summary>
+    public bool PopupMode
+    {
+        get => (bool)GetValue(PopupModeProperty);
+        set => SetValue(PopupModeProperty, value);
+    }
+
+    /// <summary>
     /// Gets whether the dropdown is currently expanded.
     /// </summary>
     public bool IsExpanded => _isExpanded;
@@ -606,6 +626,12 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     /// Occurs when the dropdown is closed.
     /// </summary>
     public event EventHandler? Closed;
+
+    /// <summary>
+    /// Occurs when PopupMode is true and the dropdown should be shown.
+    /// The parent container should handle this event to show a popup overlay.
+    /// </summary>
+    public event EventHandler<ComboBoxPopupRequestEventArgs>? PopupRequested;
 
     #endregion
 
@@ -944,6 +970,15 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     }
 
     /// <summary>
+    /// Sets the selected item from an external source (e.g., popup overlay).
+    /// Used in PopupMode when the selection is made in the parent's popup.
+    /// </summary>
+    public void SetSelectedItemFromPopup(object? item)
+    {
+        SelectItem(item!);
+    }
+
+    /// <summary>
     /// Performs validation and returns the result.
     /// </summary>
     /// <returns>The validation result.</returns>
@@ -1117,6 +1152,21 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
     private void ToggleDropdown()
     {
+        // In popup mode, don't show inline dropdown - raise event for parent to handle
+        if (PopupMode && !_isExpanded)
+        {
+            var bounds = GetBoundsRelativeToPage();
+            var args = new ComboBoxPopupRequestEventArgs(
+                this,
+                bounds,
+                ItemsSource,
+                DisplayMemberPath,
+                SelectedItem,
+                Placeholder);
+            PopupRequested?.Invoke(this, args);
+            return;
+        }
+
         _isExpanded = !_isExpanded;
 
         var accentColor = AccentColor;
@@ -1146,6 +1196,36 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             searchEntry.Unfocus();
             RaiseClosed();
         }
+    }
+
+    /// <summary>
+    /// Gets the bounds of this control relative to the page/window.
+    /// </summary>
+    private Rect GetBoundsRelativeToPage()
+    {
+        var x = 0.0;
+        var y = 0.0;
+
+        // Walk up the visual tree to calculate absolute position
+        Element? current = this;
+        while (current != null)
+        {
+            if (current is VisualElement ve)
+            {
+                x += ve.X;
+                y += ve.Y;
+
+                // Also account for scroll position in parent ScrollViews
+                if (current.Parent is ScrollView scrollView)
+                {
+                    x -= scrollView.ScrollX;
+                    y -= scrollView.ScrollY;
+                }
+            }
+            current = current.Parent;
+        }
+
+        return new Rect(x, y, Width, Height);
     }
 
     private void SelectItem(object item)

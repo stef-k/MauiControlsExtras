@@ -135,37 +135,44 @@ public class DataGridComboBoxColumn : DataGridColumn
         var currentValue = GetCellValue(item);
         var items = GetPickerItems();
 
-        // Use standard Picker for now - the dropdown renders as a native popup
-        // which works correctly in constrained cell bounds.
-        // TODO: Implement popup-based ComboBox for filtering support (#84)
-        var picker = new Picker
+        // Use ComboBox with PopupMode for DataGrid editing
+        // This allows filtering while avoiding clipping issues in constrained cells
+        var comboBox = new ComboBox
         {
             ItemsSource = items,
+            DisplayMemberPath = DisplayMemberPath,
+            SelectedItem = FindSelectedItem(currentValue, items),
+            PopupMode = true,
+            Placeholder = Placeholder ?? "Search...",
+            VisibleItemCount = VisibleItemCount,
             VerticalOptions = LayoutOptions.Center,
             HorizontalOptions = LayoutOptions.Fill
         };
 
-        // Set ItemDisplayBinding if DisplayMemberPath is specified
-        if (!string.IsNullOrEmpty(DisplayMemberPath))
+        // Set SelectedValuePath if specified
+        if (!string.IsNullOrEmpty(SelectedValuePath))
         {
-            picker.ItemDisplayBinding = new Binding(DisplayMemberPath);
+            comboBox.ValueMemberPath = SelectedValuePath;
         }
 
-        // Set the selected index based on current value
-        if (currentValue != null && items != null)
+        return comboBox;
+    }
+
+    private object? FindSelectedItem(object? currentValue, List<object>? items)
+    {
+        if (currentValue == null || items == null)
+            return null;
+
+        foreach (var item in items)
         {
-            for (int i = 0; i < items.Count; i++)
+            var itemValue = GetItemValue(item);
+            if (Equals(itemValue, currentValue))
             {
-                var itemValue = GetItemValue(items[i]);
-                if (Equals(itemValue, currentValue))
-                {
-                    picker.SelectedIndex = i;
-                    break;
-                }
+                return item;
             }
         }
 
-        return picker;
+        return null;
     }
 
     /// <summary>
@@ -173,6 +180,17 @@ public class DataGridComboBoxColumn : DataGridColumn
     /// </summary>
     public object? GetValueFromEditControl(View editControl)
     {
+        if (editControl is ComboBox comboBox)
+        {
+            var selectedItem = comboBox.SelectedItem;
+            if (selectedItem != null)
+            {
+                return GetItemValue(selectedItem);
+            }
+            return null;
+        }
+
+        // Legacy support for Picker (in case it's used elsewhere)
         if (editControl is Picker picker && picker.SelectedIndex >= 0)
         {
             var items = GetPickerItems();
