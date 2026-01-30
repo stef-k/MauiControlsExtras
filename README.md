@@ -68,15 +68,16 @@ xmlns:extras="clr-namespace:MauiControlsExtras.Controls;assembly=MauiControlsExt
                  DisplayMemberPath="Name"
                  Placeholder="Select a country..." />
 
-<!-- DataGrid with sorting and filtering -->
+<!-- DataGrid with sorting, filtering, and various column types -->
 <extras:DataGridView ItemsSource="{Binding Employees}"
                      CanUserEdit="True"
-                     EnableSorting="True"
-                     EnableFiltering="True">
+                     CanUserSort="True"
+                     CanUserFilter="True">
     <extras:DataGridView.Columns>
         <extras:DataGridTextColumn Header="Name" Binding="Name" />
-        <extras:DataGridTextColumn Header="Department" Binding="Department" />
-        <extras:DataGridNumericColumn Header="Salary" Binding="Salary" Format="C0" />
+        <extras:DataGridTextColumn Header="Salary" Binding="Salary" Format="C0" />
+        <extras:DataGridDatePickerColumn Header="Hire Date" Binding="HireDate" Format="d" />
+        <extras:DataGridCheckBoxColumn Header="Active" Binding="IsActive" />
     </extras:DataGridView.Columns>
 </extras:DataGridView>
 

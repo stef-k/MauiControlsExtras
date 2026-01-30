@@ -23,7 +23,7 @@ public partial class DataGridDemoPage : ContentPage
         dataGrid.Columns.Add(new DataGridTextColumn { Header = "Name", Binding = "Name", Width = 150 });
         dataGrid.Columns.Add(departmentColumn);
         dataGrid.Columns.Add(new DataGridTextColumn { Header = "Salary", Binding = "Salary", Width = 100, Format = "C0" });
-        dataGrid.Columns.Add(new DataGridTextColumn { Header = "Hire Date", Binding = "HireDate", Width = 100, Format = "d" });
+        dataGrid.Columns.Add(new DataGridDatePickerColumn { Header = "Hire Date", Binding = "HireDate", Width = 120, Format = "d" });
         dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "Active", Binding = "IsActive", Width = 70 });
         dataGrid.Columns.Add(new DataGridTextColumn { Header = "Email", Binding = "Email", Width = 200 });
 
