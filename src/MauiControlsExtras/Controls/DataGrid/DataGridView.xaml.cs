@@ -2605,13 +2605,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         contentGrid.Children.Add(headerLabel);
         Grid.SetColumn(headerLabel, 0);
 
-        // Filter indicator
+        // Filter indicator (using funnel/filter icon distinct from sort arrows)
         if (CanUserFilter && column.CanUserFilter)
         {
             var filterLabel = new Label
             {
-                Text = column.IsFiltered ? "🔽" : "▽",
-                FontSize = 10,
+                Text = column.IsFiltered ? "⫧" : "⫶",
+                FontSize = 12,
                 VerticalOptions = LayoutOptions.Center,
                 TextColor = column.IsFiltered ? EffectiveAccentColor : Colors.Gray,
                 Margin = new Thickness(4, 0, 0, 0)
