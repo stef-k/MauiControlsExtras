@@ -3598,9 +3598,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 timePicker.PropertyChanged += OnTimePickerPropertyChanged;
                 WireUpPickerEscapeKey(timePicker);
             }
+            else if (_currentEditControl is ComboBox comboBox)
+            {
+                // Use SelectionChanged for our custom ComboBox control
+                comboBox.SelectionChanged += OnComboBoxSelectionChanged;
+            }
             else if (_currentEditControl is Picker picker)
             {
-                // Use SelectedIndexChanged instead of Unfocused
+                // Use SelectedIndexChanged instead of Unfocused (fallback for standard Picker)
                 picker.SelectedIndexChanged += OnPickerSelectedIndexChanged;
                 WireUpPickerEscapeKey(picker);
             }
@@ -3709,6 +3714,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             timePicker.PropertyChanged -= OnTimePickerPropertyChanged;
         }
+        else if (_currentEditControl is ComboBox comboBox)
+        {
+            comboBox.SelectionChanged -= OnComboBoxSelectionChanged;
+        }
         else if (_currentEditControl is Picker picker)
         {
             picker.SelectedIndexChanged -= OnPickerSelectedIndexChanged;
@@ -3745,6 +3754,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             Entry entry => entry.Text,
             CheckBox checkBox => checkBox.IsChecked,
+            ComboBox comboBox when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
             Picker picker when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
             DatePicker datePicker when column is DataGridDatePickerColumn dateColumn => dateColumn.GetValueFromEditControl(control),
             TimePicker timePicker when column is DataGridTimePickerColumn timeColumn => timeColumn.GetValueFromEditControl(control),
@@ -3831,6 +3841,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         // Commit when a selection is made in the picker
         if (_editingItem != null)
+        {
+            CommitEdit();
+        }
+    }
+
+    private void OnComboBoxSelectionChanged(object? sender, object? e)
+    {
+        // Commit when a selection is made in the ComboBox
+        if (_editingItem != null && sender is ComboBox comboBox && comboBox.SelectedItem != null)
         {
             CommitEdit();
         }

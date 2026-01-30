@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - All controls now support keyboard navigation (#27)
 - All controls now support mouse interactions (#27)
+- **DataGridView**: ComboBoxColumn now uses library's ComboBox control with search/filtering support (#82)
 
 ### Fixed
 

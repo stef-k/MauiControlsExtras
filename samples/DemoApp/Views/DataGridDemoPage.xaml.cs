@@ -11,12 +11,14 @@ public partial class DataGridDemoPage : ContentPage
         InitializeComponent();
 
         // Add columns programmatically (XAML column definitions have issues with ContentProperty attribute)
+        // ComboBox column now uses the library's ComboBox control with search/filtering support
         var departmentColumn = new DataGridComboBoxColumn
         {
             Header = "Department",
             Binding = "Department",
-            Width = 120,
-            ItemsSource = SampleData.Departments
+            Width = 150,
+            ItemsSource = SampleData.Departments,
+            Placeholder = "Search departments..."
         };
 
         dataGrid.Columns.Add(new DataGridTextColumn { Header = "ID", Binding = "Id", Width = 60, IsReadOnly = true });

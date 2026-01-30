@@ -3,7 +3,8 @@ using System.Collections;
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
-/// ComboBox/Picker column for data grid.
+/// ComboBox column for data grid using the library's custom ComboBox control.
+/// Provides searchable/filterable dropdown with keyboard navigation.
 /// </summary>
 public class DataGridComboBoxColumn : DataGridColumn
 {
@@ -11,6 +12,8 @@ public class DataGridComboBoxColumn : DataGridColumn
     private IEnumerable? _itemsSource;
     private string? _displayMemberPath;
     private string? _selectedValuePath;
+    private string? _placeholder;
+    private int _visibleItemCount = 6;
 
     /// <summary>
     /// Gets or sets the property binding path for the selected value.
@@ -76,6 +79,38 @@ public class DataGridComboBoxColumn : DataGridColumn
         }
     }
 
+    /// <summary>
+    /// Gets or sets the placeholder text shown when no item is selected.
+    /// </summary>
+    public string? Placeholder
+    {
+        get => _placeholder;
+        set
+        {
+            if (_placeholder != value)
+            {
+                _placeholder = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the number of visible items in the dropdown (default: 6).
+    /// </summary>
+    public int VisibleItemCount
+    {
+        get => _visibleItemCount;
+        set
+        {
+            if (_visibleItemCount != value)
+            {
+                _visibleItemCount = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     /// <inheritdoc />
     public override string? PropertyPath => Binding;
 
@@ -98,30 +133,38 @@ public class DataGridComboBoxColumn : DataGridColumn
     public override View? CreateEditContent(object item)
     {
         var currentValue = GetCellValue(item);
-        var items = GetPickerItems();
 
-        var picker = new Picker
+        // Use the library's ComboBox control for filtering support
+        var comboBox = new ComboBox
         {
-            ItemsSource = items,
+            ItemsSource = ItemsSource,
+            DisplayMemberPath = DisplayMemberPath,
+            ValueMemberPath = SelectedValuePath,
+            Placeholder = Placeholder ?? "Select...",
+            VisibleItemCount = VisibleItemCount,
             VerticalOptions = LayoutOptions.Center,
-            HorizontalOptions = LayoutOptions.Fill
+            HorizontalOptions = LayoutOptions.Fill,
+            HeightRequest = 40
         };
 
-        // Set the selected index
-        if (currentValue != null && items != null)
+        // Set the selected item based on current value
+        if (currentValue != null && ItemsSource != null)
         {
-            for (int i = 0; i < items.Count; i++)
+            foreach (var sourceItem in ItemsSource)
             {
-                var itemValue = GetItemValue(items[i]);
+                if (sourceItem == null)
+                    continue;
+
+                var itemValue = GetItemValue(sourceItem);
                 if (Equals(itemValue, currentValue))
                 {
-                    picker.SelectedIndex = i;
+                    comboBox.SelectedItem = sourceItem;
                     break;
                 }
             }
         }
 
-        return picker;
+        return comboBox;
     }
 
     /// <summary>
@@ -129,31 +172,19 @@ public class DataGridComboBoxColumn : DataGridColumn
     /// </summary>
     public object? GetValueFromEditControl(View editControl)
     {
-        if (editControl is Picker picker && picker.SelectedIndex >= 0)
+        if (editControl is ComboBox comboBox)
         {
-            var items = GetPickerItems();
-            if (items != null && picker.SelectedIndex < items.Count)
+            if (comboBox.SelectedItem != null)
             {
-                return GetItemValue(items[picker.SelectedIndex]);
+                return GetItemValue(comboBox.SelectedItem);
+            }
+            // Also check SelectedValue for ValueMemberPath scenarios
+            if (comboBox.SelectedValue != null)
+            {
+                return comboBox.SelectedValue;
             }
         }
         return null;
-    }
-
-    private List<object>? GetPickerItems()
-    {
-        if (ItemsSource == null)
-            return null;
-
-        var items = new List<object>();
-        foreach (var sourceItem in ItemsSource)
-        {
-            if (sourceItem != null)
-            {
-                items.Add(sourceItem);
-            }
-        }
-        return items;
     }
 
     private string GetDisplayText(object? value)
