@@ -3088,19 +3088,25 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Add context menu gesture (right-click on desktop, long-press on mobile)
         if (ShowDefaultContextMenu || ContextMenuTemplate != null)
         {
-#if WINDOWS || MACCATALYST
-            var pointerGesture = new PointerGestureRecognizer();
-            pointerGesture.PointerPressed += (s, e) =>
+#if WINDOWS
+            // For Windows, use TapGestureRecognizer with secondary button detection
+            var rightClickGesture = new TapGestureRecognizer { Buttons = ButtonsMask.Secondary };
+            rightClickGesture.Tapped += (s, e) =>
             {
-                // Check for right-click (secondary button)
-                // Note: Platform-specific handling may be needed
+                ShowContextMenu(item, column, rowIndex, colIndex);
             };
-            container.GestureRecognizers.Add(pointerGesture);
+            container.GestureRecognizers.Add(rightClickGesture);
+#elif MACCATALYST
+            // For Mac, use secondary click gesture
+            var rightClickGesture = new TapGestureRecognizer { Buttons = ButtonsMask.Secondary };
+            rightClickGesture.Tapped += (s, e) =>
+            {
+                ShowContextMenu(item, column, rowIndex, colIndex);
+            };
+            container.GestureRecognizers.Add(rightClickGesture);
 #endif
 
-            // Long-press for context menu on all platforms
-            var longPressHandler = new TapGestureRecognizer();
-            // We'll use a custom approach since TapGestureRecognizer doesn't support long-press directly
+            // Long-press for context menu on all platforms (mobile fallback)
             var panGesture = new PanGestureRecognizer();
             bool isPanStarted = false;
             System.Timers.Timer? longPressTimer = null;
@@ -3602,6 +3608,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 // Use SelectionChanged for our custom ComboBox control
                 comboBox.SelectionChanged += OnComboBoxSelectionChanged;
+                // Auto-open the dropdown when entering edit mode
+                Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), () =>
+                {
+                    if (_editingItem != null)
+                    {
+                        comboBox.Open();
+                    }
+                });
             }
             else if (_currentEditControl is Picker picker)
             {
