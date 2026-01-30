@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGridView**: `ContextMenuItems` collection for custom menu items in XAML or code
 - **DataGridView**: `ContextMenuItemsOpening` event for dynamic menu customization
 - **DataGridView**: `ShowContextMenuAsync()` method for programmatic context menu display
+- **ComboBox**: `PopupMode` property for external popup handling in constrained containers
+- **ComboBox**: `PopupRequested` event for parent container popup management
+- **ComboBox**: `ComboBoxPopupContent` control for rendering popup overlays
+- **DataGridView**: ComboBoxColumn now uses library ComboBox with filtering support (#84)
 - **DataGridView**: DatePickerColumn for date editing with native DatePicker (#61)
 - **DataGridView**: TimePickerColumn for time editing with native TimePicker (#62)
 - **DataGridView**: Sort indicator (⇅) visible when column is sortable (#69)
@@ -62,7 +66,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Issues
 
-- **DataGridView**: ComboBoxColumn uses native Picker instead of library's ComboBox due to dropdown clipping within cell bounds. Popup-based ComboBox with filtering support planned for future release (#87)
 - Documentation GitHub Pages deployment with .nojekyll file (#35)
 
 ## [1.0.0] - Initial Release
