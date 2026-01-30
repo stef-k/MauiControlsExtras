@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGridView**: TimePickerColumn for time editing with native TimePicker (#62)
 - **DataGridView**: Sort indicator (⇅) visible when column is sortable (#69)
 - **DataGridView**: ESC key cancels edit on Windows desktop (#68)
+- **DataGridView**: F2 key enters edit mode on Windows desktop (#74)
 - **RichTextEditor**: Dark theme support with dynamic switching (#40)
 - **RichTextEditor**: Local/bundled Quill.js support for offline use (#37)
 - **Calendar**: Date picker control with single, multiple, and range selection (#16)
