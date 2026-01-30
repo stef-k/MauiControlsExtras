@@ -179,6 +179,55 @@ public interface ISelectable
 
 ---
 
+## IContextMenuSupport
+
+Interface for controls that support context menus with platform-specific native implementations.
+
+```csharp
+public interface IContextMenuSupport
+{
+    // Properties
+    ContextMenuItemCollection ContextMenuItems { get; }
+    bool ShowDefaultContextMenu { get; set; }
+
+    // Methods
+    void ShowContextMenu(Point? position = null);
+
+    // Events
+    event EventHandler<ContextMenuOpeningEventArgs>? ContextMenuOpening;
+}
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| ContextMenuItems | ContextMenuItemCollection | Collection of custom menu items |
+| ShowDefaultContextMenu | bool | Whether to show built-in context menu items (Copy, Paste, etc.) |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| ShowContextMenu(Point?) | void | Programmatically shows the context menu at the specified position |
+
+### Events
+
+| Event | Args | Description |
+|-------|------|-------------|
+| ContextMenuOpening | ContextMenuOpeningEventArgs | Raised before the context menu is shown; allows customization and cancellation |
+
+### Platform Implementations
+
+| Platform | Native Control |
+|----------|---------------|
+| Windows | MenuFlyout with FontIcon support |
+| macOS | UIMenu via UIContextMenuInteraction |
+| iOS | UIAlertController (action sheet style) |
+| Android | PopupMenu |
+
+---
+
 ## IValidatable
 
 Interface for controls that support validation.
@@ -257,5 +306,89 @@ public class ValidationResult
 
     public static ValidationResult Success { get; }
     public static ValidationResult Failure(IEnumerable<string> errors);
+}
+```
+
+### ContextMenuItem
+
+Represents a single item in a context menu.
+
+```csharp
+public class ContextMenuItem : BindableObject
+{
+    // Properties
+    string? Text { get; set; }
+    ImageSource? Icon { get; set; }
+    string? IconGlyph { get; set; }          // Font icon glyph (e.g., Segoe MDL2)
+    ICommand? Command { get; set; }
+    object? CommandParameter { get; set; }
+    Action? Action { get; set; }              // Alternative to Command
+    bool IsEnabled { get; set; }
+    bool IsVisible { get; set; }
+    bool IsSeparator { get; set; }
+    string? KeyboardShortcut { get; set; }    // Display hint (e.g., "Ctrl+C")
+    ContextMenuItemCollection SubItems { get; }
+    bool HasSubItems { get; }
+
+    // Methods
+    void Execute();
+    bool CanExecute();
+
+    // Factory Methods
+    static ContextMenuItem Separator();
+    static ContextMenuItem Create(string text, Action action, string? iconGlyph = null, string? keyboardShortcut = null);
+    static ContextMenuItem Create(string text, ICommand command, object? parameter = null, string? iconGlyph = null, string? keyboardShortcut = null);
+    static ContextMenuItem CreateSubMenu(string text, IEnumerable<ContextMenuItem> subItems, string? iconGlyph = null);
+}
+```
+
+### ContextMenuItemCollection
+
+A collection of context menu items with helper methods.
+
+```csharp
+public class ContextMenuItemCollection : ObservableCollection<ContextMenuItem>
+{
+    void AddSeparator();
+    ContextMenuItem Add(string text, Action action, string? iconGlyph = null, string? keyboardShortcut = null);
+    ContextMenuItem Add(string text, ICommand command, object? parameter = null, string? iconGlyph = null, string? keyboardShortcut = null);
+    ContextMenuItem AddSubMenu(string text, IEnumerable<ContextMenuItem> subItems, string? iconGlyph = null);
+    ContextMenuItem AddSubMenu(string text, Action<ContextMenuItemCollection> buildSubMenu, string? iconGlyph = null);
+    void AddRange(IEnumerable<ContextMenuItem> items);
+    ContextMenuItem? FindByText(string text);
+    IEnumerable<ContextMenuItem> GetVisibleItems();
+}
+```
+
+### ContextMenuOpeningEventArgs
+
+Event args for the ContextMenuOpening event.
+
+```csharp
+public class ContextMenuOpeningEventArgs : EventArgs
+{
+    ContextMenuItemCollection Items { get; }
+    object? TargetElement { get; }
+    Point Position { get; }
+    View? AnchorView { get; }
+    bool Cancel { get; set; }
+    bool Handled { get; set; }
+}
+```
+
+### DataGridContextMenuOpeningEventArgs
+
+Extended event args for DataGridView context menus with cell information.
+
+```csharp
+public class DataGridContextMenuOpeningEventArgs : ContextMenuOpeningEventArgs
+{
+    object? Item { get; }
+    DataGridColumn? Column { get; }
+    int RowIndex { get; }
+    int ColumnIndex { get; }
+    object? CellValue { get; }
+    bool IsHeader { get; }
+    bool IsDataCell { get; }
 }
 ```

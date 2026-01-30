@@ -287,6 +287,32 @@ private void OnItemSelected(object item)
 
 Controls opt-in to behaviors by implementing interfaces. Do NOT add these to base classes.
 
+### IContextMenuSupport
+
+For controls that support right-click context menus with platform-specific native implementations:
+
+```csharp
+public interface IContextMenuSupport
+{
+    ContextMenuItemCollection ContextMenuItems { get; }
+    bool ShowDefaultContextMenu { get; set; }
+    event EventHandler<ContextMenuOpeningEventArgs>? ContextMenuOpening;
+    void ShowContextMenu(Point? position = null);
+}
+```
+
+**Platform implementations:**
+- Windows: MenuFlyout with FontIcon support
+- macOS: UIMenu via UIContextMenuInteraction
+- iOS: UIAlertController (action sheet style)
+- Android: PopupMenu
+
+**Implementation requirements:**
+- Use `ContextMenuService.Current` to show native menus
+- Fire `ContextMenuOpening` event before showing menu
+- Populate `ContextMenuItems` with custom items
+- Add default items (Copy, Paste, etc.) when `ShowDefaultContextMenu` is true
+
 ### IValidatable
 
 For controls that support input validation:

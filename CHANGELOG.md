@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Context Menu System**: Platform-specific native context menu support with `IContextMenuSupport` interface
+  - Windows: MenuFlyout with FontIcon support
+  - macOS: UIMenu via UIContextMenuInteraction
+  - iOS: UIAlertController action sheet
+  - Android: PopupMenu
+- **DataGridView**: `ContextMenuItems` collection for custom menu items in XAML or code
+- **DataGridView**: `ContextMenuItemsOpening` event for dynamic menu customization
+- **DataGridView**: `ShowContextMenuAsync()` method for programmatic context menu display
 - **DataGridView**: DatePickerColumn for date editing with native DatePicker (#61)
 - **DataGridView**: TimePickerColumn for time editing with native TimePicker (#62)
 - **DataGridView**: Sort indicator (⇅) visible when column is sortable (#69)
@@ -34,6 +42,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **DataGridView**: Entry edit mode now allows native TextBox context menu (Cut/Copy/Paste/Select All)
+- **DataGridView**: Entry edit commits are now deterministic - commit on Enter, Escape to cancel, or clicking another cell (removed time-based Unfocused handler)
 - All controls now support keyboard navigation (#27)
 - All controls now support mouse interactions (#27)
 
@@ -47,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGridView**: Picker/DatePicker/TimePicker columns now stay open when dropdown opens (#77)
 - **DataGridView**: F2/ESC/arrow keys now work after cell tap (grid receives focus) (#80)
 - **DataGridView**: Right-click context menu now works on Windows desktop using native handlers (#85)
+- **DataGridView**: Native context menu no longer disappears immediately when right-clicking Entry in edit mode (#87)
+- **DataGridView**: Edit mode commit timing issues with context menu interactions resolved
 
 ### Known Issues
 

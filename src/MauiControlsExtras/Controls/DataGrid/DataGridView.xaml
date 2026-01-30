@@ -210,6 +210,24 @@
                                            FilterApplied="OnFilterPopupApplied"
                                            FilterCancelled="OnFilterPopupCancelled" />
             </Grid>
+
+            <!-- ComboBox Popup Overlay -->
+            <Grid x:Name="comboBoxPopupOverlay"
+                  Grid.RowSpan="4"
+                  IsVisible="False"
+                  BackgroundColor="#80000000"
+                  InputTransparent="False">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnComboBoxOverlayTapped" />
+                </Grid.GestureRecognizers>
+
+                <local:ComboBoxPopupContent x:Name="comboBoxPopup"
+                                            HorizontalOptions="Start"
+                                            VerticalOptions="Start"
+                                            WidthRequest="250"
+                                            ItemSelected="OnComboBoxPopupItemSelected"
+                                            Cancelled="OnComboBoxPopupCancelled" />
+            </Grid>
         </Grid>
     </Border>
     </base:ListStyledControlBase.Content>
