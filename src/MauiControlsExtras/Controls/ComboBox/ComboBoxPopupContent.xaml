@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="MauiControlsExtras.Controls.ComboBoxPopupContent"
+             x:Name="thisPopup"
+             WidthRequest="250"
+             HeightRequest="280">
+
+    <Border Stroke="{AppThemeBinding Light=#CCCCCC, Dark=#555555}"
+            StrokeThickness="1"
+            BackgroundColor="{AppThemeBinding Light=#FFFFFF, Dark=#424242}">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="8" />
+        </Border.StrokeShape>
+        <Border.Shadow>
+            <Shadow Brush="#000000"
+                    Offset="2,2"
+                    Radius="8"
+                    Opacity="0.3" />
+        </Border.Shadow>
+
+        <Grid RowDefinitions="Auto,*" Padding="0">
+            <!-- Search Input -->
+            <Border Grid.Row="0"
+                    StrokeThickness="0,0,0,1"
+                    Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
+                    Padding="8,6"
+                    BackgroundColor="Transparent">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Search Icon -->
+                    <Label Grid.Column="0"
+                           Text="&#x1F50D;"
+                           FontSize="14"
+                           VerticalOptions="Center"
+                           Margin="0,0,8,0"
+                           Opacity="0.6" />
+
+                    <!-- Search Entry -->
+                    <Entry x:Name="searchEntry"
+                           Grid.Column="1"
+                           Placeholder="Search..."
+                           PlaceholderColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                           TextColor="{AppThemeBinding Light=#212121, Dark=#FFFFFF}"
+                           BackgroundColor="Transparent"
+                           FontSize="14"
+                           TextChanged="OnSearchTextChanged" />
+
+                    <!-- Clear Search Button -->
+                    <Label x:Name="clearSearchButton"
+                           Grid.Column="2"
+                           Text="&#x2715;"
+                           FontSize="12"
+                           TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                           VerticalOptions="Center"
+                           IsVisible="False">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnClearSearchTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
+            </Border>
+
+            <!-- Items List -->
+            <CollectionView x:Name="itemsList"
+                            Grid.Row="1"
+                            SelectionMode="Single"
+                            SelectionChanged="OnItemsListSelectionChanged">
+                <CollectionView.EmptyView>
+                    <Grid Padding="12,16">
+                        <Label Text="No matches found"
+                               FontSize="14"
+                               TextColor="{AppThemeBinding Light=#9E9E9E, Dark=#BDBDBD}"
+                               HorizontalOptions="Center" />
+                    </Grid>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </Grid>
+    </Border>
+</ContentView>

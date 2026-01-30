@@ -1,0 +1,58 @@
+using System.Collections;
+
+namespace MauiControlsExtras.Controls;
+
+/// <summary>
+/// Event arguments for ComboBox popup requests in popup mode.
+/// </summary>
+public class ComboBoxPopupRequestEventArgs : EventArgs
+{
+    /// <summary>
+    /// Gets the bounds of the anchor element relative to its container.
+    /// </summary>
+    public Rect AnchorBounds { get; }
+
+    /// <summary>
+    /// Gets the items source for the popup.
+    /// </summary>
+    public IEnumerable? ItemsSource { get; }
+
+    /// <summary>
+    /// Gets the display member path for item display.
+    /// </summary>
+    public string? DisplayMemberPath { get; }
+
+    /// <summary>
+    /// Gets the currently selected item.
+    /// </summary>
+    public object? SelectedItem { get; }
+
+    /// <summary>
+    /// Gets the placeholder text for the search entry.
+    /// </summary>
+    public string? Placeholder { get; }
+
+    /// <summary>
+    /// Gets the source ComboBox that raised the event.
+    /// </summary>
+    public ComboBox Source { get; }
+
+    /// <summary>
+    /// Initializes a new instance of ComboBoxPopupRequestEventArgs.
+    /// </summary>
+    public ComboBoxPopupRequestEventArgs(
+        ComboBox source,
+        Rect anchorBounds,
+        IEnumerable? itemsSource,
+        string? displayMemberPath,
+        object? selectedItem,
+        string? placeholder)
+    {
+        Source = source;
+        AnchorBounds = anchorBounds;
+        ItemsSource = itemsSource;
+        DisplayMemberPath = displayMemberPath;
+        SelectedItem = selectedItem;
+        Placeholder = placeholder;
+    }
+}

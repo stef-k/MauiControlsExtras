@@ -184,6 +184,22 @@ public bool IsExpanded { get; }
 
 ---
 
+### PopupMode
+
+Gets or sets whether the ComboBox uses popup mode for external popup handling.
+When true, the dropdown raises `PopupRequested` instead of showing inline.
+Used for constrained containers like DataGrid cells.
+
+```csharp
+public bool PopupMode { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `bool` | `false` | Yes |
+
+---
+
 ## Events
 
 ### SelectionChanged
@@ -215,6 +231,28 @@ Occurs when the dropdown closes.
 ```csharp
 public event EventHandler? Closed;
 ```
+
+---
+
+### PopupRequested
+
+Occurs when `PopupMode` is true and the dropdown should be shown.
+The parent container handles this event to show a popup overlay.
+
+```csharp
+public event EventHandler<ComboBoxPopupRequestEventArgs>? PopupRequested;
+```
+
+**Event Args:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Source | ComboBox | The ComboBox that raised the event |
+| AnchorBounds | Rect | Bounds of the anchor element relative to container |
+| ItemsSource | IEnumerable | Items for the popup dropdown |
+| DisplayMemberPath | string | Property path for item display |
+| SelectedItem | object | Currently selected item |
+| Placeholder | string | Placeholder text for search entry |
 
 ---
 
@@ -256,6 +294,17 @@ Refreshes the dropdown items from the current ItemsSource.
 
 ```csharp
 public void RefreshItems()
+```
+
+---
+
+### SetSelectedItemFromPopup(object? item)
+
+Sets the selected item from an external source (e.g., popup overlay).
+Used in `PopupMode` when the selection is made in the parent's popup.
+
+```csharp
+public void SetSelectedItemFromPopup(object? item)
 ```
 
 ---
@@ -304,5 +353,39 @@ myComboBox.ClearSelection();
 if (myComboBox.HasSelection)
 {
     var item = myComboBox.SelectedItem;
+}
+```
+
+### PopupMode (for constrained containers)
+
+When embedding ComboBox in constrained containers like DataGrid cells, use PopupMode
+to handle dropdown display externally:
+
+```xml
+<extras:ComboBox PopupMode="True"
+                 PopupRequested="OnPopupRequested"
+                 ItemsSource="{Binding Items}"
+                 DisplayMemberPath="Name" />
+```
+
+```csharp
+private void OnPopupRequested(object sender, ComboBoxPopupRequestEventArgs e)
+{
+    // Show popup overlay at the anchor bounds
+    var popup = new ComboBoxPopupContent
+    {
+        ItemsSource = e.ItemsSource,
+        DisplayMemberPath = e.DisplayMemberPath,
+        SelectedItem = e.SelectedItem,
+        Placeholder = e.Placeholder
+    };
+
+    popup.ItemSelected += (s, selectedItem) =>
+    {
+        e.Source.SetSelectedItemFromPopup(selectedItem);
+        ClosePopup(popup);
+    };
+
+    ShowPopupAtBounds(popup, e.AnchorBounds);
 }
 ```
