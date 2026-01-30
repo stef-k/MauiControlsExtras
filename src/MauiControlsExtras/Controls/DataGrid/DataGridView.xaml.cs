@@ -288,6 +288,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         Color.FromArgb("#BBDEFB"));
 
     /// <summary>
+    /// Identifies the <see cref="SelectedTextColor"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectedTextColorProperty = BindableProperty.Create(
+        nameof(SelectedTextColor),
+        typeof(Color),
+        typeof(DataGridView),
+        Color.FromArgb("#1A1A1A"));
+
+    /// <summary>
     /// Identifies the <see cref="IsRefreshing"/> bindable property.
     /// </summary>
     public static readonly BindableProperty IsRefreshingProperty = BindableProperty.Create(
@@ -407,7 +416,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(EditTrigger),
         typeof(DataGridEditTrigger),
         typeof(DataGridView),
-        DataGridEditTrigger.SingleTap);
+        DataGridEditTrigger.DoubleTap);
 
     /// <summary>
     /// Identifies the <see cref="SearchText"/> bindable property.
@@ -797,6 +806,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         get => (Color)GetValue(FocusedCellColorProperty);
         set => SetValue(FocusedCellColorProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the text color for selected rows.
+    /// </summary>
+    public Color SelectedTextColor
+    {
+        get => (Color)GetValue(SelectedTextColorProperty);
+        set => SetValue(SelectedTextColorProperty, value);
     }
 
     /// <summary>
@@ -2978,6 +2996,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Cell content
         var content = column.CreateCellContent(item);
 
+        // Apply text color for selected/focused cells to ensure contrast
+        if ((isSelected || isFocused) && content is Label contentLabel)
+        {
+            contentLabel.TextColor = SelectedTextColor;
+        }
+
         // Apply search highlighting if enabled
         if (HighlightSearchResults && !string.IsNullOrEmpty(SearchText) && content is Label label && !string.IsNullOrEmpty(label.Text))
         {
@@ -3454,6 +3478,23 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         cellGrid.BackgroundColor = bgColor;
+
+        // Update text color for contrast
+        foreach (var child in cellGrid.Children)
+        {
+            if (child is Label label)
+            {
+                label.TextColor = (isSelected || isFocused) ? SelectedTextColor : GetDefaultTextColor();
+            }
+        }
+    }
+
+    private Color GetDefaultTextColor()
+    {
+        // Return appropriate text color based on current theme
+        return Application.Current?.RequestedTheme == AppTheme.Dark
+            ? Colors.White
+            : Colors.Black;
     }
 
     private void UpdateEmptyView()
@@ -4419,11 +4460,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private static void OnSelectedItemChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        if (bindable is DataGridView grid && newValue != null && !grid._isUpdating)
+        if (bindable is DataGridView grid && !grid._isUpdating)
         {
+            // Track previously selected for visual update
+            var previouslySelected = grid._selectedItems.ToList();
+
             grid._selectedItems.Clear();
-            grid._selectedItems.Add(newValue);
-            grid.BuildDataRows();
+            if (newValue != null)
+                grid._selectedItems.Add(newValue);
+
+            // Use targeted visual update instead of full rebuild
+            grid.UpdateSelectionVisualState(previouslySelected);
         }
     }
 
