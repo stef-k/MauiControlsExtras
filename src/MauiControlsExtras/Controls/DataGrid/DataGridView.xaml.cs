@@ -2554,17 +2554,23 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private View CreateHeaderCell(DataGridColumn column, int columnIndex, bool isFrozen)
     {
-        var grid = new Grid
+        // Main container - use same padding as data cells for alignment
+        var container = new Grid
+        {
+            BackgroundColor = Colors.Transparent
+        };
+
+        // Content grid with header text and indicators
+        var contentGrid = new Grid
         {
             ColumnDefinitions =
             {
                 new ColumnDefinition { Width = GridLength.Star },
                 new ColumnDefinition { Width = GridLength.Auto },
-                new ColumnDefinition { Width = GridLength.Auto },
-                new ColumnDefinition { Width = new GridLength(6) } // Resize grip
+                new ColumnDefinition { Width = GridLength.Auto }
             },
-            Padding = new Thickness(8, 0),
-            BackgroundColor = Colors.Transparent
+            Padding = new Thickness(8, 4), // Match data cell padding
+            VerticalOptions = LayoutOptions.Center
         };
 
         // Header text
@@ -2575,7 +2581,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             VerticalOptions = LayoutOptions.Center,
             TextColor = EffectiveForegroundColor
         };
-        grid.Children.Add(headerLabel);
+        contentGrid.Children.Add(headerLabel);
         Grid.SetColumn(headerLabel, 0);
 
         // Filter indicator
@@ -2594,7 +2600,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             filterTap.Tapped += (s, e) => ShowFilterPopup(column);
             filterLabel.GestureRecognizers.Add(filterTap);
 
-            grid.Children.Add(filterLabel);
+            contentGrid.Children.Add(filterLabel);
             Grid.SetColumn(filterLabel, 1);
         }
 
@@ -2608,27 +2614,47 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             Margin = new Thickness(4, 0, 0, 0)
         };
         sortLabel.SetBinding(Label.TextProperty, new Binding(nameof(column.SortIndicator), source: column));
-        grid.Children.Add(sortLabel);
+        contentGrid.Children.Add(sortLabel);
         Grid.SetColumn(sortLabel, 2);
 
-        // Add resize grip (if resizing allowed)
+        container.Children.Add(contentGrid);
+
+        // Add resize grip (if resizing allowed) - positioned at the right edge, overlapping column border
         if (CanUserResize && column.CanUserResize)
         {
+            // Larger hit area for easier targeting (12px wide, but only 2px visible)
+            var resizeGripContainer = new Grid
+            {
+                WidthRequest = 12,
+                HorizontalOptions = LayoutOptions.End,
+                VerticalOptions = LayoutOptions.Fill,
+                BackgroundColor = Colors.Transparent,
+                Margin = new Thickness(0, 0, -6, 0), // Extend 6px into next column
+                ZIndex = 10 // Ensure it's on top
+            };
+
             var resizeGrip = new BoxView
             {
-                Color = Colors.Gray.WithAlpha(0.3f),
-                WidthRequest = 4,
+                Color = Colors.Gray.WithAlpha(0.5f),
+                WidthRequest = 2,
                 VerticalOptions = LayoutOptions.Fill,
-                HorizontalOptions = LayoutOptions.End,
-                Margin = new Thickness(1, 4)
+                HorizontalOptions = LayoutOptions.Center,
+                Margin = new Thickness(0, 4)
             };
+
+            resizeGripContainer.Children.Add(resizeGrip);
 
             var panGesture = new PanGestureRecognizer();
             panGesture.PanUpdated += (s, e) => OnColumnResizePan(column, columnIndex, e);
-            resizeGrip.GestureRecognizers.Add(panGesture);
+            resizeGripContainer.GestureRecognizers.Add(panGesture);
 
-            grid.Children.Add(resizeGrip);
-            Grid.SetColumn(resizeGrip, 3);
+            // TODO: Add cursor change for desktop platforms (requires platform-specific implementation)
+            // On Windows, cursor changes require either:
+            // 1. Subclassing the native control to access ProtectedCursor
+            // 2. Using SetCursor Win32 API via P/Invoke
+            // For now, the visual resize grip indicator serves as the resize affordance
+
+            container.Children.Add(resizeGripContainer);
         }
 
         // Add drag gesture for column reordering
@@ -2636,12 +2662,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             var dragGesture = new DragGestureRecognizer();
             dragGesture.DragStarting += (s, e) => OnColumnDragStarting(column, columnIndex, e);
-            grid.GestureRecognizers.Add(dragGesture);
+            contentGrid.GestureRecognizers.Add(dragGesture);
 
             var dropGesture = new DropGestureRecognizer();
             dropGesture.DragOver += (s, e) => OnColumnDragOver(columnIndex, e);
             dropGesture.Drop += (s, e) => OnColumnDrop(columnIndex, e);
-            grid.GestureRecognizers.Add(dropGesture);
+            contentGrid.GestureRecognizers.Add(dropGesture);
         }
 
         // Add tap gesture for sorting
@@ -2649,7 +2675,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             var tapGesture = new TapGestureRecognizer();
             tapGesture.Tapped += (s, e) => OnHeaderTapped(column);
-            grid.GestureRecognizers.Add(tapGesture);
+            contentGrid.GestureRecognizers.Add(tapGesture);
         }
 
         // Add bottom border
@@ -2661,11 +2687,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 HeightRequest = 1,
                 VerticalOptions = LayoutOptions.End
             };
-            grid.Children.Add(border);
-            Grid.SetColumnSpan(border, 4);
+            container.Children.Add(border);
         }
 
-        return grid;
+        return container;
     }
 
     private void BuildDataRows()
