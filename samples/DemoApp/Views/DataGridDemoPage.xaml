@@ -62,6 +62,7 @@
                                  CanUserFilter="{Binding CanUserFilter}"
                                  CanUserEdit="{Binding CanUserEdit}"
                                  EnablePagination="{Binding EnablePagination}"
+                                 ShowDefaultContextMenu="True"
                                  AutoGenerateColumns="False"
                                  VerticalOptions="FillAndExpand"
                                  HorizontalOptions="FillAndExpand"
