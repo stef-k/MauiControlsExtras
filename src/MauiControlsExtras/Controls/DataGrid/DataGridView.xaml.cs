@@ -3573,7 +3573,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 Dispatcher.Dispatch(() => ve.Focus());
             }
 
-            // Wire up commit/cancel for Entry controls
+            // Wire up commit/cancel for edit controls
+            // Note: Picker-based controls (Picker, DatePicker, TimePicker) should NOT use Unfocused
+            // because opening the dropdown causes focus to transfer to the popup, triggering Unfocused
             if (_currentEditControl is Entry entry)
             {
                 entry.Completed += OnEditEntryCompleted;
@@ -3586,17 +3588,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
             else if (_currentEditControl is DatePicker datePicker)
             {
-                datePicker.Unfocused += OnEditControlUnfocused;
+                // Use DateSelected instead of Unfocused - Unfocused fires when dropdown opens
+                datePicker.DateSelected += OnDatePickerDateSelected;
                 WireUpPickerEscapeKey(datePicker);
             }
             else if (_currentEditControl is TimePicker timePicker)
             {
-                timePicker.Unfocused += OnEditControlUnfocused;
+                // TimePicker doesn't have a selection event, so we use PropertyChanged
+                timePicker.PropertyChanged += OnTimePickerPropertyChanged;
                 WireUpPickerEscapeKey(timePicker);
             }
             else if (_currentEditControl is Picker picker)
             {
-                picker.Unfocused += OnEditControlUnfocused;
+                // Use SelectedIndexChanged instead of Unfocused
+                picker.SelectedIndexChanged += OnPickerSelectedIndexChanged;
+                WireUpPickerEscapeKey(picker);
             }
         }
 
@@ -3695,6 +3701,18 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             checkBox.CheckedChanged -= OnEditCheckBoxChanged;
         }
+        else if (_currentEditControl is DatePicker datePicker)
+        {
+            datePicker.DateSelected -= OnDatePickerDateSelected;
+        }
+        else if (_currentEditControl is TimePicker timePicker)
+        {
+            timePicker.PropertyChanged -= OnTimePickerPropertyChanged;
+        }
+        else if (_currentEditControl is Picker picker)
+        {
+            picker.SelectedIndexChanged -= OnPickerSelectedIndexChanged;
+        }
 
         // Fire RowEditEnded if we have edited columns in this row
         if (_editingItem != null && _editedColumnsInRow.Count > 0)
@@ -3785,6 +3803,37 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         // Commit immediately for checkbox changes
         CommitEdit();
+    }
+
+    private void OnDatePickerDateSelected(object? sender, DateChangedEventArgs e)
+    {
+        // Commit when a date is selected
+        CommitEdit();
+    }
+
+    private void OnTimePickerPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Commit when the Time property changes (user selected a time)
+        if (e.PropertyName == nameof(TimePicker.Time) && _editingItem != null)
+        {
+            // Small delay to allow the picker to close
+            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
+            {
+                if (_editingItem != null)
+                {
+                    CommitEdit();
+                }
+            });
+        }
+    }
+
+    private void OnPickerSelectedIndexChanged(object? sender, EventArgs e)
+    {
+        // Commit when a selection is made in the picker
+        if (_editingItem != null)
+        {
+            CommitEdit();
+        }
     }
 
     private void WireUpEntryEscapeKey(Entry entry)
