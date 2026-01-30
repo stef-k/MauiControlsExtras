@@ -5,7 +5,7 @@ Complete API reference for the DataGridView control.
 ## Class Definition
 
 ```csharp
-public class DataGridView : StyledControlBase, IUndoRedo, IClipboardSupport, IKeyboardNavigable
+public class DataGridView : StyledControlBase, IUndoRedo, IClipboardSupport, IKeyboardNavigable, IContextMenuSupport
 ```
 
 ## Bindable Properties
@@ -72,6 +72,14 @@ public class DataGridView : StyledControlBase, IUndoRedo, IClipboardSupport, IKe
 | EnableVirtualization | bool | false | Enable virtual scrolling |
 | VirtualizationBufferSize | int | 5 | Buffer rows above/below |
 
+### Context Menu Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| ShowDefaultContextMenu | bool | true | Show built-in context menu items (Copy, Cut, Paste, Undo, Redo, Delete) |
+| ContextMenuItems | ContextMenuItemCollection | | Custom context menu items defined in XAML or code |
+| ContextMenuTemplate | DataTemplate | null | Custom template for full control over context menu appearance |
+
 ## Events
 
 ### Selection Events
@@ -99,7 +107,10 @@ event EventHandler<DataGridFilterEventArgs> FilterChanged;
 
 ```csharp
 event EventHandler<DataGridContextMenuEventArgs> ContextMenuOpening;
+event EventHandler<DataGridContextMenuOpeningEventArgs> ContextMenuItemsOpening;
 ```
+
+The `ContextMenuItemsOpening` event provides access to the `ContextMenuItemCollection` for dynamic customization before the menu is displayed.
 
 ## Commands
 
@@ -110,6 +121,7 @@ event EventHandler<DataGridContextMenuEventArgs> ContextMenuOpening;
 | RowEditEndedCommand | DataGridRowEditEventArgs | On row edit complete |
 | SortChangedCommand | DataGridSortEventArgs | On sort change |
 | DeleteRowCommand | object | On row delete |
+| ContextMenuOpeningCommand | DataGridContextMenuOpeningEventArgs | On context menu opening |
 
 ## Methods
 
@@ -136,6 +148,13 @@ void SelectRows(IEnumerable<int> indices);
 void BeginEdit(int rowIndex, int columnIndex);
 void EndEdit(bool commit = true);
 void CancelEdit();
+```
+
+### Context Menu Methods
+
+```csharp
+void ShowContextMenu(object? item, DataGridColumn? column, int rowIndex, int columnIndex);
+Task ShowContextMenuAsync(object? item, DataGridColumn? column, int rowIndex, int columnIndex, Point? position, View? anchorView = null);
 ```
 
 ### Export Methods
@@ -316,5 +335,22 @@ public class DataGridContextMenuEventArgs : EventArgs
     int ColumnIndex { get; }
     bool Cancel { get; set; }
     List<DataGridContextMenuAction> Actions { get; }
+}
+```
+
+### DataGridContextMenuOpeningEventArgs
+
+Extended event args for the new context menu system with full cell information.
+
+```csharp
+public class DataGridContextMenuOpeningEventArgs : ContextMenuOpeningEventArgs
+{
+    object? Item { get; }              // Data item at the context menu location
+    DataGridColumn? Column { get; }    // Column at the context menu location
+    int RowIndex { get; }              // Row index (-1 if not on a row)
+    int ColumnIndex { get; }           // Column index (-1 if not on a column)
+    object? CellValue { get; }         // Cell value at the location
+    bool IsHeader { get; }             // True if triggered on header
+    bool IsDataCell { get; }           // True if triggered on data cell
 }
 ```

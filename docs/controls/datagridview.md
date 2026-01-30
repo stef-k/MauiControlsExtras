@@ -11,6 +11,7 @@ A feature-rich data grid control for displaying and editing tabular data.
 - **Selection** - Single, multiple, and range selection
 - **Virtual Scrolling** - Efficient handling of large datasets
 - **Column Types** - Text, numeric, checkbox, combo box, date picker, time picker columns
+- **Context Menu** - Native right-click context menus with platform-specific implementations
 - **Export** - Export to CSV, TSV, JSON formats
 - **Print** - Print with customizable options
 - **Undo/Redo** - Full undo/redo support for edits
@@ -130,6 +131,103 @@ Uses the library's custom ComboBox control with built-in search/filtering suppor
     Format="t" />
 ```
 
+## Context Menu
+
+The DataGridView supports native context menus with platform-specific implementations:
+
+- **Windows**: MenuFlyout with FontIcon support
+- **macOS**: UIMenu via UIContextMenuInteraction
+- **iOS**: UIAlertController action sheet
+- **Android**: PopupMenu
+
+### Default Context Menu
+
+The default context menu provides Copy, Cut, Paste, Undo, Redo, and Delete actions:
+
+```xml
+<extras:DataGridView
+    ItemsSource="{Binding Items}"
+    ShowDefaultContextMenu="True" />
+```
+
+### Custom Context Menu Items
+
+Add custom items via XAML or code:
+
+```xml
+<extras:DataGridView ItemsSource="{Binding Items}">
+    <extras:DataGridView.ContextMenuItems>
+        <extras:ContextMenuItem Text="View Details"
+                                Command="{Binding ViewDetailsCommand}"
+                                IconGlyph="&#xE8A5;"
+                                KeyboardShortcut="Ctrl+D" />
+        <extras:ContextMenuItem IsSeparator="True" />
+        <extras:ContextMenuItem Text="Export Row"
+                                Command="{Binding ExportRowCommand}"
+                                IconGlyph="&#xEDE1;" />
+    </extras:DataGridView.ContextMenuItems>
+</extras:DataGridView>
+```
+
+### Dynamic Context Menu
+
+Handle `ContextMenuItemsOpening` for dynamic customization:
+
+```csharp
+private void OnContextMenuOpening(object sender, DataGridContextMenuOpeningEventArgs e)
+{
+    // Add items based on cell context
+    if (e.Column?.Header == "Status")
+    {
+        e.Items.Add("Mark as Complete", () => MarkComplete(e.Item));
+        e.Items.Add("Mark as Pending", () => MarkPending(e.Item));
+    }
+
+    // Remove default items if needed
+    var deleteItem = e.Items.FindByText("Delete");
+    if (deleteItem != null && !CanDeleteRow(e.Item))
+    {
+        deleteItem.IsEnabled = false;
+    }
+
+    // Cancel the menu entirely
+    if (!ShouldShowMenu(e.Item))
+    {
+        e.Cancel = true;
+    }
+}
+```
+
+### Programmatic Context Menu
+
+Show the context menu programmatically:
+
+```csharp
+await dataGrid.ShowContextMenuAsync(
+    item: selectedItem,
+    column: currentColumn,
+    rowIndex: 5,
+    columnIndex: 2,
+    position: new Point(100, 200));
+```
+
+## Edit Mode Behavior
+
+When editing cells, the DataGridView provides a consistent editing experience:
+
+### Text/Entry Columns
+- **Enter**: Commit edit and move to next row
+- **Escape**: Cancel edit and restore original value
+- **Tab**: Commit edit and move to next cell
+- **Click another cell**: Commit current edit and begin editing new cell
+- **Right-click**: Opens native TextBox context menu (Cut/Copy/Paste/Select All) without closing edit mode
+
+### Picker Columns (ComboBox, DatePicker, TimePicker)
+- Dropdown stays open when activated
+- Selection commits the edit
+- **Escape**: Cancel and close dropdown
+- Click outside: Commit selection
+
 ## Virtual Scrolling
 
 For large datasets, enable virtual scrolling:
@@ -217,7 +315,8 @@ await myDataGrid.PrintAsync(new DataGridPrintOptions
 | RowEditEnded | Row editing completed |
 | SortChanged | Sort column/direction changed |
 | FilterChanged | Filter applied/removed |
-| ContextMenuOpening | Right-click menu opening |
+| ContextMenuOpening | Right-click menu opening (legacy) |
+| ContextMenuItemsOpening | Right-click menu opening with full item access |
 
 ## Commands
 
