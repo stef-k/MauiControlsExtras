@@ -3089,21 +3089,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (ShowDefaultContextMenu || ContextMenuTemplate != null)
         {
 #if WINDOWS
-            // For Windows, use TapGestureRecognizer with secondary button detection
-            var rightClickGesture = new TapGestureRecognizer { Buttons = ButtonsMask.Secondary };
-            rightClickGesture.Tapped += (s, e) =>
+            // For Windows, use Handler to attach RightTapped event (ButtonsMask.Secondary has known bugs)
+            container.HandlerChanged += (s, e) =>
             {
-                ShowContextMenu(item, column, rowIndex, colIndex);
+                if (container.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
+                {
+                    element.RightTapped += (sender, args) =>
+                    {
+                        args.Handled = true;
+                        Dispatcher.Dispatch(() => ShowContextMenu(item, column, rowIndex, colIndex));
+                    };
+                }
             };
-            container.GestureRecognizers.Add(rightClickGesture);
 #elif MACCATALYST
-            // For Mac, use secondary click gesture
-            var rightClickGesture = new TapGestureRecognizer { Buttons = ButtonsMask.Secondary };
-            rightClickGesture.Tapped += (s, e) =>
+            // For Mac, use secondary click via PointerGestureRecognizer
+            container.HandlerChanged += (s, e) =>
             {
-                ShowContextMenu(item, column, rowIndex, colIndex);
+                if (container.Handler?.PlatformView is UIKit.UIView uiView)
+                {
+                    var tapRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
+                    {
+                        Dispatcher.Dispatch(() => ShowContextMenu(item, column, rowIndex, colIndex));
+                    });
+                    tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
+                    uiView.AddGestureRecognizer(tapRecognizer);
+                }
             };
-            container.GestureRecognizers.Add(rightClickGesture);
 #endif
 
             // Long-press for context menu on all platforms (mobile fallback)
@@ -3604,19 +3615,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 timePicker.PropertyChanged += OnTimePickerPropertyChanged;
                 WireUpPickerEscapeKey(timePicker);
             }
-            else if (_currentEditControl is ComboBox comboBox)
-            {
-                // Use SelectionChanged for our custom ComboBox control
-                comboBox.SelectionChanged += OnComboBoxSelectionChanged;
-                // Auto-open the dropdown when entering edit mode
-                Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), () =>
-                {
-                    if (_editingItem != null)
-                    {
-                        comboBox.Open();
-                    }
-                });
-            }
             else if (_currentEditControl is Picker picker)
             {
                 // Use SelectedIndexChanged instead of Unfocused (fallback for standard Picker)
@@ -3728,10 +3726,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             timePicker.PropertyChanged -= OnTimePickerPropertyChanged;
         }
-        else if (_currentEditControl is ComboBox comboBox)
-        {
-            comboBox.SelectionChanged -= OnComboBoxSelectionChanged;
-        }
         else if (_currentEditControl is Picker picker)
         {
             picker.SelectedIndexChanged -= OnPickerSelectedIndexChanged;
@@ -3768,7 +3762,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             Entry entry => entry.Text,
             CheckBox checkBox => checkBox.IsChecked,
-            ComboBox comboBox when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
             Picker picker when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
             DatePicker datePicker when column is DataGridDatePickerColumn dateColumn => dateColumn.GetValueFromEditControl(control),
             TimePicker timePicker when column is DataGridTimePickerColumn timeColumn => timeColumn.GetValueFromEditControl(control),
@@ -3855,15 +3848,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         // Commit when a selection is made in the picker
         if (_editingItem != null)
-        {
-            CommitEdit();
-        }
-    }
-
-    private void OnComboBoxSelectionChanged(object? sender, object? e)
-    {
-        // Commit when a selection is made in the ComboBox
-        if (_editingItem != null && sender is ComboBox comboBox && comboBox.SelectedItem != null)
         {
             CommitEdit();
         }

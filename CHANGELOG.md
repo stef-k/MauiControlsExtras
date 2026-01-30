@@ -36,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - All controls now support keyboard navigation (#27)
 - All controls now support mouse interactions (#27)
-- **DataGridView**: ComboBoxColumn now uses library's ComboBox control with search/filtering support (#82)
 
 ### Fixed
 
@@ -47,8 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGridView**: Type conversion when committing cell edits (#55)
 - **DataGridView**: Picker/DatePicker/TimePicker columns now stay open when dropdown opens (#77)
 - **DataGridView**: F2/ESC/arrow keys now work after cell tap (grid receives focus) (#80)
-- **DataGridView**: ComboBox column now auto-opens dropdown when entering edit mode (#84)
-- **DataGridView**: Right-click context menu now works on Windows desktop (#85)
+- **DataGridView**: Right-click context menu now works on Windows desktop using native handlers (#85)
+
+### Known Issues
+
+- **DataGridView**: ComboBoxColumn uses native Picker instead of library's ComboBox due to dropdown clipping within cell bounds. Popup-based ComboBox with filtering support planned for future release (#87)
 - Documentation GitHub Pages deployment with .nojekyll file (#35)
 
 ## [1.0.0] - Initial Release
