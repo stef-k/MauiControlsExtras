@@ -7,6 +7,7 @@ using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
 using MauiControlsExtras.Behaviors;
+using MauiControlsExtras.ContextMenu;
 
 namespace MauiControlsExtras.Controls;
 
@@ -146,6 +147,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     // Row details state
     private readonly HashSet<object> _expandedItems = new();
+
+    // ComboBox popup state
+    private ComboBox? _activeComboBox;
+    private DataGridComboBoxColumn? _activeComboBoxColumn;
+    private object? _activeComboBoxItem;
 
     #endregion
 
@@ -661,6 +667,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     public static readonly BindableProperty ContextMenuTemplateProperty = BindableProperty.Create(
         nameof(ContextMenuTemplate),
         typeof(DataTemplate),
+        typeof(DataGridView),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="ContextMenuItems"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ContextMenuItemsProperty = BindableProperty.Create(
+        nameof(ContextMenuItems),
+        typeof(ContextMenuItemCollection),
         typeof(DataGridView),
         null);
 
@@ -1232,6 +1247,24 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         set => SetValue(ContextMenuTemplateProperty, value);
     }
 
+    /// <summary>
+    /// Gets the collection of context menu items to display.
+    /// Use XAML to define static items, or handle ContextMenuOpening to add dynamic items.
+    /// </summary>
+    public ContextMenuItemCollection ContextMenuItems
+    {
+        get
+        {
+            var items = (ContextMenuItemCollection?)GetValue(ContextMenuItemsProperty);
+            if (items == null)
+            {
+                items = new ContextMenuItemCollection();
+                SetValue(ContextMenuItemsProperty, items);
+            }
+            return items;
+        }
+    }
+
     #endregion
 
     #region IUndoRedo Properties
@@ -1399,8 +1432,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     /// <summary>
     /// Occurs before the context menu is opened. Can be cancelled.
+    /// Use this event to dynamically add, remove, or modify context menu items.
     /// </summary>
     public event EventHandler<DataGridContextMenuEventArgs>? ContextMenuOpening;
+
+    /// <summary>
+    /// Occurs before the context menu is opened with the new context menu framework.
+    /// Provides access to the <see cref="ContextMenuItemCollection"/> for dynamic customization.
+    /// </summary>
+    public event EventHandler<DataGridContextMenuOpeningEventArgs>? ContextMenuItemsOpening;
 
     #endregion
 
@@ -2331,10 +2371,25 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public void ShowContextMenu(object? item, DataGridColumn? column, int rowIndex, int columnIndex)
     {
-        var args = new DataGridContextMenuEventArgs(item, column, rowIndex, columnIndex);
-        ContextMenuOpening?.Invoke(this, args);
+        ShowContextMenuAsync(item, column, rowIndex, columnIndex, null).ConfigureAwait(false);
+    }
 
-        if (args.Cancel)
+    /// <summary>
+    /// Shows the context menu at the specified cell and position.
+    /// </summary>
+    /// <param name="item">The data item at the context menu location.</param>
+    /// <param name="column">The column at the context menu location.</param>
+    /// <param name="rowIndex">The row index.</param>
+    /// <param name="columnIndex">The column index.</param>
+    /// <param name="position">The position to show the menu at (relative to anchorView).</param>
+    /// <param name="anchorView">The view to anchor the menu to. If null, uses the DataGrid.</param>
+    public async Task ShowContextMenuAsync(object? item, DataGridColumn? column, int rowIndex, int columnIndex, Point? position, View? anchorView = null)
+    {
+        // Fire legacy event for backward compatibility
+        var legacyArgs = new DataGridContextMenuEventArgs(item, column, rowIndex, columnIndex);
+        ContextMenuOpening?.Invoke(this, legacyArgs);
+
+        if (legacyArgs.Cancel)
             return;
 
         // Select the item if not already selected
@@ -2343,16 +2398,115 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             SelectItem(item);
         }
 
-        // Build and show context menu
+        // Build the menu items collection
+        var menuItems = new ContextMenuItemCollection();
+
+        // Add XAML-defined items first
+        foreach (var xamlItem in ContextMenuItems)
+        {
+            menuItems.Add(xamlItem);
+        }
+
+        // Add default items if enabled
         if (ShowDefaultContextMenu)
         {
-            BuildAndShowDefaultContextMenu(item, column, rowIndex, columnIndex, args.CustomMenuItems);
+            if (menuItems.Count > 0)
+            {
+                menuItems.AddSeparator();
+            }
+            AddDefaultContextMenuItems(menuItems, item);
+        }
+
+        // Get cell value if available
+        object? cellValue = null;
+        if (item != null && column != null)
+        {
+            cellValue = column.GetCellValue(item);
+        }
+
+        // Fire new event for dynamic customization
+        var newArgs = new DataGridContextMenuOpeningEventArgs(
+            menuItems,
+            position ?? Point.Zero,
+            item,
+            column,
+            rowIndex,
+            columnIndex,
+            cellValue,
+            this);
+
+        ContextMenuItemsOpening?.Invoke(this, newArgs);
+
+        if (newArgs.Cancel)
+            return;
+
+        // If handled by the new event, don't show default menu
+        if (newArgs.Handled)
+            return;
+
+        // Store legacy actions for backward compatibility
+        BuildLegacyContextMenuActions(item, column, rowIndex, columnIndex, legacyArgs.CustomMenuItems);
+
+        // Show the context menu using the service
+        var visibleItems = menuItems.GetVisibleItems().ToList();
+        if (visibleItems.Count > 0)
+        {
+            await ContextMenuService.Current.ShowAsync(anchorView ?? this, visibleItems, position);
         }
     }
 
-    private void BuildAndShowDefaultContextMenu(object? item, DataGridColumn? column, int rowIndex, int columnIndex, IList<object>? customItems)
+    private void AddDefaultContextMenuItems(ContextMenuItemCollection items, object? item)
     {
-        // Build list of default menu actions for consumers to use
+        // Copy
+        if (CanCopy)
+        {
+            items.Add("Copy", Copy, "\uE8C8", "Ctrl+C");
+        }
+
+        // Cut
+        if (CanCut)
+        {
+            items.Add("Cut", Cut, "\uE8C6", "Ctrl+X");
+        }
+
+        // Paste
+        if (CanPaste)
+        {
+            items.Add("Paste", Paste, "\uE77F", "Ctrl+V");
+        }
+
+        // Undo/Redo
+        if (CanUndo || CanRedo)
+        {
+            items.AddSeparator();
+
+            if (CanUndo)
+            {
+                items.Add($"Undo {GetUndoDescription()}", () => Undo(), "\uE7A7", "Ctrl+Z");
+            }
+
+            if (CanRedo)
+            {
+                items.Add($"Redo {GetRedoDescription()}", () => Redo(), "\uE7A6", "Ctrl+Y");
+            }
+        }
+
+        // Expand/Collapse row details
+        if (RowDetailsTemplate != null && item != null && RowDetailsVisibility == DataGridRowDetailsVisibilityMode.Collapsed)
+        {
+            items.AddSeparator();
+
+            var isExpanded = _expandedItems.Contains(item);
+            items.Add(
+                isExpanded ? "Collapse Details" : "Expand Details",
+                () => ToggleRowDetails(item),
+                isExpanded ? "\uE70D" : "\uE70E");
+        }
+    }
+
+    private void BuildLegacyContextMenuActions(object? item, DataGridColumn? column, int rowIndex, int columnIndex, IList<object>? customItems)
+    {
+        // Build list of default menu actions for consumers who still use the legacy API
         var defaultActions = new List<DataGridContextMenuAction>();
 
         // Copy
@@ -2394,7 +2548,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Store the actions for consumers who handle ContextMenuOpening
-        // They can build platform-specific menus using these actions
         _lastContextMenuActions = defaultActions;
     }
 
@@ -3086,30 +3239,74 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Add context menu gesture (right-click on desktop, long-press on mobile)
-        if (ShowDefaultContextMenu || ContextMenuTemplate != null)
+        if (ShowDefaultContextMenu || ContextMenuTemplate != null || ContextMenuItems.Count > 0)
         {
 #if WINDOWS
             // For Windows, use Handler to attach RightTapped event (ButtonsMask.Secondary has known bugs)
+            // Capture container reference and indices for use in event handler
+            var cellContainer = container;
+            var capturedRowIndex = rowIndex;
+            var capturedColIndex = colIndex;
             container.HandlerChanged += (s, e) =>
             {
-                if (container.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
+                if (cellContainer.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
                 {
                     element.RightTapped += (sender, args) =>
                     {
+                        // If we're currently editing this cell, check if click originated from a TextBox
+                        if (_editingRowIndex == capturedRowIndex && _editingColumnIndex == capturedColIndex && _currentEditControl != null)
+                        {
+                            // Check if the event source is a native TextBox (Entry's platform control)
+                            // TextBox has its own context menu (Cut/Copy/Paste/Select All) that should work
+                            if (args.OriginalSource is Microsoft.UI.Xaml.Controls.TextBox)
+                            {
+                                // Let native TextBox handle its context menu - don't interfere
+                                return;
+                            }
+
+                            // For other edit controls (CheckBox, pickers), show DataGrid context menu
+                            // These don't have useful native context menus
+                        }
+
                         args.Handled = true;
-                        Dispatcher.Dispatch(() => ShowContextMenu(item, column, rowIndex, colIndex));
+                        // Get position relative to the cell element for proper menu placement
+                        var winPos = args.GetPosition(element);
+                        var position = new Point(winPos.X, winPos.Y);
+                        // Pass the cell container as anchor so position is relative to it
+                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, capturedRowIndex, capturedColIndex, position, cellContainer).ConfigureAwait(false));
                     };
                 }
             };
 #elif MACCATALYST
             // For Mac, use secondary click via PointerGestureRecognizer
+            var macCellContainer = container;
+            var macCapturedRowIndex = rowIndex;
+            var macCapturedColIndex = colIndex;
             container.HandlerChanged += (s, e) =>
             {
-                if (container.Handler?.PlatformView is UIKit.UIView uiView)
+                if (macCellContainer.Handler?.PlatformView is UIKit.UIView uiView)
                 {
                     var tapRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
                     {
-                        Dispatcher.Dispatch(() => ShowContextMenu(item, column, rowIndex, colIndex));
+                        // If we're currently editing this cell, check if click is on a text input
+                        if (_editingRowIndex == macCapturedRowIndex && _editingColumnIndex == macCapturedColIndex && _currentEditControl != null)
+                        {
+                            // Check if the tap location is within a UITextField or UITextView
+                            // These have their own context menus (Cut/Copy/Paste) that should work
+                            var tapLocation = gesture.LocationInView(uiView);
+                            var hitView = uiView.HitTest(tapLocation, null);
+                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
+                            {
+                                // Let native text control handle its context menu
+                                return;
+                            }
+
+                            // For other edit controls (switches, pickers), show DataGrid context menu
+                        }
+
+                        var location = gesture.LocationInView(uiView);
+                        var position = new Point(location.X, location.Y);
+                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, macCapturedRowIndex, macCapturedColIndex, position, macCellContainer).ConfigureAwait(false));
                     });
                     tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
                     uiView.AddGestureRecognizer(tapRecognizer);
@@ -3118,22 +3315,43 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 #endif
 
             // Long-press for context menu on all platforms (mobile fallback)
+            var longPressCellContainer = container;
+            var longPressCapturedRowIndex = rowIndex;
+            var longPressCapturedColIndex = colIndex;
             var panGesture = new PanGestureRecognizer();
             bool isPanStarted = false;
             System.Timers.Timer? longPressTimer = null;
+            Point longPressPosition = Point.Zero;
 
             panGesture.PanUpdated += (s, e) =>
             {
                 if (e.StatusType == GestureStatus.Started)
                 {
+                    // If we're currently editing this cell with an Entry, let the native text control
+                    // handle long-press for text selection instead of showing DataGrid context menu
+                    if (_editingRowIndex == longPressCapturedRowIndex && _editingColumnIndex == longPressCapturedColIndex && _currentEditControl != null)
+                    {
+                        // Entry controls need long-press for text selection on mobile
+                        if (_currentEditControl is Entry)
+                        {
+                            return;
+                        }
+
+                        // For other edit controls (CheckBox, pickers), we could show context menu
+                        // but long-press on these typically has no useful native behavior
+                    }
+
                     isPanStarted = true;
+                    // Capture the position at the start of the gesture
+                    longPressPosition = new Point(e.TotalX, e.TotalY);
                     longPressTimer = new System.Timers.Timer(500); // 500ms for long press
                     longPressTimer.AutoReset = false;
                     longPressTimer.Elapsed += (ts, te) =>
                     {
                         if (isPanStarted)
                         {
-                            Dispatcher.Dispatch(() => ShowContextMenu(item, column, rowIndex, colIndex));
+                            var pos = longPressPosition;
+                            Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, longPressCapturedRowIndex, longPressCapturedColIndex, pos, longPressCellContainer).ConfigureAwait(false));
                         }
                     };
                     longPressTimer.Start();
@@ -3155,7 +3373,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     longPressTimer?.Dispose();
                 }
             };
-            container.GestureRecognizers.Add(panGesture);
+            longPressCellContainer.GestureRecognizers.Add(panGesture);
         }
 
         return container;
@@ -3596,7 +3814,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (_currentEditControl is Entry entry)
             {
                 entry.Completed += OnEditEntryCompleted;
-                entry.Unfocused += OnEditControlUnfocused;
+                // Note: We intentionally don't use Unfocused for Entry because:
+                // 1. Native context menus (Cut/Copy/Paste) steal focus, causing premature commits
+                // 2. This matches the approach for Picker/DatePicker/TimePicker
+                // Instead, we commit when: Enter pressed, another cell clicked, or Tab pressed
                 WireUpEntryEscapeKey(entry);
             }
             else if (_currentEditControl is CheckBox checkBox)
@@ -3620,6 +3841,23 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 // Use SelectedIndexChanged instead of Unfocused (fallback for standard Picker)
                 picker.SelectedIndexChanged += OnPickerSelectedIndexChanged;
                 WireUpPickerEscapeKey(picker);
+            }
+            else if (_currentEditControl is ComboBox comboBox)
+            {
+                // ComboBox in popup mode - wire up popup request and selection events
+                comboBox.PopupRequested += OnComboBoxPopupRequested;
+                comboBox.SelectionChanged += OnComboBoxSelectionChanged;
+
+                // Store references for popup handling
+                _activeComboBox = comboBox;
+                _activeComboBoxColumn = column as DataGridComboBoxColumn;
+                _activeComboBoxItem = item;
+
+                // Automatically trigger popup when ComboBox is in PopupMode
+                if (comboBox.PopupMode)
+                {
+                    Dispatcher.Dispatch(() => comboBox.Open());
+                }
             }
         }
 
@@ -3712,7 +3950,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (_currentEditControl is Entry entry)
         {
             entry.Completed -= OnEditEntryCompleted;
-            entry.Unfocused -= OnEditControlUnfocused;
         }
         else if (_currentEditControl is CheckBox checkBox)
         {
@@ -3730,6 +3967,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             picker.SelectedIndexChanged -= OnPickerSelectedIndexChanged;
         }
+        else if (_currentEditControl is ComboBox comboBox)
+        {
+            comboBox.PopupRequested -= OnComboBoxPopupRequested;
+            comboBox.SelectionChanged -= OnComboBoxSelectionChanged;
+        }
+
+        // Hide ComboBox popup if visible
+        HideComboBoxPopup();
 
         // Fire RowEditEnded if we have edited columns in this row
         if (_editingItem != null && _editedColumnsInRow.Count > 0)
@@ -3762,6 +4007,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             Entry entry => entry.Text,
             CheckBox checkBox => checkBox.IsChecked,
+            ComboBox comboBox when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
             Picker picker when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
             DatePicker datePicker when column is DataGridDatePickerColumn dateColumn => dateColumn.GetValueFromEditControl(control),
             TimePicker timePicker when column is DataGridTimePickerColumn timeColumn => timeColumn.GetValueFromEditControl(control),
@@ -3802,18 +4048,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         CommitEdit();
         MoveFocusDown();
-    }
-
-    private void OnEditControlUnfocused(object? sender, FocusEventArgs e)
-    {
-        // Small delay to allow button clicks to register
-        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(100), () =>
-        {
-            if (_editingItem != null)
-            {
-                CommitEdit();
-            }
-        });
     }
 
     private void OnEditCheckBoxChanged(object? sender, CheckedChangedEventArgs e)
@@ -4457,6 +4691,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnCellTapped(object item, DataGridColumn column, int rowIndex, int colIndex)
     {
+        // If we're editing a different cell, commit the edit first
+        if (_editingItem != null && (_editingRowIndex != rowIndex || _editingColumnIndex != colIndex))
+        {
+            CommitEdit();
+        }
+
         SelectItem(item);
         _focusedColumnIndex = colIndex;
 
@@ -4480,6 +4720,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnCellDoubleTapped(object item, DataGridColumn column, int rowIndex, int colIndex)
     {
+        // If we're editing a different cell, commit the edit first
+        if (_editingItem != null && (_editingRowIndex != rowIndex || _editingColumnIndex != colIndex))
+        {
+            CommitEdit();
+        }
+
         var args = new DataGridCellEventArgs(item, column, rowIndex, colIndex);
         CellDoubleTapped?.Invoke(this, args);
 
@@ -4613,6 +4859,109 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private void OnFilterPopupCancelled(object? sender, EventArgs e)
     {
         HideFilterPopup();
+    }
+
+    private void OnComboBoxPopupRequested(object? sender, ComboBoxPopupRequestEventArgs e)
+    {
+        ShowComboBoxPopup(e);
+    }
+
+    private void OnComboBoxSelectionChanged(object? sender, object? selectedItem)
+    {
+        // Selection made through inline dropdown (non-popup mode)
+        // Commit the edit
+        if (_editingItem != null && sender is ComboBox comboBox && !comboBox.PopupMode)
+        {
+            CommitEdit();
+        }
+    }
+
+    private void OnComboBoxOverlayTapped(object? sender, EventArgs e)
+    {
+        HideComboBoxPopup();
+        CancelEdit();
+    }
+
+    private void OnComboBoxPopupItemSelected(object? sender, object? selectedItem)
+    {
+        if (_activeComboBox != null && selectedItem != null)
+        {
+            _activeComboBox.SetSelectedItemFromPopup(selectedItem);
+        }
+        HideComboBoxPopup();
+        CommitEdit();
+    }
+
+    private void OnComboBoxPopupCancelled(object? sender, EventArgs e)
+    {
+        HideComboBoxPopup();
+        CancelEdit();
+    }
+
+    private void ShowComboBoxPopup(ComboBoxPopupRequestEventArgs e)
+    {
+        // Reset search text first
+        comboBoxPopup.Reset();
+
+        // Configure the popup content
+        comboBoxPopup.DisplayMemberPath = e.DisplayMemberPath;
+        comboBoxPopup.ItemsSource = e.ItemsSource;  // This populates filtered items
+        comboBoxPopup.SelectedItem = e.SelectedItem;
+
+        // Calculate position relative to the data grid
+        PositionComboBoxPopup(e.AnchorBounds);
+
+        // Show the overlay
+        comboBoxPopupOverlay.IsVisible = true;
+
+        // Focus the search entry after a brief delay to ensure rendering is complete
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
+        {
+            comboBoxPopup.Focus();
+        });
+    }
+
+    private void HideComboBoxPopup()
+    {
+        comboBoxPopupOverlay.IsVisible = false;
+        _activeComboBox = null;
+        _activeComboBoxColumn = null;
+        _activeComboBoxItem = null;
+    }
+
+    private void PositionComboBoxPopup(Rect anchorBounds)
+    {
+        var popupHeight = 280.0;
+        var popupWidth = 250.0;
+
+        // Get the DataGridView's actual dimensions
+        var gridHeight = Height;
+        var gridWidth = Width;
+
+        // Calculate available space below and above the anchor
+        var availableBelow = gridHeight - anchorBounds.Bottom - 10;
+        var availableAbove = anchorBounds.Top - 10;
+
+        // Determine vertical position - prefer below if there's enough space
+        double top;
+        if (availableBelow >= popupHeight || availableBelow >= availableAbove)
+        {
+            // Position below the anchor
+            top = anchorBounds.Bottom + 2;
+        }
+        else
+        {
+            // Position above the anchor
+            top = anchorBounds.Top - popupHeight - 2;
+        }
+
+        // Determine horizontal position - align with anchor, but keep within bounds
+        var left = Math.Max(0, Math.Min(anchorBounds.Left, gridWidth - popupWidth - 10));
+
+        // Ensure top is within bounds
+        top = Math.Max(10, Math.Min(top, gridHeight - popupHeight - 10));
+
+        comboBoxPopup.SetPosition(left, top);
     }
 
     private void OnPageSizeChanged(object? sender, EventArgs e)
