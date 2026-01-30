@@ -2619,42 +2619,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         container.Children.Add(contentGrid);
 
-        // Add resize grip (if resizing allowed) - positioned at the right edge, overlapping column border
+        // Add resize grip (if resizing allowed) - positioned at the right edge
         if (CanUserResize && column.CanUserResize)
         {
-            // Larger hit area for easier targeting (12px wide, but only 2px visible)
-            var resizeGripContainer = new Grid
-            {
-                WidthRequest = 12,
-                HorizontalOptions = LayoutOptions.End,
-                VerticalOptions = LayoutOptions.Fill,
-                BackgroundColor = Colors.Transparent,
-                Margin = new Thickness(0, 0, -6, 0), // Extend 6px into next column
-                ZIndex = 10 // Ensure it's on top
-            };
-
+            // Visible resize grip with good hit area
             var resizeGrip = new BoxView
             {
-                Color = Colors.Gray.WithAlpha(0.5f),
-                WidthRequest = 2,
+                Color = Colors.Gray.WithAlpha(0.4f),
+                WidthRequest = 6,
+                MinimumWidthRequest = 6,
                 VerticalOptions = LayoutOptions.Fill,
-                HorizontalOptions = LayoutOptions.Center,
-                Margin = new Thickness(0, 4)
+                HorizontalOptions = LayoutOptions.End,
+                Margin = new Thickness(0)
             };
-
-            resizeGripContainer.Children.Add(resizeGrip);
 
             var panGesture = new PanGestureRecognizer();
             panGesture.PanUpdated += (s, e) => OnColumnResizePan(column, columnIndex, e);
-            resizeGripContainer.GestureRecognizers.Add(panGesture);
+            resizeGrip.GestureRecognizers.Add(panGesture);
 
-            // TODO: Add cursor change for desktop platforms (requires platform-specific implementation)
-            // On Windows, cursor changes require either:
-            // 1. Subclassing the native control to access ProtectedCursor
-            // 2. Using SetCursor Win32 API via P/Invoke
-            // For now, the visual resize grip indicator serves as the resize affordance
+            // Add hover effect for desktop
+            var pointerGesture = new PointerGestureRecognizer();
+            pointerGesture.PointerEntered += (s, e) => resizeGrip.Color = EffectiveAccentColor;
+            pointerGesture.PointerExited += (s, e) => resizeGrip.Color = Colors.Gray.WithAlpha(0.4f);
+            resizeGrip.GestureRecognizers.Add(pointerGesture);
 
-            container.Children.Add(resizeGripContainer);
+            container.Children.Add(resizeGrip);
         }
 
         // Add drag gesture for column reordering
