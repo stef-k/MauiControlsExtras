@@ -195,7 +195,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(CanUserSort),
         typeof(bool),
         typeof(DataGridView),
-        true);
+        true,
+        propertyChanged: OnCanUserSortChanged);
 
     /// <summary>
     /// Identifies the <see cref="CanUserFilter"/> bindable property.
@@ -204,7 +205,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(CanUserFilter),
         typeof(bool),
         typeof(DataGridView),
-        true);
+        true,
+        propertyChanged: OnCanUserFilterChanged);
 
     /// <summary>
     /// Identifies the <see cref="CanUserEdit"/> bindable property.
@@ -213,7 +215,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(CanUserEdit),
         typeof(bool),
         typeof(DataGridView),
-        false);
+        false,
+        propertyChanged: OnCanUserEditChanged);
 
     /// <summary>
     /// Identifies the <see cref="CanUserResize"/> bindable property.
@@ -4498,6 +4501,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             grid.BuildDataRows();
             grid.UpdatePaginationUI();
+        }
+    }
+
+    private static void OnCanUserSortChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is DataGridView grid && !grid._isUpdating)
+        {
+            grid.BuildHeader();
+        }
+    }
+
+    private static void OnCanUserFilterChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is DataGridView grid && !grid._isUpdating)
+        {
+            grid.BuildHeader();
+        }
+    }
+
+    private static void OnCanUserEditChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is DataGridView grid && !grid._isUpdating)
+        {
+            // Editing changes don't require header rebuild, but we should cancel any active edit
+            grid.CancelEdit();
         }
     }
 
