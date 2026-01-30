@@ -4443,6 +4443,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         SelectItem(item);
         _focusedColumnIndex = colIndex;
 
+        // Focus the grid to enable keyboard shortcuts (F2, ESC, arrow keys, etc.)
+        this.Focus();
+
         var args = new DataGridCellEventArgs(item, column, rowIndex, colIndex);
         CellTapped?.Invoke(this, args);
 
