@@ -209,6 +209,28 @@ public class DataGridComboBoxColumn : DataGridColumn
 }
 ```
 
+### DataGridDatePickerColumn
+
+```csharp
+public class DataGridDatePickerColumn : DataGridColumn
+{
+    string Binding { get; set; }
+    string Format { get; set; }
+    DateTime? MinimumDate { get; set; }
+    DateTime? MaximumDate { get; set; }
+}
+```
+
+### DataGridTimePickerColumn
+
+```csharp
+public class DataGridTimePickerColumn : DataGridColumn
+{
+    string Binding { get; set; }
+    string Format { get; set; }
+}
+```
+
 ## Enumerations
 
 ### DataGridSelectionMode

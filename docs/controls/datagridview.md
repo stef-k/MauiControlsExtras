@@ -10,7 +10,7 @@ A feature-rich data grid control for displaying and editing tabular data.
 - **Editing** - In-cell editing with validation
 - **Selection** - Single, multiple, and range selection
 - **Virtual Scrolling** - Efficient handling of large datasets
-- **Column Types** - Text, numeric, checkbox, combo box columns
+- **Column Types** - Text, numeric, checkbox, combo box, date picker, time picker columns
 - **Export** - Export to CSV, TSV, JSON formats
 - **Print** - Print with customizable options
 - **Undo/Redo** - Full undo/redo support for edits
@@ -98,6 +98,26 @@ A feature-rich data grid control for displaying and editing tabular data.
     ItemsSource="{Binding Categories}"
     DisplayMemberPath="Name"
     SelectedValuePath="Id" />
+```
+
+### DataGridDatePickerColumn
+
+```xml
+<extras:DataGridDatePickerColumn
+    Header="Hire Date"
+    Binding="HireDate"
+    Format="d"
+    MinimumDate="2020-01-01"
+    MaximumDate="2030-12-31" />
+```
+
+### DataGridTimePickerColumn
+
+```xml
+<extras:DataGridTimePickerColumn
+    Header="Start Time"
+    Binding="StartTime"
+    Format="t" />
 ```
 
 ## Virtual Scrolling

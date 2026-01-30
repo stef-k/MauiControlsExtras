@@ -3687,6 +3687,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             Entry entry => entry.Text,
             CheckBox checkBox => checkBox.IsChecked,
             Picker picker when column is DataGridComboBoxColumn comboColumn => comboColumn.GetValueFromEditControl(control),
+            DatePicker datePicker when column is DataGridDatePickerColumn dateColumn => dateColumn.GetValueFromEditControl(control),
+            TimePicker timePicker when column is DataGridTimePickerColumn timeColumn => timeColumn.GetValueFromEditControl(control),
             _ => null
         };
     }
