@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
+using MauiControlsExtras.Behaviors;
 
 namespace MauiControlsExtras.Controls;
 
@@ -1415,6 +1416,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         // Set initial page size picker
         pageSizePicker.SelectedIndex = 2; // 50
+
+        // Attach keyboard behavior for desktop keyboard handling (F2, arrow keys, etc.)
+        Behaviors.Add(new KeyboardBehavior { HandleTabKey = true });
     }
 
     #endregion
