@@ -573,7 +573,66 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
 
         var type = item.GetType();
         var property = type.GetProperty(PropertyPath);
-        property?.SetValue(item, value);
+        if (property == null)
+            return;
+
+        // Convert value to target property type
+        var targetType = property.PropertyType;
+        var convertedValue = ConvertToType(value, targetType);
+        property.SetValue(item, convertedValue);
+    }
+
+    /// <summary>
+    /// Converts a value to the specified target type.
+    /// </summary>
+    protected static object? ConvertToType(object? value, Type targetType)
+    {
+        if (value == null)
+            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+
+        var valueType = value.GetType();
+        if (targetType.IsAssignableFrom(valueType))
+            return value;
+
+        // Handle nullable types
+        var underlyingType = Nullable.GetUnderlyingType(targetType);
+        if (underlyingType != null)
+        {
+            if (value is string s && string.IsNullOrWhiteSpace(s))
+                return null;
+            targetType = underlyingType;
+        }
+
+        // Handle empty string for value types
+        if (value is string str && string.IsNullOrWhiteSpace(str))
+            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+
+        try
+        {
+            // Special handling for common types
+            if (targetType == typeof(decimal))
+                return Convert.ToDecimal(value);
+            if (targetType == typeof(double))
+                return Convert.ToDouble(value);
+            if (targetType == typeof(float))
+                return Convert.ToSingle(value);
+            if (targetType == typeof(int))
+                return Convert.ToInt32(value);
+            if (targetType == typeof(long))
+                return Convert.ToInt64(value);
+            if (targetType == typeof(bool))
+                return Convert.ToBoolean(value);
+            if (targetType == typeof(DateTime))
+                return Convert.ToDateTime(value);
+
+            // General conversion
+            return Convert.ChangeType(value, targetType);
+        }
+        catch
+        {
+            // Return default value if conversion fails
+            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
+        }
     }
 
     /// <summary>
