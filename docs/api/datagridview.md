@@ -200,14 +200,24 @@ public class DataGridCheckBoxColumn : DataGridColumn
 
 ### DataGridComboBoxColumn
 
+Uses the library's custom ComboBox control with search/filtering support.
+
 ```csharp
 public class DataGridComboBoxColumn : DataGridColumn
 {
-    IEnumerable ItemsSource { get; set; }
-    string DisplayMemberPath { get; set; }
-    string SelectedValuePath { get; set; }
+    string Binding { get; set; }              // Property path for selected value
+    IEnumerable ItemsSource { get; set; }     // Dropdown items collection
+    string DisplayMemberPath { get; set; }    // Property to display in dropdown
+    string SelectedValuePath { get; set; }    // Property for selected value
+    string Placeholder { get; set; }          // Search placeholder text (default: "Select...")
+    int VisibleItemCount { get; set; }        // Visible items in dropdown (default: 6)
 }
 ```
+
+**Features:**
+- Built-in search/filtering of dropdown items
+- Keyboard navigation support
+- Theme-aware styling
 
 ### DataGridDatePickerColumn
 

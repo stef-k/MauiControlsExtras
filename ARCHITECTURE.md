@@ -10,6 +10,7 @@ MauiControlsExtras provides custom controls for .NET MAUI applications, designed
 - **MVVM Support**: Every user action has both an event and a corresponding command
 - **Theme Integration**: Controls respect global themes while allowing per-instance customization
 - **Optional Behaviors**: Interface-based patterns for validation, clipboard, selection, and undo/redo
+- **Internal Reuse**: When a library control can fulfill a need, prefer it over standard MAUI controls (e.g., DataGridComboBoxColumn uses our ComboBox, not MAUI Picker)
 
 ## Project Structure
 

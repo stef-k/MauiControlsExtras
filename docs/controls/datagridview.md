@@ -91,14 +91,24 @@ A feature-rich data grid control for displaying and editing tabular data.
 
 ### DataGridComboBoxColumn
 
+Uses the library's custom ComboBox control with built-in search/filtering support.
+
 ```xml
 <extras:DataGridComboBoxColumn
     Header="Category"
     Binding="CategoryId"
     ItemsSource="{Binding Categories}"
     DisplayMemberPath="Name"
-    SelectedValuePath="Id" />
+    SelectedValuePath="Id"
+    Placeholder="Search categories..."
+    VisibleItemCount="8" />
 ```
+
+**Features:**
+- Search/filter dropdown items by typing
+- Keyboard navigation (↑/↓/Enter/Escape/Home/End)
+- Customizable placeholder text
+- Configurable visible item count
 
 ### DataGridDatePickerColumn
 
