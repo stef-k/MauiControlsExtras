@@ -133,38 +133,39 @@ public class DataGridComboBoxColumn : DataGridColumn
     public override View? CreateEditContent(object item)
     {
         var currentValue = GetCellValue(item);
+        var items = GetPickerItems();
 
-        // Use the library's ComboBox control for filtering support
-        var comboBox = new ComboBox
+        // Use standard Picker for now - the dropdown renders as a native popup
+        // which works correctly in constrained cell bounds.
+        // TODO: Implement popup-based ComboBox for filtering support (#84)
+        var picker = new Picker
         {
-            ItemsSource = ItemsSource,
-            DisplayMemberPath = DisplayMemberPath,
-            ValueMemberPath = SelectedValuePath,
-            Placeholder = Placeholder ?? "Select...",
-            VisibleItemCount = VisibleItemCount,
+            ItemsSource = items,
             VerticalOptions = LayoutOptions.Center,
-            HorizontalOptions = LayoutOptions.Fill,
-            HeightRequest = 40
+            HorizontalOptions = LayoutOptions.Fill
         };
 
-        // Set the selected item based on current value
-        if (currentValue != null && ItemsSource != null)
+        // Set ItemDisplayBinding if DisplayMemberPath is specified
+        if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            foreach (var sourceItem in ItemsSource)
-            {
-                if (sourceItem == null)
-                    continue;
+            picker.ItemDisplayBinding = new Binding(DisplayMemberPath);
+        }
 
-                var itemValue = GetItemValue(sourceItem);
+        // Set the selected index based on current value
+        if (currentValue != null && items != null)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                var itemValue = GetItemValue(items[i]);
                 if (Equals(itemValue, currentValue))
                 {
-                    comboBox.SelectedItem = sourceItem;
+                    picker.SelectedIndex = i;
                     break;
                 }
             }
         }
 
-        return comboBox;
+        return picker;
     }
 
     /// <summary>
@@ -172,19 +173,31 @@ public class DataGridComboBoxColumn : DataGridColumn
     /// </summary>
     public object? GetValueFromEditControl(View editControl)
     {
-        if (editControl is ComboBox comboBox)
+        if (editControl is Picker picker && picker.SelectedIndex >= 0)
         {
-            if (comboBox.SelectedItem != null)
+            var items = GetPickerItems();
+            if (items != null && picker.SelectedIndex < items.Count)
             {
-                return GetItemValue(comboBox.SelectedItem);
-            }
-            // Also check SelectedValue for ValueMemberPath scenarios
-            if (comboBox.SelectedValue != null)
-            {
-                return comboBox.SelectedValue;
+                return GetItemValue(items[picker.SelectedIndex]);
             }
         }
         return null;
+    }
+
+    private List<object>? GetPickerItems()
+    {
+        if (ItemsSource == null)
+            return null;
+
+        var items = new List<object>();
+        foreach (var sourceItem in ItemsSource)
+        {
+            if (sourceItem != null)
+            {
+                items.Add(sourceItem);
+            }
+        }
+        return items;
     }
 
     private string GetDisplayText(object? value)
