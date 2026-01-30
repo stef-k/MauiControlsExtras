@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **DataGridView**: DatePickerColumn for date editing with native DatePicker (#61)
+- **DataGridView**: TimePickerColumn for time editing with native TimePicker (#62)
+- **DataGridView**: Sort indicator (⇅) visible when column is sortable (#69)
+- **DataGridView**: ESC key cancels edit on Windows desktop (#68)
 - **RichTextEditor**: Dark theme support with dynamic switching (#40)
 - **RichTextEditor**: Local/bundled Quill.js support for offline use (#37)
 - **Calendar**: Date picker control with single, multiple, and range selection (#16)
@@ -34,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **DataGridView**: Filter icon now distinct from sort arrows (⫶ vs ▲/▼) (#63)
+- **DataGridView**: Feature toggle checkboxes now update UI correctly (#64)
+- **DataGridView**: Selection performance with targeted visual updates (#52, #58)
+- **DataGridView**: Edit trigger default and dark theme text contrast (#57, #59)
+- **DataGridView**: Type conversion when committing cell edits (#55)
 - Documentation GitHub Pages deployment with .nojekyll file (#35)
 
 ## [1.0.0] - Initial Release

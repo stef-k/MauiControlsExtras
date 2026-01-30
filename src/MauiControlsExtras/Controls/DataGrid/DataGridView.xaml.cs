@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Reflection;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
@@ -2625,18 +2626,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             Grid.SetColumn(filterLabel, 1);
         }
 
-        // Sort indicator
-        var sortLabel = new Label
+        // Sort indicator (only show if sorting is enabled)
+        if (CanUserSort && column.CanUserSort)
         {
-            Text = column.SortIndicator,
-            FontSize = 10,
-            VerticalOptions = LayoutOptions.Center,
-            TextColor = EffectiveAccentColor,
-            Margin = new Thickness(4, 0, 0, 0)
-        };
-        sortLabel.SetBinding(Label.TextProperty, new Binding(nameof(column.SortIndicator), source: column));
-        contentGrid.Children.Add(sortLabel);
-        Grid.SetColumn(sortLabel, 2);
+            var sortLabel = new Label
+            {
+                Text = GetSortIndicatorText(column),
+                FontSize = 10,
+                VerticalOptions = LayoutOptions.Center,
+                TextColor = column.SortDirection != null ? EffectiveAccentColor : Colors.Gray,
+                Margin = new Thickness(4, 0, 0, 0)
+            };
+            sortLabel.SetBinding(Label.TextProperty, new Binding(nameof(column.SortIndicator), source: column, converter: new SortIndicatorConverter()));
+            contentGrid.Children.Add(sortLabel);
+            Grid.SetColumn(sortLabel, 2);
+        }
 
         container.Children.Add(contentGrid);
 
@@ -3500,6 +3504,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             : Colors.Black;
     }
 
+    private static string GetSortIndicatorText(DataGridColumn column)
+    {
+        return column.SortDirection switch
+        {
+            SortDirection.Ascending => "▲",
+            SortDirection.Descending => "▼",
+            _ => "⇅" // Neutral indicator showing column is sortable
+        };
+    }
+
     private void UpdateEmptyView()
     {
         var hasData = _sortedItems.Count > 0;
@@ -3552,10 +3566,19 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 entry.Completed += OnEditEntryCompleted;
                 entry.Unfocused += OnEditControlUnfocused;
+                WireUpEntryEscapeKey(entry);
             }
             else if (_currentEditControl is CheckBox checkBox)
             {
                 checkBox.CheckedChanged += OnEditCheckBoxChanged;
+            }
+            else if (_currentEditControl is DatePicker datePicker)
+            {
+                datePicker.Unfocused += OnEditControlUnfocused;
+            }
+            else if (_currentEditControl is TimePicker timePicker)
+            {
+                timePicker.Unfocused += OnEditControlUnfocused;
             }
         }
 
@@ -3744,6 +3767,29 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         // Commit immediately for checkbox changes
         CommitEdit();
+    }
+
+    private void WireUpEntryEscapeKey(Entry entry)
+    {
+#if WINDOWS
+        entry.HandlerChanged += (s, e) =>
+        {
+            if (entry.Handler?.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+            {
+                textBox.KeyDown += (sender, args) =>
+                {
+                    if (args.Key == Windows.System.VirtualKey.Escape)
+                    {
+                        CancelEdit();
+                        args.Handled = true;
+                    }
+                };
+            }
+        };
+#elif MACCATALYST || IOS
+        // On Mac/iOS, ESC key handling is typically done through keyboard commands
+        // The default behavior should work through the keyboard handler
+#endif
     }
 
     /// <summary>
@@ -5245,4 +5291,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     #endregion
 
     #endregion
+}
+
+/// <summary>
+/// Converts empty sort indicator to a neutral sortable indicator.
+/// </summary>
+internal class SortIndicatorConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is string s && !string.IsNullOrEmpty(s))
+            return s;
+        return "⇅"; // Neutral indicator showing column is sortable
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
 }
