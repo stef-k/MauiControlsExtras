@@ -407,7 +407,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(EditTrigger),
         typeof(DataGridEditTrigger),
         typeof(DataGridView),
-        DataGridEditTrigger.DoubleTap);
+        DataGridEditTrigger.SingleTap);
 
     /// <summary>
     /// Identifies the <see cref="SearchText"/> bindable property.
@@ -3344,6 +3344,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (SelectionMode == DataGridSelectionMode.None)
             return;
 
+        // Track previously selected items for visual update
+        var previouslySelected = _selectedItems.ToList();
+
         if (SelectionMode == DataGridSelectionMode.Single)
         {
             _selectedItems.Clear();
@@ -3366,8 +3369,91 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Update focused row
         _focusedRowIndex = _sortedItems.IndexOf(item);
 
-        BuildDataRows();
+        // Update only the affected rows instead of rebuilding all
+        UpdateSelectionVisualState(previouslySelected);
         RaiseSelectionChanged();
+    }
+
+    private void UpdateSelectionVisualState(List<object> previouslySelected)
+    {
+        var displayItems = GetDisplayItems();
+        var frozenColumns = GetFrozenColumns();
+        var scrollableColumns = GetScrollableColumns();
+        var totalColumns = frozenColumns.Count + scrollableColumns.Count;
+
+        // Find items that changed selection state
+        var nowSelected = _selectedItems.ToHashSet();
+        var wasSelected = previouslySelected.ToHashSet();
+
+        // Items that need visual update: newly selected + newly deselected
+        var itemsToUpdate = new HashSet<object>();
+        foreach (var it in nowSelected)
+        {
+            if (!wasSelected.Contains(it))
+                itemsToUpdate.Add(it);
+        }
+        foreach (var it in wasSelected)
+        {
+            if (!nowSelected.Contains(it))
+                itemsToUpdate.Add(it);
+        }
+
+        // Update the visual state for each affected row
+        foreach (var itemToUpdate in itemsToUpdate)
+        {
+            var rowIndex = _sortedItems.IndexOf(itemToUpdate);
+            var displayIndex = displayItems.IndexOf(itemToUpdate);
+            if (displayIndex < 0)
+                continue;
+
+            var isSelected = _selectedItems.Contains(itemToUpdate);
+            var isAlternate = displayIndex % 2 == 1;
+
+            // Update frozen cells
+            foreach (var child in frozenDataGrid.Children)
+            {
+                if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                {
+                    var colIndex = Grid.GetColumn(cellGrid);
+                    UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                }
+            }
+
+            // Update scrollable cells
+            foreach (var child in dataGrid.Children)
+            {
+                if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                {
+                    var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
+                    UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                }
+            }
+        }
+    }
+
+    private void UpdateCellBackground(Grid cellGrid, int rowIndex, int colIndex, bool isSelected, bool isAlternate)
+    {
+        Color bgColor;
+        var isFocused = rowIndex == _focusedRowIndex && colIndex == _focusedColumnIndex;
+
+        if (isFocused)
+        {
+            bgColor = FocusedCellColor;
+        }
+        else if (isSelected)
+        {
+            bgColor = SelectedRowColor;
+        }
+        else if (isAlternate && AlternatingRowColor != null)
+        {
+            bgColor = AlternatingRowColor;
+        }
+        else
+        {
+            bgColor = Colors.Transparent;
+        }
+
+        cellGrid.BackgroundColor = bgColor;
     }
 
     private void UpdateEmptyView()
@@ -3654,15 +3740,78 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (newRow != _focusedRowIndex || newCol != _focusedColumnIndex)
         {
+            var oldRow = _focusedRowIndex;
+            var oldCol = _focusedColumnIndex;
             _focusedRowIndex = newRow;
             _focusedColumnIndex = newCol;
 
             if (rowDelta != 0)
                 SelectItem(_sortedItems[newRow]);
 
-            BuildDataRows();
+            // Update focus visual for old and new cells
+            UpdateFocusVisualState(oldRow, oldCol, newRow, newCol);
             ScrollToFocusedCell();
         }
+    }
+
+    private void UpdateFocusVisualState(int oldRow, int oldCol, int newRow, int newCol)
+    {
+        var displayItems = GetDisplayItems();
+        var frozenColumns = GetFrozenColumns();
+
+        // Update old focused cell
+        if (oldRow >= 0 && oldCol >= 0)
+        {
+            var oldItem = oldRow < _sortedItems.Count ? _sortedItems[oldRow] : null;
+            if (oldItem != null)
+            {
+                var oldDisplayIndex = displayItems.IndexOf(oldItem);
+                if (oldDisplayIndex >= 0)
+                {
+                    var isSelected = _selectedItems.Contains(oldItem);
+                    var isAlternate = oldDisplayIndex % 2 == 1;
+                    var cellGrid = FindCellInGrid(oldDisplayIndex, oldCol, frozenColumns.Count);
+                    if (cellGrid != null)
+                        UpdateCellBackground(cellGrid, oldRow, oldCol, isSelected, isAlternate);
+                }
+            }
+        }
+
+        // Update new focused cell
+        if (newRow >= 0 && newCol >= 0)
+        {
+            var newItem = newRow < _sortedItems.Count ? _sortedItems[newRow] : null;
+            if (newItem != null)
+            {
+                var newDisplayIndex = displayItems.IndexOf(newItem);
+                if (newDisplayIndex >= 0)
+                {
+                    var isSelected = _selectedItems.Contains(newItem);
+                    var isAlternate = newDisplayIndex % 2 == 1;
+                    var cellGrid = FindCellInGrid(newDisplayIndex, newCol, frozenColumns.Count);
+                    if (cellGrid != null)
+                        UpdateCellBackground(cellGrid, newRow, newCol, isSelected, isAlternate);
+                }
+            }
+        }
+    }
+
+    private Grid? FindCellInGrid(int displayIndex, int colIndex, int frozenColCount)
+    {
+        var isFrozen = colIndex < frozenColCount;
+        var grid = isFrozen ? frozenDataGrid : dataGrid;
+        var adjustedColIndex = isFrozen ? colIndex : colIndex - frozenColCount;
+
+        foreach (var child in grid.Children)
+        {
+            if (child is Grid cellGrid &&
+                Grid.GetRow(cellGrid) == displayIndex &&
+                Grid.GetColumn(cellGrid) == adjustedColIndex)
+            {
+                return cellGrid;
+            }
+        }
+        return null;
     }
 
     /// <summary>
@@ -3680,13 +3829,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (_focusedColumnIndex < 0)
             _focusedColumnIndex = -1;
 
+        var oldRow = _focusedRowIndex;
+        var oldCol = _focusedColumnIndex;
+
         // Find next editable column in current row
         for (int c = _focusedColumnIndex + 1; c < visibleCols.Count; c++)
         {
             if (visibleCols[c].CanUserEdit && !visibleCols[c].IsReadOnly)
             {
                 _focusedColumnIndex = c;
-                BuildDataRows();
+                UpdateFocusVisualState(oldRow, oldCol, _focusedRowIndex, _focusedColumnIndex);
                 BeginEdit(_sortedItems[_focusedRowIndex], visibleCols[c]);
                 return;
             }
@@ -3703,15 +3855,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 if (visibleCols[c].CanUserEdit && !visibleCols[c].IsReadOnly)
                 {
                     _focusedColumnIndex = c;
-                    BuildDataRows();
+                    UpdateFocusVisualState(oldRow, oldCol, _focusedRowIndex, _focusedColumnIndex);
                     BeginEdit(_sortedItems[_focusedRowIndex], visibleCols[c]);
                     return;
                 }
             }
         }
 
-        // No more editable cells
-        BuildDataRows();
+        // No more editable cells - just update focus visual
+        UpdateFocusVisualState(oldRow, oldCol, _focusedRowIndex, _focusedColumnIndex);
     }
 
     /// <summary>
@@ -3729,13 +3881,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (_focusedColumnIndex < 0)
             _focusedColumnIndex = visibleCols.Count;
 
+        var oldRow = _focusedRowIndex;
+        var oldCol = _focusedColumnIndex;
+
         // Find previous editable column in current row
         for (int c = _focusedColumnIndex - 1; c >= 0; c--)
         {
             if (visibleCols[c].CanUserEdit && !visibleCols[c].IsReadOnly)
             {
                 _focusedColumnIndex = c;
-                BuildDataRows();
+                UpdateFocusVisualState(oldRow, oldCol, _focusedRowIndex, _focusedColumnIndex);
                 BeginEdit(_sortedItems[_focusedRowIndex], visibleCols[c]);
                 return;
             }
@@ -3752,15 +3907,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 if (visibleCols[c].CanUserEdit && !visibleCols[c].IsReadOnly)
                 {
                     _focusedColumnIndex = c;
-                    BuildDataRows();
+                    UpdateFocusVisualState(oldRow, oldCol, _focusedRowIndex, _focusedColumnIndex);
                     BeginEdit(_sortedItems[_focusedRowIndex], visibleCols[c]);
                     return;
                 }
             }
         }
 
-        // No more editable cells
-        BuildDataRows();
+        // No more editable cells - just update focus visual
+        UpdateFocusVisualState(oldRow, oldCol, _focusedRowIndex, _focusedColumnIndex);
     }
 
     private void ScrollToFocusedCell()
