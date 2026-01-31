@@ -122,6 +122,33 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Search Visibility Toggle -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Search Visibility" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Toggle the search box visibility for small item lists." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <HorizontalStackLayout Spacing="10">
+                        <CheckBox IsChecked="{Binding IsSearchVisible}" VerticalOptions="Center" />
+                        <Label Text="Show Search Box" VerticalOptions="Center" />
+                    </HorizontalStackLayout>
+
+                    <extras:ComboBox ItemsSource="{Binding Priorities}"
+                                     SelectedItem="{Binding SelectedPriority}"
+                                     IsSearchVisible="{Binding IsSearchVisible}"
+                                     Placeholder="Select priority..."
+                                     WidthRequest="300"
+                                     HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedPriority, StringFormat='Selected: {0}', TargetNullValue='None selected'}" />
+
+                    <Label Text="Tip: For small lists like this, hiding the search box provides a cleaner UI."
+                           FontSize="12"
+                           TextColor="{StaticResource Gray400}"
+                           FontAttributes="Italic" />
+                </VerticalStackLayout>
+            </Frame>
+
             <!-- Status -->
             <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
         </VerticalStackLayout>

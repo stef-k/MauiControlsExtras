@@ -27,12 +27,22 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     [ObservableProperty]
     private ObservableCollection<Employee> _employees = [];
 
+    [ObservableProperty]
+    private bool _isSearchVisible = true;
+
+    [ObservableProperty]
+    private string? _selectedPriority;
+
+    [ObservableProperty]
+    private ObservableCollection<string> _priorities = [];
+
     public ComboBoxDemoViewModel()
     {
         Title = "ComboBox Demo";
         Countries = new ObservableCollection<Country>(SampleData.Countries);
         Departments = new ObservableCollection<string>(SampleData.Departments);
         Employees = new ObservableCollection<Employee>(SampleData.Employees.Take(10));
+        Priorities = new ObservableCollection<string>(["Low", "Normal", "High", "Critical"]);
     }
 
     partial void OnSelectedCountryChanged(Country? value)
@@ -57,5 +67,16 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     {
         if (value is not null)
             UpdateStatus($"Selected employee: {value.Name}");
+    }
+
+    partial void OnSelectedPriorityChanged(string? value)
+    {
+        if (value is not null)
+            UpdateStatus($"Selected priority: {value}");
+    }
+
+    partial void OnIsSearchVisibleChanged(bool value)
+    {
+        UpdateStatus($"Search visibility: {(value ? "Visible" : "Hidden")}");
     }
 }
