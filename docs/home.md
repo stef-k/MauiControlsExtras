@@ -2,9 +2,17 @@
 
 > Enhanced UI controls for .NET MAUI applications
 
+> **Work in Progress**: This library is under active development. APIs may change between releases. See the [Changelog](changelog.md) for breaking changes.
+
 ## Overview
 
 MAUI Controls Extras is a library that provides additional UI controls for .NET MAUI applications. These controls fill gaps in the standard MAUI control library, offering functionality commonly needed in mobile and cross-platform applications.
+
+## Demo Application
+
+A complete demo app showcasing all controls is available in the [`samples/DemoApp/`](https://github.com/stef-k/MauiControlsExtras/tree/main/samples/DemoApp) directory.
+
+> **Note**: The demo uses direct event handlers for simplicity. For production apps, we recommend proper MVVM patterns with commands and view models.
 
 ## Available Controls
 
