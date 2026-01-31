@@ -48,8 +48,13 @@ public class TreeNode
     ItemsSource="{Binding RootNodes}"
     ShowCheckBoxes="True"
     CheckedItems="{Binding CheckedItems}"
-    AllowTriStateCheckBoxes="True" />
+    CheckBoxMode="TriState" />
 ```
+
+**CheckBoxMode values:**
+- `Independent` - Checkboxes are independent (default)
+- `Cascade` - Checking parent checks all children
+- `TriState` - Parent shows indeterminate state when some children are checked
 
 ## Selection
 
@@ -103,5 +108,5 @@ public class TreeNode
 | DisplayMemberPath | string | Property to display |
 | SelectedItem | object | Currently selected node |
 | ShowCheckBoxes | bool | Show checkboxes |
-| AllowTriStateCheckBoxes | bool | Enable tri-state checkboxes |
+| CheckBoxMode | CheckBoxMode | Checkbox behavior: Independent, Cascade, or TriState |
 | SelectionMode | SelectionMode | Single or Multiple |
