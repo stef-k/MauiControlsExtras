@@ -1383,8 +1383,8 @@ public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboa
 
         return e.Key switch
         {
-            "Left" or "Down" => HandleDecrementKey(step),
-            "Right" or "Up" => HandleIncrementKey(step),
+            "ArrowLeft" or "ArrowDown" => HandleDecrementKey(step),
+            "ArrowRight" or "ArrowUp" => HandleIncrementKey(step),
             "PageDown" => HandleDecrementKey(largeStep),
             "PageUp" => HandleIncrementKey(largeStep),
             "Home" => HandleHomeKey(),

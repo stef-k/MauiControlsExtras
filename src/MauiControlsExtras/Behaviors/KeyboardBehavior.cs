@@ -240,10 +240,10 @@ public class KeyboardBehavior : Behavior<View>
             Windows.System.VirtualKey.End => "End",
             Windows.System.VirtualKey.PageUp => "PageUp",
             Windows.System.VirtualKey.PageDown => "PageDown",
-            Windows.System.VirtualKey.Up => "Up",
-            Windows.System.VirtualKey.Down => "Down",
-            Windows.System.VirtualKey.Left => "Left",
-            Windows.System.VirtualKey.Right => "Right",
+            Windows.System.VirtualKey.Up => "ArrowUp",
+            Windows.System.VirtualKey.Down => "ArrowDown",
+            Windows.System.VirtualKey.Left => "ArrowLeft",
+            Windows.System.VirtualKey.Right => "ArrowRight",
             Windows.System.VirtualKey.F1 => "F1",
             Windows.System.VirtualKey.F2 => "F2",
             Windows.System.VirtualKey.F3 => "F3",
@@ -383,10 +383,10 @@ public class KeyboardBehavior : Behavior<View>
     {
         var input = command.Input;
 
-        if (input == UIKit.UIKeyCommand.UpArrow) return "Up";
-        if (input == UIKit.UIKeyCommand.DownArrow) return "Down";
-        if (input == UIKit.UIKeyCommand.LeftArrow) return "Left";
-        if (input == UIKit.UIKeyCommand.RightArrow) return "Right";
+        if (input == UIKit.UIKeyCommand.UpArrow) return "ArrowUp";
+        if (input == UIKit.UIKeyCommand.DownArrow) return "ArrowDown";
+        if (input == UIKit.UIKeyCommand.LeftArrow) return "ArrowLeft";
+        if (input == UIKit.UIKeyCommand.RightArrow) return "ArrowRight";
         if (input == UIKit.UIKeyCommand.Escape) return "Escape";
         if (input == "\r") return "Enter";
         if (input == "\t") return "Tab";
