@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace DemoApp.Models;
 
@@ -10,61 +11,28 @@ public record Country(string Code, string Name, string FlagEmoji)
 }
 
 // Employee model for DataGrid and BindingNavigator demos
-public class Employee : INotifyPropertyChanged
+public partial class Employee : ObservableObject
 {
+    [ObservableProperty]
     private int _id;
+
+    [ObservableProperty]
     private string _name = string.Empty;
+
+    [ObservableProperty]
     private string _department = string.Empty;
+
+    [ObservableProperty]
     private decimal _salary;
+
+    [ObservableProperty]
     private DateTime _hireDate;
+
+    [ObservableProperty]
     private bool _isActive;
+
+    [ObservableProperty]
     private string _email = string.Empty;
-
-    public int Id
-    {
-        get => _id;
-        set { _id = value; OnPropertyChanged(nameof(Id)); }
-    }
-
-    public string Name
-    {
-        get => _name;
-        set { _name = value; OnPropertyChanged(nameof(Name)); }
-    }
-
-    public string Department
-    {
-        get => _department;
-        set { _department = value; OnPropertyChanged(nameof(Department)); }
-    }
-
-    public decimal Salary
-    {
-        get => _salary;
-        set { _salary = value; OnPropertyChanged(nameof(Salary)); }
-    }
-
-    public DateTime HireDate
-    {
-        get => _hireDate;
-        set { _hireDate = value; OnPropertyChanged(nameof(HireDate)); }
-    }
-
-    public bool IsActive
-    {
-        get => _isActive;
-        set { _isActive = value; OnPropertyChanged(nameof(IsActive)); }
-    }
-
-    public string Email
-    {
-        get => _email;
-        set { _email = value; OnPropertyChanged(nameof(Email)); }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged(string propertyName) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
 
 // Folder model for TreeView demo
@@ -86,84 +54,47 @@ public class FolderItem
 }
 
 // Product model for PropertyGrid demo
-public class Product : INotifyPropertyChanged
+public partial class Product : ObservableObject
 {
+    [ObservableProperty]
+    [property: Category("General")]
+    [property: Description("The name of the product")]
     private string _name = string.Empty;
+
+    [ObservableProperty]
+    [property: Category("General")]
+    [property: Description("A detailed description of the product")]
     private string _description = string.Empty;
+
+    [ObservableProperty]
+    [property: Category("Pricing")]
+    [property: Description("The price of the product")]
     private decimal _price;
+
+    [ObservableProperty]
+    [property: Category("Inventory")]
+    [property: Description("The quantity in stock")]
     private int _quantity;
+
+    [ObservableProperty]
+    [property: Category("General")]
+    [property: Description("The product category")]
     private string _category = string.Empty;
+
+    [ObservableProperty]
+    [property: Category("Inventory")]
+    [property: Description("Whether the product is available for sale")]
     private bool _isAvailable;
+
+    [ObservableProperty]
+    [property: Category("General")]
+    [property: Description("The product release date")]
     private DateTime _releaseDate;
+
+    [ObservableProperty]
+    [property: Category("Appearance")]
+    [property: Description("The theme color for the product display")]
     private Color _themeColor = Colors.Blue;
-
-    [Category("General")]
-    [Description("The name of the product")]
-    public string Name
-    {
-        get => _name;
-        set { _name = value; OnPropertyChanged(nameof(Name)); }
-    }
-
-    [Category("General")]
-    [Description("A detailed description of the product")]
-    public string Description
-    {
-        get => _description;
-        set { _description = value; OnPropertyChanged(nameof(Description)); }
-    }
-
-    [Category("Pricing")]
-    [Description("The price of the product")]
-    public decimal Price
-    {
-        get => _price;
-        set { _price = value; OnPropertyChanged(nameof(Price)); }
-    }
-
-    [Category("Inventory")]
-    [Description("The quantity in stock")]
-    public int Quantity
-    {
-        get => _quantity;
-        set { _quantity = value; OnPropertyChanged(nameof(Quantity)); }
-    }
-
-    [Category("General")]
-    [Description("The product category")]
-    public string Category
-    {
-        get => _category;
-        set { _category = value; OnPropertyChanged(nameof(Category)); }
-    }
-
-    [Category("Inventory")]
-    [Description("Whether the product is available for sale")]
-    public bool IsAvailable
-    {
-        get => _isAvailable;
-        set { _isAvailable = value; OnPropertyChanged(nameof(IsAvailable)); }
-    }
-
-    [Category("General")]
-    [Description("The product release date")]
-    public DateTime ReleaseDate
-    {
-        get => _releaseDate;
-        set { _releaseDate = value; OnPropertyChanged(nameof(ReleaseDate)); }
-    }
-
-    [Category("Appearance")]
-    [Description("The theme color for the product display")]
-    public Color ThemeColor
-    {
-        get => _themeColor;
-        set { _themeColor = value; OnPropertyChanged(nameof(ThemeColor)); }
-    }
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged(string propertyName) =>
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }
 
 // Control info for gallery
