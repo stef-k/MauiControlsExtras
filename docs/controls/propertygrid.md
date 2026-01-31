@@ -165,12 +165,12 @@ var changes = propertyGrid.GetModifiedProperties();
 
 | Key | Action |
 |-----|--------|
-| ↑ | Previous property |
-| ↓ | Next property |
-| Enter | Edit property value |
-| Tab | Move to next property |
-| Escape | Cancel editing |
-| Ctrl+F | Focus search box |
+| ↑ | Select previous property |
+| ↓ | Select next property |
+| ← | Collapse property |
+| → | Expand property |
+| Home | Select first property |
+| End | Select last property |
 
 ## Events
 

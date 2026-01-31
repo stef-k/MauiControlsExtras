@@ -78,13 +78,11 @@ public ICommand ValidateTagCommand => new Command<TokenValidationEventArgs>(e =>
 
 | Key | Action |
 |-----|--------|
-| Enter | Add token |
-| Backspace | Remove last token (when input empty) |
-| Delete | Remove selected token |
-| ← / → | Navigate tokens |
-| Escape | Clear input / deselect |
-| Ctrl+A | Select all tokens |
-| ↑ / ↓ | Navigate suggestions |
+| Enter | Create token from current text |
+| Backspace | Delete last token (when input empty) |
+| Delete | Delete selected token |
+| ← | Select previous token |
+| → | Deselect token |
 
 ## Events
 

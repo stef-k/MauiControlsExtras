@@ -97,14 +97,14 @@ int totalCount = navigator.Count;
 
 | Key | Action |
 |-----|--------|
-| Home | First item |
-| End | Last item |
-| ← | Previous item |
-| → | Next item |
-| Ctrl+N | Add new item |
+| Home | Move to first |
+| End | Move to last |
+| ← | Move to previous |
+| → | Move to next |
+| Page Up | Move to previous |
+| Page Down | Move to next |
+| Insert | Add new item |
 | Delete | Delete current item |
-| Ctrl+S | Save |
-| Escape | Cancel |
 
 ## Events
 

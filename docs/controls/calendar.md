@@ -144,18 +144,12 @@ calendar.SelectDate(new DateTime(2024, 7, 4));
 
 | Key | Action |
 |-----|--------|
-| ← | Previous day |
-| → | Next day |
-| ↑ | Previous week |
-| ↓ | Next week |
+| ← / → / ↑ / ↓ | Navigate dates |
 | Page Up | Previous month |
 | Page Down | Next month |
-| Home | First day of month |
-| End | Last day of month |
-| Enter | Select focused date |
-| Space | Toggle date selection |
-| Ctrl+↑ | Switch to year view |
-| Ctrl+↓ | Switch to month view |
+| Home | Go to today |
+| Enter | Select date |
+| Space | Select date |
 
 ## Events
 

@@ -143,12 +143,14 @@ bool isExpanded = accordion.IsItemExpanded(0);
 
 | Key | Action |
 |-----|--------|
-| ↑ | Focus previous header |
-| ↓ | Focus next header |
-| Enter | Toggle focused section |
-| Space | Toggle focused section |
-| Home | Focus first header |
-| End | Focus last header |
+| ↑ | Select previous item |
+| ↓ | Select next item |
+| Home | Select first item |
+| End | Select last item |
+| Enter | Toggle selected item |
+| Space | Toggle selected item |
+| → | Expand selected item |
+| ← | Collapse selected item |
 
 ## Events
 
