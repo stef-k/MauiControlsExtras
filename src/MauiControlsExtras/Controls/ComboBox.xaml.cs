@@ -670,6 +670,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         // Wire up keyboard events from search entry
         searchEntry.Completed += OnSearchEntryCompleted;
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
+
+        // Wire up keyboard events from items list (for when search is hidden)
+        itemsList.HandlerChanged += OnItemsListHandlerChanged;
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -681,6 +684,19 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             textBox.KeyDown += OnWindowsTextBoxKeyDown;
             textBox.PreviewKeyDown += OnWindowsTextBoxPreviewKeyDown;
+        }
+#endif
+    }
+
+    private void OnItemsListHandlerChanged(object? sender, EventArgs e)
+    {
+        if (itemsList.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (itemsList.Handler.PlatformView is Microsoft.UI.Xaml.UIElement uiElement)
+        {
+            uiElement.KeyDown += OnWindowsItemsListKeyDown;
+            uiElement.PreviewKeyDown += OnWindowsItemsListPreviewKeyDown;
         }
 #endif
     }
@@ -708,7 +724,35 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         if (!_isExpanded) return;
+        HandleWindowsKeyDown(e);
+    }
 
+    private void OnWindowsItemsListPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        // Handle Tab key for autocomplete when search is hidden
+        if (e.Key == Windows.System.VirtualKey.Tab && _isExpanded && !IsSearchVisible)
+        {
+            if (FilteredItems.Count == 1)
+            {
+                SelectItem(FilteredItems[0]);
+                e.Handled = true;
+            }
+            else if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+            {
+                SelectItem(FilteredItems[_highlightedIndex]);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnWindowsItemsListKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (!_isExpanded) return;
+        HandleWindowsKeyDown(e);
+    }
+
+    private void HandleWindowsKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
         switch (e.Key)
         {
             case Windows.System.VirtualKey.Down:
@@ -732,6 +776,20 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             case Windows.System.VirtualKey.Escape:
                 Close();
                 e.Handled = true;
+                break;
+
+            case Windows.System.VirtualKey.Enter:
+                // Select highlighted item
+                if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+                {
+                    SelectItem(FilteredItems[_highlightedIndex]);
+                    e.Handled = true;
+                }
+                else if (FilteredItems.Count == 1)
+                {
+                    SelectItem(FilteredItems[0]);
+                    e.Handled = true;
+                }
                 break;
 
             case Windows.System.VirtualKey.Home:
@@ -1200,13 +1258,19 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
-            _highlightedIndex = -1;
+            _highlightedIndex = FilteredItems.Count > 0 ? 0 : -1;
+            UpdateHighlightVisual();
             RaiseOpened();
 
-            // Focus the search entry when dropdown opens (only if visible)
+            // Focus the appropriate element when dropdown opens
             if (IsSearchVisible)
             {
                 Dispatcher.Dispatch(() => searchEntry?.Focus());
+            }
+            else
+            {
+                // Focus the items list for keyboard navigation when search is hidden
+                Dispatcher.Dispatch(() => itemsList?.Focus());
             }
         }
         else

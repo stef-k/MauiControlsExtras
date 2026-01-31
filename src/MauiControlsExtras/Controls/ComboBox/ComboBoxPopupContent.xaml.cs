@@ -148,7 +148,9 @@ public partial class ComboBoxPopupContent : ContentView
         {
             searchEntry.Text = string.Empty;
         }
-        _highlightedIndex = -1;
+        // Initialize highlight to first item when search is hidden
+        _highlightedIndex = _filteredItems.Count > 0 ? 0 : -1;
+        UpdateHighlightVisual();
     }
 
     /// <summary>
@@ -234,6 +236,7 @@ public partial class ComboBoxPopupContent : ContentView
     {
         searchEntry.Completed += OnSearchEntryCompleted;
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
+        itemsList.HandlerChanged += OnItemsListHandlerChanged;
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -249,13 +252,45 @@ public partial class ComboBoxPopupContent : ContentView
 #endif
     }
 
+    private void OnItemsListHandlerChanged(object? sender, EventArgs e)
+    {
+        if (itemsList.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (itemsList.Handler.PlatformView is Microsoft.UI.Xaml.UIElement uiElement)
+        {
+            uiElement.KeyDown += OnWindowsItemsListKeyDown;
+            uiElement.PreviewKeyDown += OnWindowsItemsListPreviewKeyDown;
+        }
+#endif
+    }
+
 #if WINDOWS
     private void OnWindowsTextBoxPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsPreviewKeyDown(e);
+    }
+
+    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsKeyDown(e);
+    }
+
+    private void OnWindowsItemsListPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsPreviewKeyDown(e);
+    }
+
+    private void OnWindowsItemsListKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsKeyDown(e);
+    }
+
+    private void HandleWindowsPreviewKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         // Handle Tab key for autocomplete
         if (e.Key == Windows.System.VirtualKey.Tab)
         {
-            // If single filtered result or highlighted item, select it
             if (_filteredItems.Count == 1)
             {
                 SelectItem(_filteredItems[0]);
@@ -269,7 +304,7 @@ public partial class ComboBoxPopupContent : ContentView
         }
     }
 
-    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void HandleWindowsKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         switch (e.Key)
         {
@@ -293,14 +328,14 @@ public partial class ComboBoxPopupContent : ContentView
 
             case Windows.System.VirtualKey.Enter:
                 // Select the highlighted item or single filtered item
-                if (_filteredItems.Count == 1)
-                {
-                    SelectItem(_filteredItems[0]);
-                    e.Handled = true;
-                }
-                else if (_highlightedIndex >= 0 && _highlightedIndex < _filteredItems.Count)
+                if (_highlightedIndex >= 0 && _highlightedIndex < _filteredItems.Count)
                 {
                     SelectItem(_filteredItems[_highlightedIndex]);
+                    e.Handled = true;
+                }
+                else if (_filteredItems.Count == 1)
+                {
+                    SelectItem(_filteredItems[0]);
                     e.Handled = true;
                 }
                 break;
