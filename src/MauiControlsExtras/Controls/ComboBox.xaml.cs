@@ -671,8 +671,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         searchEntry.Completed += OnSearchEntryCompleted;
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
 
-        // Wire up keyboard events from items list (for when search is hidden)
-        itemsList.HandlerChanged += OnItemsListHandlerChanged;
+        // Wire up keyboard events from hidden keyboard capture entry (for when search is hidden)
+        keyboardCaptureEntry.HandlerChanged += OnKeyboardCaptureEntryHandlerChanged;
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -688,15 +688,15 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 #endif
     }
 
-    private void OnItemsListHandlerChanged(object? sender, EventArgs e)
+    private void OnKeyboardCaptureEntryHandlerChanged(object? sender, EventArgs e)
     {
-        if (itemsList.Handler?.PlatformView == null) return;
+        if (keyboardCaptureEntry.Handler?.PlatformView == null) return;
 
 #if WINDOWS
-        if (itemsList.Handler.PlatformView is Microsoft.UI.Xaml.UIElement uiElement)
+        if (keyboardCaptureEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
         {
-            uiElement.KeyDown += OnWindowsItemsListKeyDown;
-            uiElement.PreviewKeyDown += OnWindowsItemsListPreviewKeyDown;
+            textBox.KeyDown += OnWindowsKeyboardCaptureKeyDown;
+            textBox.PreviewKeyDown += OnWindowsKeyboardCapturePreviewKeyDown;
         }
 #endif
     }
@@ -727,10 +727,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         HandleWindowsKeyDown(e);
     }
 
-    private void OnWindowsItemsListPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void OnWindowsKeyboardCapturePreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         // Handle Tab key for autocomplete when search is hidden
-        if (e.Key == Windows.System.VirtualKey.Tab && _isExpanded && !IsSearchVisible)
+        if (e.Key == Windows.System.VirtualKey.Tab && _isExpanded)
         {
             if (FilteredItems.Count == 1)
             {
@@ -745,7 +745,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         }
     }
 
-    private void OnWindowsItemsListKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void OnWindowsKeyboardCaptureKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         if (!_isExpanded) return;
         HandleWindowsKeyDown(e);
@@ -1269,8 +1269,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             }
             else
             {
-                // Focus the items list for keyboard navigation when search is hidden
-                Dispatcher.Dispatch(() => itemsList?.Focus());
+                // Focus the hidden keyboard capture entry for keyboard navigation when search is hidden
+                Dispatcher.Dispatch(() => keyboardCaptureEntry?.Focus());
             }
         }
         else

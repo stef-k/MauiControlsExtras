@@ -73,6 +73,8 @@ public partial class ComboBoxPopupContent : ContentView
                 _isSearchVisible = value;
                 if (searchBorder != null)
                     searchBorder.IsVisible = value;
+                if (keyboardCaptureEntry != null)
+                    keyboardCaptureEntry.IsVisible = !value;
             }
         }
     }
@@ -125,7 +127,7 @@ public partial class ComboBoxPopupContent : ContentView
     }
 
     /// <summary>
-    /// Focuses the search entry if visible, otherwise focuses the items list.
+    /// Focuses the search entry if visible, otherwise focuses the hidden keyboard capture entry.
     /// </summary>
     public new void Focus()
     {
@@ -135,7 +137,7 @@ public partial class ComboBoxPopupContent : ContentView
         }
         else
         {
-            Dispatcher.Dispatch(() => itemsList?.Focus());
+            Dispatcher.Dispatch(() => keyboardCaptureEntry?.Focus());
         }
     }
 
@@ -236,7 +238,7 @@ public partial class ComboBoxPopupContent : ContentView
     {
         searchEntry.Completed += OnSearchEntryCompleted;
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
-        itemsList.HandlerChanged += OnItemsListHandlerChanged;
+        keyboardCaptureEntry.HandlerChanged += OnKeyboardCaptureEntryHandlerChanged;
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -252,15 +254,15 @@ public partial class ComboBoxPopupContent : ContentView
 #endif
     }
 
-    private void OnItemsListHandlerChanged(object? sender, EventArgs e)
+    private void OnKeyboardCaptureEntryHandlerChanged(object? sender, EventArgs e)
     {
-        if (itemsList.Handler?.PlatformView == null) return;
+        if (keyboardCaptureEntry.Handler?.PlatformView == null) return;
 
 #if WINDOWS
-        if (itemsList.Handler.PlatformView is Microsoft.UI.Xaml.UIElement uiElement)
+        if (keyboardCaptureEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
         {
-            uiElement.KeyDown += OnWindowsItemsListKeyDown;
-            uiElement.PreviewKeyDown += OnWindowsItemsListPreviewKeyDown;
+            textBox.KeyDown += OnWindowsKeyboardCaptureKeyDown;
+            textBox.PreviewKeyDown += OnWindowsKeyboardCapturePreviewKeyDown;
         }
 #endif
     }
@@ -276,12 +278,12 @@ public partial class ComboBoxPopupContent : ContentView
         HandleWindowsKeyDown(e);
     }
 
-    private void OnWindowsItemsListPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void OnWindowsKeyboardCapturePreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         HandleWindowsPreviewKeyDown(e);
     }
 
-    private void OnWindowsItemsListKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void OnWindowsKeyboardCaptureKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         HandleWindowsKeyDown(e);
     }

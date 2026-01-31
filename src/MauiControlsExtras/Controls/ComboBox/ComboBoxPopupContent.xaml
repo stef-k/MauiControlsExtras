@@ -19,10 +19,19 @@
                     Opacity="0.3" />
         </Border.Shadow>
 
-        <Grid RowDefinitions="Auto,*" Padding="0">
+        <Grid RowDefinitions="Auto,Auto,*" Padding="0">
+            <!-- Hidden keyboard capture Entry (used when search is hidden) -->
+            <Entry x:Name="keyboardCaptureEntry"
+                   Grid.Row="0"
+                   HeightRequest="0"
+                   WidthRequest="0"
+                   Opacity="0"
+                   InputTransparent="False"
+                   IsVisible="False" />
+
             <!-- Search Input -->
             <Border x:Name="searchBorder"
-                    Grid.Row="0"
+                    Grid.Row="1"
                     StrokeThickness="0,0,0,1"
                     Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
                     Padding="8,6"
@@ -63,7 +72,7 @@
 
             <!-- Items List -->
             <CollectionView x:Name="itemsList"
-                            Grid.Row="1"
+                            Grid.Row="2"
                             SelectionMode="Single"
                             SelectionChanged="OnItemsListSelectionChanged">
                 <CollectionView.EmptyView>

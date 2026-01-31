@@ -8,6 +8,7 @@
 
     <base:TextStyledControlBase.Resources>
         <converters:MauiAssetImageConverter x:Key="MauiAssetImageConverter" />
+        <converters:InvertedBoolConverter x:Key="InvertedBoolConverter" />
     </base:TextStyledControlBase.Resources>
 
     <Grid RowDefinitions="Auto,Auto">
@@ -88,10 +89,19 @@
                         Opacity="0.3" />
             </Border.Shadow>
 
-            <Grid RowDefinitions="Auto,*">
+            <Grid RowDefinitions="Auto,Auto,*">
+                <!-- Hidden keyboard capture Entry (used when search is hidden) -->
+                <Entry x:Name="keyboardCaptureEntry"
+                       Grid.Row="0"
+                       HeightRequest="0"
+                       WidthRequest="0"
+                       Opacity="0"
+                       InputTransparent="False"
+                       IsVisible="{Binding IsSearchVisible, Source={x:Reference thisControl}, Converter={StaticResource InvertedBoolConverter}}" />
+
                 <!-- Search Input -->
                 <Border x:Name="searchBorder"
-                        Grid.Row="0"
+                        Grid.Row="1"
                         StrokeThickness="0,0,0,1"
                         Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
                         Padding="8,6"
@@ -134,7 +144,7 @@
 
                 <!-- Items List (ItemTemplate set in code-behind for DisplayMemberPath support) -->
                 <CollectionView x:Name="itemsList"
-                                Grid.Row="1"
+                                Grid.Row="2"
                                 ItemsSource="{Binding FilteredItems, Source={x:Reference thisControl}}"
                                 SelectionMode="Single"
                                 SelectionChanged="OnItemsListSelectionChanged"
