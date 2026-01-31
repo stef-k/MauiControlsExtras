@@ -231,6 +231,15 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         typeof(ComboBox),
         false);
 
+    /// <summary>
+    /// Identifies the <see cref="IsSearchVisible"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsSearchVisibleProperty = BindableProperty.Create(
+        nameof(IsSearchVisible),
+        typeof(bool),
+        typeof(ComboBox),
+        true);
+
     #endregion
 
     #region Command Bindable Properties
@@ -507,6 +516,16 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     }
 
     /// <summary>
+    /// Gets or sets whether the search input is visible in the dropdown.
+    /// Set to false to hide the search UI for small item lists.
+    /// </summary>
+    public bool IsSearchVisible
+    {
+        get => (bool)GetValue(IsSearchVisibleProperty);
+        set => SetValue(IsSearchVisibleProperty, value);
+    }
+
+    /// <summary>
     /// Gets whether the dropdown is currently expanded.
     /// </summary>
     public bool IsExpanded => _isExpanded;
@@ -651,6 +670,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         // Wire up keyboard events from search entry
         searchEntry.Completed += OnSearchEntryCompleted;
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
+
+        // Wire up keyboard events from hidden keyboard capture entry (for when search is hidden)
+        keyboardCaptureEntry.HandlerChanged += OnKeyboardCaptureEntryHandlerChanged;
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -662,6 +684,19 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             textBox.KeyDown += OnWindowsTextBoxKeyDown;
             textBox.PreviewKeyDown += OnWindowsTextBoxPreviewKeyDown;
+        }
+#endif
+    }
+
+    private void OnKeyboardCaptureEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (keyboardCaptureEntry.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (keyboardCaptureEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+        {
+            textBox.KeyDown += OnWindowsKeyboardCaptureKeyDown;
+            textBox.PreviewKeyDown += OnWindowsKeyboardCapturePreviewKeyDown;
         }
 #endif
     }
@@ -689,7 +724,35 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         if (!_isExpanded) return;
+        HandleWindowsKeyDown(e);
+    }
 
+    private void OnWindowsKeyboardCapturePreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        // Handle Tab key for autocomplete when search is hidden
+        if (e.Key == Windows.System.VirtualKey.Tab && _isExpanded)
+        {
+            if (FilteredItems.Count == 1)
+            {
+                SelectItem(FilteredItems[0]);
+                e.Handled = true;
+            }
+            else if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+            {
+                SelectItem(FilteredItems[_highlightedIndex]);
+                e.Handled = true;
+            }
+        }
+    }
+
+    private void OnWindowsKeyboardCaptureKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (!_isExpanded) return;
+        HandleWindowsKeyDown(e);
+    }
+
+    private void HandleWindowsKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
         switch (e.Key)
         {
             case Windows.System.VirtualKey.Down:
@@ -713,6 +776,20 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             case Windows.System.VirtualKey.Escape:
                 Close();
                 e.Handled = true;
+                break;
+
+            case Windows.System.VirtualKey.Enter:
+                // Select highlighted item
+                if (_highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
+                {
+                    SelectItem(FilteredItems[_highlightedIndex]);
+                    e.Handled = true;
+                }
+                else if (FilteredItems.Count == 1)
+                {
+                    SelectItem(FilteredItems[0]);
+                    e.Handled = true;
+                }
                 break;
 
             case Windows.System.VirtualKey.Home:
@@ -1136,9 +1213,19 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                                 new Setter
                                 {
                                     Property = Grid.BackgroundColorProperty,
-                                    Value = Application.Current?.RequestedTheme == AppTheme.Dark
-                                        ? Color.FromArgb("#424242")
-                                        : Color.FromArgb("#F5F5F5")
+                                    Value = MauiControlsExtras.Theming.MauiControlsExtrasTheme.Current.HoverColor
+                                }
+                            }
+                        },
+                        new VisualState
+                        {
+                            Name = "Selected",
+                            Setters =
+                            {
+                                new Setter
+                                {
+                                    Property = Grid.BackgroundColorProperty,
+                                    Value = MauiControlsExtras.Theming.MauiControlsExtrasTheme.Current.SelectedBackgroundColor
                                 }
                             }
                         }
@@ -1162,7 +1249,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 ItemsSource,
                 DisplayMemberPath,
                 SelectedItem,
-                Placeholder);
+                Placeholder,
+                IsSearchVisible);
             PopupRequested?.Invoke(this, args);
             return;
         }
@@ -1180,11 +1268,20 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
-            _highlightedIndex = -1;
+            _highlightedIndex = FilteredItems.Count > 0 ? 0 : -1;
+            UpdateHighlightVisual();
             RaiseOpened();
 
-            // Focus the search entry when dropdown opens
-            Dispatcher.Dispatch(() => searchEntry?.Focus());
+            // Focus the appropriate element when dropdown opens
+            if (IsSearchVisible)
+            {
+                Dispatcher.Dispatch(() => searchEntry?.Focus());
+            }
+            else
+            {
+                // Focus the hidden keyboard capture entry for keyboard navigation when search is hidden
+                Dispatcher.Dispatch(() => keyboardCaptureEntry?.Focus());
+            }
         }
         else
         {

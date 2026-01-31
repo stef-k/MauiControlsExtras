@@ -200,6 +200,46 @@ public bool PopupMode { get; set; }
 
 ---
 
+### IsSearchVisible
+
+Gets or sets whether the search input is visible in the dropdown.
+Set to `false` to hide the search UI for small item lists where search adds unnecessary complexity.
+
+```csharp
+public bool IsSearchVisible { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `bool` | `true` | Yes |
+
+**Example - Hide search for small lists:**
+
+```xml
+<extras:ComboBox ItemsSource="{Binding Priorities}"
+                 SelectedItem="{Binding SelectedPriority}"
+                 IsSearchVisible="False"
+                 Placeholder="Select priority..." />
+```
+
+**Example - Dynamic toggle via binding:**
+
+```xml
+<CheckBox IsChecked="{Binding ShowSearch}" />
+<extras:ComboBox ItemsSource="{Binding Items}"
+                 IsSearchVisible="{Binding ShowSearch}"
+                 SelectedItem="{Binding Selected}" />
+```
+
+**Example - Code-behind toggle:**
+
+```csharp
+// Hide search for lists with fewer than 10 items
+myComboBox.IsSearchVisible = myComboBox.ItemsSource?.Cast<object>().Count() >= 10;
+```
+
+---
+
 ## Events
 
 ### SelectionChanged
@@ -253,6 +293,7 @@ public event EventHandler<ComboBoxPopupRequestEventArgs>? PopupRequested;
 | DisplayMemberPath | string | Property path for item display |
 | SelectedItem | object | Currently selected item |
 | Placeholder | string | Placeholder text for search entry |
+| IsSearchVisible | bool | Whether the search input should be visible |
 
 ---
 
@@ -332,6 +373,7 @@ public void SetSelectedItemFromPopup(object? item)
                  DefaultValue="default"
                  VisibleItemCount="6"
                  AccentColor="#FF5722"
+                 IsSearchVisible="True"
                  SelectionChanged="OnSelectionChanged"
                  Opened="OnDropdownOpened"
                  Closed="OnDropdownClosed" />
@@ -377,7 +419,7 @@ private void OnPopupRequested(object sender, ComboBoxPopupRequestEventArgs e)
         ItemsSource = e.ItemsSource,
         DisplayMemberPath = e.DisplayMemberPath,
         SelectedItem = e.SelectedItem,
-        Placeholder = e.Placeholder
+        IsSearchVisible = e.IsSearchVisible
     };
 
     popup.ItemSelected += (s, selectedItem) =>
@@ -387,5 +429,61 @@ private void OnPopupRequested(object sender, ComboBoxPopupRequestEventArgs e)
     };
 
     ShowPopupAtBounds(popup, e.AnchorBounds);
+}
+```
+
+### Hiding Search for Small Lists
+
+For simple dropdowns with few items, hide the search box to provide a cleaner UI:
+
+```xml
+<!-- Status dropdown - no search needed -->
+<extras:ComboBox ItemsSource="{Binding StatusOptions}"
+                 SelectedItem="{Binding Status}"
+                 IsSearchVisible="False"
+                 Placeholder="Select status..." />
+```
+
+```csharp
+// ViewModel
+public ObservableCollection<string> StatusOptions { get; } =
+    new(["Draft", "Pending", "Approved", "Rejected"]);
+```
+
+### Dynamic Search Visibility
+
+Toggle search visibility based on item count or user preference:
+
+```xml
+<!-- XAML with runtime toggle -->
+<VerticalStackLayout>
+    <HorizontalStackLayout Spacing="10">
+        <CheckBox IsChecked="{Binding IsSearchEnabled}" />
+        <Label Text="Show Search Box" VerticalOptions="Center" />
+    </HorizontalStackLayout>
+
+    <extras:ComboBox ItemsSource="{Binding Countries}"
+                     SelectedItem="{Binding SelectedCountry}"
+                     DisplayMemberPath="Name"
+                     IsSearchVisible="{Binding IsSearchEnabled}"
+                     Placeholder="Select country..." />
+</VerticalStackLayout>
+```
+
+```csharp
+// ViewModel with dynamic toggle
+public partial class MyViewModel : ObservableObject
+{
+    [ObservableProperty]
+    private bool _isSearchEnabled = true;
+
+    [ObservableProperty]
+    private ObservableCollection<Country> _countries;
+
+    // Automatically hide search for small lists
+    partial void OnCountriesChanged(ObservableCollection<Country> value)
+    {
+        IsSearchEnabled = value?.Count >= 10;
+    }
 }
 ```

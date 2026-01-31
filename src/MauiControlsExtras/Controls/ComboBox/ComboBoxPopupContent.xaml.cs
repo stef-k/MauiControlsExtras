@@ -58,6 +58,27 @@ public partial class ComboBoxPopupContent : ContentView
         }
     }
 
+    private bool _isSearchVisible = true;
+
+    /// <summary>
+    /// Gets or sets whether the search input is visible in the popup.
+    /// </summary>
+    public bool IsSearchVisible
+    {
+        get => _isSearchVisible;
+        set
+        {
+            if (_isSearchVisible != value)
+            {
+                _isSearchVisible = value;
+                if (searchBorder != null)
+                    searchBorder.IsVisible = value;
+                if (keyboardCaptureEntry != null)
+                    keyboardCaptureEntry.IsVisible = !value;
+            }
+        }
+    }
+
     /// <summary>
     /// Gets or sets the currently selected item.
     /// </summary>
@@ -106,11 +127,18 @@ public partial class ComboBoxPopupContent : ContentView
     }
 
     /// <summary>
-    /// Focuses the search entry.
+    /// Focuses the search entry if visible, otherwise focuses the hidden keyboard capture entry.
     /// </summary>
     public new void Focus()
     {
-        Dispatcher.Dispatch(() => searchEntry?.Focus());
+        if (_isSearchVisible)
+        {
+            Dispatcher.Dispatch(() => searchEntry?.Focus());
+        }
+        else
+        {
+            Dispatcher.Dispatch(() => keyboardCaptureEntry?.Focus());
+        }
     }
 
     /// <summary>
@@ -118,8 +146,13 @@ public partial class ComboBoxPopupContent : ContentView
     /// </summary>
     public void Reset()
     {
-        searchEntry.Text = string.Empty;
-        _highlightedIndex = -1;
+        if (_isSearchVisible && searchEntry != null)
+        {
+            searchEntry.Text = string.Empty;
+        }
+        // Initialize highlight to first item when search is hidden
+        _highlightedIndex = _filteredItems.Count > 0 ? 0 : -1;
+        UpdateHighlightVisual();
     }
 
     /// <summary>
@@ -187,9 +220,19 @@ public partial class ComboBoxPopupContent : ContentView
                                 new Setter
                                 {
                                     Property = Grid.BackgroundColorProperty,
-                                    Value = Application.Current?.RequestedTheme == AppTheme.Dark
-                                        ? Color.FromArgb("#424242")
-                                        : Color.FromArgb("#F5F5F5")
+                                    Value = MauiControlsExtras.Theming.MauiControlsExtrasTheme.Current.HoverColor
+                                }
+                            }
+                        },
+                        new VisualState
+                        {
+                            Name = "Selected",
+                            Setters =
+                            {
+                                new Setter
+                                {
+                                    Property = Grid.BackgroundColorProperty,
+                                    Value = MauiControlsExtras.Theming.MauiControlsExtrasTheme.Current.SelectedBackgroundColor
                                 }
                             }
                         }
@@ -205,6 +248,7 @@ public partial class ComboBoxPopupContent : ContentView
     {
         searchEntry.Completed += OnSearchEntryCompleted;
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
+        keyboardCaptureEntry.HandlerChanged += OnKeyboardCaptureEntryHandlerChanged;
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -220,13 +264,45 @@ public partial class ComboBoxPopupContent : ContentView
 #endif
     }
 
+    private void OnKeyboardCaptureEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (keyboardCaptureEntry.Handler?.PlatformView == null) return;
+
+#if WINDOWS
+        if (keyboardCaptureEntry.Handler.PlatformView is Microsoft.UI.Xaml.Controls.TextBox textBox)
+        {
+            textBox.KeyDown += OnWindowsKeyboardCaptureKeyDown;
+            textBox.PreviewKeyDown += OnWindowsKeyboardCapturePreviewKeyDown;
+        }
+#endif
+    }
+
 #if WINDOWS
     private void OnWindowsTextBoxPreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsPreviewKeyDown(e);
+    }
+
+    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsKeyDown(e);
+    }
+
+    private void OnWindowsKeyboardCapturePreviewKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsPreviewKeyDown(e);
+    }
+
+    private void OnWindowsKeyboardCaptureKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        HandleWindowsKeyDown(e);
+    }
+
+    private void HandleWindowsPreviewKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         // Handle Tab key for autocomplete
         if (e.Key == Windows.System.VirtualKey.Tab)
         {
-            // If single filtered result or highlighted item, select it
             if (_filteredItems.Count == 1)
             {
                 SelectItem(_filteredItems[0]);
@@ -240,7 +316,7 @@ public partial class ComboBoxPopupContent : ContentView
         }
     }
 
-    private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    private void HandleWindowsKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
         switch (e.Key)
         {
@@ -264,14 +340,14 @@ public partial class ComboBoxPopupContent : ContentView
 
             case Windows.System.VirtualKey.Enter:
                 // Select the highlighted item or single filtered item
-                if (_filteredItems.Count == 1)
-                {
-                    SelectItem(_filteredItems[0]);
-                    e.Handled = true;
-                }
-                else if (_highlightedIndex >= 0 && _highlightedIndex < _filteredItems.Count)
+                if (_highlightedIndex >= 0 && _highlightedIndex < _filteredItems.Count)
                 {
                     SelectItem(_filteredItems[_highlightedIndex]);
+                    e.Handled = true;
+                }
+                else if (_filteredItems.Count == 1)
+                {
+                    SelectItem(_filteredItems[0]);
                     e.Handled = true;
                 }
                 break;
