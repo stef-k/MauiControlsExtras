@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **ComboBox**: `IsSearchVisible` property to show/hide the search input in dropdowns (#91)
 - **Context Menu System**: Platform-specific native context menu support with `IContextMenuSupport` interface
   - Windows: MenuFlyout with FontIcon support
   - macOS: UIMenu via UIContextMenuInteraction

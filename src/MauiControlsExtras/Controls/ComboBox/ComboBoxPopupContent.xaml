@@ -21,7 +21,8 @@
 
         <Grid RowDefinitions="Auto,*" Padding="0">
             <!-- Search Input -->
-            <Border Grid.Row="0"
+            <Border x:Name="searchBorder"
+                    Grid.Row="0"
                     StrokeThickness="0,0,0,1"
                     Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
                     Padding="8,6"

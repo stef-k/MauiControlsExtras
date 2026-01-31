@@ -100,6 +100,23 @@ Control dropdown height:
                  ... />
 ```
 
+### Hiding the Search Box
+
+For small item lists where search adds unnecessary complexity, hide the search input:
+
+```xml
+<extras:ComboBox ItemsSource="{Binding StatusOptions}"
+                 SelectedItem="{Binding SelectedStatus, Mode=TwoWay}"
+                 DisplayMemberPath="Name"
+                 IsSearchVisible="False"
+                 Placeholder="Select status..." />
+```
+
+This is useful for:
+- Lists with fewer than 10 items
+- Simple Yes/No or status dropdowns
+- Cleaner UI when search isn't needed
+
 ## Programmatic Control
 
 ### Open/Close

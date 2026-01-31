@@ -90,11 +90,13 @@
 
             <Grid RowDefinitions="Auto,*">
                 <!-- Search Input -->
-                <Border Grid.Row="0"
+                <Border x:Name="searchBorder"
+                        Grid.Row="0"
                         StrokeThickness="0,0,0,1"
                         Stroke="{AppThemeBinding Light=#EEEEEE, Dark=#616161}"
                         Padding="8,6"
-                        BackgroundColor="Transparent">
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsSearchVisible, Source={x:Reference thisControl}}">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                         <!-- Search Icon -->
                         <Label Grid.Column="0"

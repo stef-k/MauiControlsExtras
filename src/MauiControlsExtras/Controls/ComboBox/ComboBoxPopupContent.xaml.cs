@@ -58,6 +58,25 @@ public partial class ComboBoxPopupContent : ContentView
         }
     }
 
+    private bool _isSearchVisible = true;
+
+    /// <summary>
+    /// Gets or sets whether the search input is visible in the popup.
+    /// </summary>
+    public bool IsSearchVisible
+    {
+        get => _isSearchVisible;
+        set
+        {
+            if (_isSearchVisible != value)
+            {
+                _isSearchVisible = value;
+                if (searchBorder != null)
+                    searchBorder.IsVisible = value;
+            }
+        }
+    }
+
     /// <summary>
     /// Gets or sets the currently selected item.
     /// </summary>
@@ -106,11 +125,18 @@ public partial class ComboBoxPopupContent : ContentView
     }
 
     /// <summary>
-    /// Focuses the search entry.
+    /// Focuses the search entry if visible, otherwise focuses the items list.
     /// </summary>
     public new void Focus()
     {
-        Dispatcher.Dispatch(() => searchEntry?.Focus());
+        if (_isSearchVisible)
+        {
+            Dispatcher.Dispatch(() => searchEntry?.Focus());
+        }
+        else
+        {
+            Dispatcher.Dispatch(() => itemsList?.Focus());
+        }
     }
 
     /// <summary>
@@ -118,7 +144,10 @@ public partial class ComboBoxPopupContent : ContentView
     /// </summary>
     public void Reset()
     {
-        searchEntry.Text = string.Empty;
+        if (_isSearchVisible && searchEntry != null)
+        {
+            searchEntry.Text = string.Empty;
+        }
         _highlightedIndex = -1;
     }
 

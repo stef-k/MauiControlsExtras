@@ -200,6 +200,21 @@ public bool PopupMode { get; set; }
 
 ---
 
+### IsSearchVisible
+
+Gets or sets whether the search input is visible in the dropdown.
+Set to `false` to hide the search UI for small item lists where search adds unnecessary complexity.
+
+```csharp
+public bool IsSearchVisible { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `bool` | `true` | Yes |
+
+---
+
 ## Events
 
 ### SelectionChanged
@@ -253,6 +268,7 @@ public event EventHandler<ComboBoxPopupRequestEventArgs>? PopupRequested;
 | DisplayMemberPath | string | Property path for item display |
 | SelectedItem | object | Currently selected item |
 | Placeholder | string | Placeholder text for search entry |
+| IsSearchVisible | bool | Whether the search input should be visible |
 
 ---
 
@@ -377,7 +393,7 @@ private void OnPopupRequested(object sender, ComboBoxPopupRequestEventArgs e)
         ItemsSource = e.ItemsSource,
         DisplayMemberPath = e.DisplayMemberPath,
         SelectedItem = e.SelectedItem,
-        Placeholder = e.Placeholder
+        IsSearchVisible = e.IsSearchVisible
     };
 
     popup.ItemSelected += (s, selectedItem) =>

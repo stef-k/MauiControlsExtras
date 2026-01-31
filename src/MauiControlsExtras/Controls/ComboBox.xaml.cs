@@ -231,6 +231,15 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         typeof(ComboBox),
         false);
 
+    /// <summary>
+    /// Identifies the <see cref="IsSearchVisible"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsSearchVisibleProperty = BindableProperty.Create(
+        nameof(IsSearchVisible),
+        typeof(bool),
+        typeof(ComboBox),
+        true);
+
     #endregion
 
     #region Command Bindable Properties
@@ -504,6 +513,16 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         get => (bool)GetValue(PopupModeProperty);
         set => SetValue(PopupModeProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether the search input is visible in the dropdown.
+    /// Set to false to hide the search UI for small item lists.
+    /// </summary>
+    public bool IsSearchVisible
+    {
+        get => (bool)GetValue(IsSearchVisibleProperty);
+        set => SetValue(IsSearchVisibleProperty, value);
     }
 
     /// <summary>
@@ -1162,7 +1181,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 ItemsSource,
                 DisplayMemberPath,
                 SelectedItem,
-                Placeholder);
+                Placeholder,
+                IsSearchVisible);
             PopupRequested?.Invoke(this, args);
             return;
         }
@@ -1183,8 +1203,11 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             _highlightedIndex = -1;
             RaiseOpened();
 
-            // Focus the search entry when dropdown opens
-            Dispatcher.Dispatch(() => searchEntry?.Focus());
+            // Focus the search entry when dropdown opens (only if visible)
+            if (IsSearchVisible)
+            {
+                Dispatcher.Dispatch(() => searchEntry?.Focus());
+            }
         }
         else
         {

@@ -33,6 +33,11 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
     public string? Placeholder { get; }
 
     /// <summary>
+    /// Gets whether the search input should be visible in the popup.
+    /// </summary>
+    public bool IsSearchVisible { get; }
+
+    /// <summary>
     /// Gets the source ComboBox that raised the event.
     /// </summary>
     public ComboBox Source { get; }
@@ -46,7 +51,8 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
         IEnumerable? itemsSource,
         string? displayMemberPath,
         object? selectedItem,
-        string? placeholder)
+        string? placeholder,
+        bool isSearchVisible = true)
     {
         Source = source;
         AnchorBounds = anchorBounds;
@@ -54,5 +60,6 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
         DisplayMemberPath = displayMemberPath;
         SelectedItem = selectedItem;
         Placeholder = placeholder;
+        IsSearchVisible = isSearchVisible;
     }
 }
