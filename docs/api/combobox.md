@@ -144,15 +144,15 @@ public int VisibleItemCount { get; set; }
 
 ### AccentColor
 
-Gets or sets the accent color used for focus indication.
+Gets or sets the accent color used for focus indication. When `null`, falls back to the theme's accent color.
 
 ```csharp
-public Color AccentColor { get; set; }
+public Color? AccentColor { get; set; }
 ```
 
 | Type | Default | Bindable |
 |------|---------|----------|
-| `Color` | `#0078D4` | Yes |
+| `Color?` | `null` (theme default) | Yes |
 
 ---
 

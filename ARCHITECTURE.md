@@ -79,7 +79,7 @@ All controls inherit these core properties:
 
 ```csharp
 // Colors
-AccentColor         // Primary accent (default: #0078D4)
+AccentColor         // Primary accent (default: null, uses theme)
 ForegroundColor     // Text/icon color (theme-aware)
 DisabledColor       // Disabled state color
 ErrorColor          // Validation error color (#D32F2F)
