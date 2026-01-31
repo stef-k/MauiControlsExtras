@@ -10,6 +10,7 @@ A numeric input control with increment/decrement buttons.
 - **Formatting** - Custom number formats
 - **Validation** - Built-in validation support
 - **Keyboard Navigation** - Full keyboard support
+- **Button Placement** - Configurable button positions
 
 ## Basic Usage
 
@@ -42,25 +43,54 @@ A numeric input control with increment/decrement buttons.
 | `P0` | 50% |
 | `P2` | 50.00% |
 
-## Large Step
+## Decimal Places
+
+Use `DecimalPlaces` to control the number of decimal places displayed when `Format` is not set:
+
+```xml
+<extras:NumericUpDown
+    Value="{Binding Temperature}"
+    DecimalPlaces="2"
+    Step="0.1" />
+```
+
+## Button Placement
+
+The `ButtonPlacement` property controls where the increment/decrement buttons appear:
 
 ```xml
 <extras:NumericUpDown
     Value="{Binding Quantity}"
-    Step="1"
-    LargeStep="10" />
+    ButtonPlacement="LeftAndRight" />
 ```
 
-Use Page Up/Down for large step increments.
+### ButtonPlacement Values
+
+| Value | Description |
+|-------|-------------|
+| `Right` | Buttons stacked vertically on the right side (default) |
+| `Left` | Buttons stacked vertically on the left side |
+| `LeftAndRight` | Decrement on left, increment on right |
+| `Stacked` | Buttons stacked vertically (up on top, down on bottom) on the right |
+
+## Placeholder
+
+Display placeholder text when the value is null:
+
+```xml
+<extras:NumericUpDown
+    Value="{Binding OptionalQuantity}"
+    Placeholder="Enter quantity..." />
+```
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| ↑ | Increment |
-| ↓ | Decrement |
-| Page Up | Large increment |
-| Page Down | Large decrement |
+| ↑ | Increment by Step |
+| ↓ | Decrement by Step |
+| Page Up | Large increment (Step × 10) |
+| Page Down | Large decrement (Step × 10) |
 | Home | Set to minimum |
 | End | Set to maximum |
 | Enter | Commit value |
@@ -72,25 +102,41 @@ Use Page Up/Down for large step increments.
 | Event | Description |
 |-------|-------------|
 | ValueChanged | Value has changed |
-| Incremented | Value was incremented |
-| Decremented | Value was decremented |
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| ValueChangedCommand | Execute when value changes |
-| IncrementCommand | Execute on increment |
-| DecrementCommand | Execute on decrement |
+| Command | Type | Description |
+|---------|------|-------------|
+| ValueChangedCommand | ICommand | Execute when value changes |
+| ValueChangedCommandParameter | object | Parameter passed to ValueChangedCommand |
+| IncrementCommand | ICommand | Execute when value is incremented |
+| DecrementCommand | ICommand | Execute when value is decremented |
+| ValidateCommand | ICommand | Execute when validation occurs |
+
+## Validation
+
+The control supports validation through `IsRequired` and custom validation:
+
+```xml
+<extras:NumericUpDown
+    Value="{Binding Quantity}"
+    IsRequired="True"
+    RequiredErrorMessage="Quantity is required"
+    ValidateCommand="{Binding ValidateQuantityCommand}" />
+```
 
 ## Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| Value | double | Current value |
-| Minimum | double | Minimum allowed value |
-| Maximum | double | Maximum allowed value |
-| Step | double | Increment amount |
-| LargeStep | double | Page increment amount |
-| Format | string | Number format string |
-| IsReadOnly | bool | Prevent editing |
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| Value | double? | null | Current value (nullable) |
+| Minimum | double | double.MinValue | Minimum allowed value |
+| Maximum | double | double.MaxValue | Maximum allowed value |
+| Step | double | 1.0 | Increment/decrement amount |
+| DecimalPlaces | int | 0 | Number of decimal places to display |
+| Format | string | null | Custom number format string (e.g., "C2") |
+| ButtonPlacement | ButtonPlacement | Right | Button position style |
+| Placeholder | string | null | Placeholder text when value is null |
+| IsReadOnly | bool | false | Prevent direct text editing |
+| IsRequired | bool | false | Whether a value is required |
+| RequiredErrorMessage | string | "This field is required." | Error message for required validation |
