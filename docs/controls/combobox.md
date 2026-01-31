@@ -226,6 +226,21 @@ private void ComboBox_Closed(object sender, EventArgs e)
 }
 ```
 
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| ↓ (Down) | Open dropdown / Move to next item |
+| ↑ (Up) | Move to previous item |
+| Enter | Select highlighted item / Open dropdown |
+| Space | Open dropdown |
+| Escape | Close dropdown |
+| Home | Move to first item |
+| End | Move to last item |
+| Tab | Select filtered/highlighted item (Windows only) |
+
+> **Note:** Tab autocomplete selects the single filtered result, or the currently highlighted item if multiple results exist. This behavior is currently Windows-only.
+
 ## Styling
 
 The ComboBox automatically adapts to light/dark themes. Key colors:
