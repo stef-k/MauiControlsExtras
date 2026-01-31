@@ -220,9 +220,19 @@ public partial class ComboBoxPopupContent : ContentView
                                 new Setter
                                 {
                                     Property = Grid.BackgroundColorProperty,
-                                    Value = Application.Current?.RequestedTheme == AppTheme.Dark
-                                        ? Color.FromArgb("#424242")
-                                        : Color.FromArgb("#F5F5F5")
+                                    Value = MauiControlsExtras.Theming.MauiControlsExtrasTheme.Current.HoverColor
+                                }
+                            }
+                        },
+                        new VisualState
+                        {
+                            Name = "Selected",
+                            Setters =
+                            {
+                                new Setter
+                                {
+                                    Property = Grid.BackgroundColorProperty,
+                                    Value = MauiControlsExtras.Theming.MauiControlsExtrasTheme.Current.SelectedBackgroundColor
                                 }
                             }
                         }
