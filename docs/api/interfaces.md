@@ -236,7 +236,6 @@ Interface for controls that support validation.
 public interface IValidatable
 {
     // Properties
-    bool IsRequired { get; set; }
     bool IsValid { get; }
     IReadOnlyList<string> ValidationErrors { get; }
 
@@ -246,6 +245,70 @@ public interface IValidatable
     // Commands
     ICommand? ValidateCommand { get; set; }
 }
+```
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| IsValid | bool | Whether the current value passes all validation rules |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | List of current validation error messages |
+
+### Methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| Validate() | ValidationResult | Performs validation and returns the result |
+
+### Commands
+
+| Command | Parameter | Description |
+|---------|-----------|-------------|
+| ValidateCommand | ValidationResult | Executed after validation completes |
+
+### Common Validation Properties
+
+Controls implementing `IValidatable` typically also provide these properties (not part of the interface):
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| IsRequired | bool | false | Whether a value is required |
+| RequiredErrorMessage | string | varies | Error message when required validation fails |
+
+### Controls Implementing IValidatable
+
+- ComboBox
+- MaskedEntry
+- MultiSelectComboBox
+- NumericUpDown
+- RangeSlider
+- Rating
+- TokenEntry
+
+### Usage Example
+
+```csharp
+// Check validation state
+if (!myControl.IsValid)
+{
+    foreach (var error in myControl.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = myControl.Validate();
+if (!result.IsValid)
+{
+    DisplayErrors(result.Errors);
+}
+
+// Use ValidateCommand for MVVM
+<extras:NumericUpDown
+    Value="{Binding Quantity}"
+    IsRequired="True"
+    ValidateCommand="{Binding OnValidationCommand}" />
 ```
 
 ---

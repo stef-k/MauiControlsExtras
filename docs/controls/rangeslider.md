@@ -94,6 +94,46 @@ This ensures the thumbs stay at least 10 apart.
 | UpperValueChangedCommand | Execute when upper value changes |
 | RangeChangedCommand | Execute when either value changes |
 
+## Validation
+
+RangeSlider implements `IValidatable` for built-in validation support.
+
+```xml
+<extras:RangeSlider
+    Minimum="0"
+    Maximum="100"
+    LowerValue="{Binding MinPrice}"
+    UpperValue="{Binding MaxPrice}"
+    IsRequired="True"
+    RequiredErrorMessage="Please select a valid price range"
+    ValidateCommand="{Binding OnValidationCommand}" />
+```
+
+### Checking Validation State
+
+```csharp
+if (!rangeSlider.IsValid)
+{
+    foreach (var error in rangeSlider.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = rangeSlider.Validate();
+```
+
+### Validation Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| IsRequired | bool | false | Whether a valid range is required |
+| RequiredErrorMessage | string | "This field is required." | Error message when validation fails |
+| IsValid | bool | (read-only) | Current validation state |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of validation error messages |
+| ValidateCommand | ICommand | null | Command executed when validation occurs |
+
 ## Properties
 
 | Property | Type | Description |

@@ -103,6 +103,43 @@ public ICommand ValidateTagCommand => new Command<TokenValidationEventArgs>(e =>
 | TokenRemovedCommand | Execute when token removed |
 | ValidateTokenCommand | Validate before adding |
 
+## Validation
+
+TokenEntry implements `IValidatable` for built-in validation support. This is separate from token-level validation (ValidateTokenCommand).
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags}"
+    IsRequired="True"
+    RequiredErrorMessage="Please add at least one tag"
+    ValidateCommand="{Binding OnValidationCommand}" />
+```
+
+### Checking Validation State
+
+```csharp
+if (!tokenEntry.IsValid)
+{
+    foreach (var error in tokenEntry.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = tokenEntry.Validate();
+```
+
+### Validation Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| IsRequired | bool | false | Whether at least one token is required |
+| RequiredErrorMessage | string | "This field is required." | Error message when required but no tokens |
+| IsValid | bool | (read-only) | Current validation state |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of validation error messages |
+| ValidateCommand | ICommand | null | Command executed when validation occurs |
+
 ## Properties
 
 | Property | Type | Description |
