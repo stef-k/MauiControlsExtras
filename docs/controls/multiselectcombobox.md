@@ -76,6 +76,44 @@ A dropdown control that allows selecting multiple items with checkboxes.
 | DropdownOpened | Dropdown was opened |
 | DropdownClosed | Dropdown was closed |
 
+## Validation
+
+MultiSelectComboBox implements `IValidatable` for built-in validation support.
+
+```xml
+<extras:MultiSelectComboBox
+    ItemsSource="{Binding Categories}"
+    SelectedItems="{Binding SelectedCategories}"
+    IsRequired="True"
+    RequiredErrorMessage="Please select at least one category"
+    ValidateCommand="{Binding OnValidationCommand}" />
+```
+
+### Checking Validation State
+
+```csharp
+if (!multiSelectComboBox.IsValid)
+{
+    foreach (var error in multiSelectComboBox.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = multiSelectComboBox.Validate();
+```
+
+### Validation Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| IsRequired | bool | false | Whether at least one selection is required |
+| RequiredErrorMessage | string | "This field is required." | Error message when required but nothing selected |
+| IsValid | bool | (read-only) | Current validation state |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of validation error messages |
+| ValidateCommand | ICommand | null | Command executed when validation occurs |
+
 ## Properties
 
 | Property | Type | Description |

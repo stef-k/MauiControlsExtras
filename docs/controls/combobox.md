@@ -253,6 +253,50 @@ The ComboBox automatically adapts to light/dark themes. Key colors:
 | Placeholder | #6B7280 | #9CA3AF |
 | Focus Border | AccentColor | AccentColor |
 
+## Validation
+
+ComboBox implements `IValidatable` for built-in validation support.
+
+```xml
+<extras:ComboBox
+    ItemsSource="{Binding Items}"
+    SelectedItem="{Binding SelectedItem}"
+    IsRequired="True"
+    RequiredErrorMessage="Please select an item"
+    ValidateCommand="{Binding OnValidationCommand}" />
+```
+
+### Checking Validation State
+
+```csharp
+if (!comboBox.IsValid)
+{
+    foreach (var error in comboBox.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = comboBox.Validate();
+```
+
+### Validation Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| IsRequired | bool | false | Whether a selection is required |
+| RequiredErrorMessage | string | "This field is required." | Error message when required but nothing selected |
+| IsValid | bool | (read-only) | Current validation state |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of validation error messages |
+| ValidateCommand | ICommand | null | Command executed when validation occurs |
+
+### Events
+
+| Event | Description |
+|-------|-------------|
+| ValidationChanged | Fired when IsValid state changes |
+
 ## Best Practices
 
 1. **Use DisplayMemberPath** for complex objects instead of overriding ToString()

@@ -162,7 +162,35 @@ By default, tapping the current rating value clears it to 0. Disable this behavi
 | Circle | Circle icon (●/○) |
 | Thumb | Thumbs up icon (👍) |
 
-## Validation Properties
+## Validation
+
+Rating implements `IValidatable` for built-in validation support.
+
+```xml
+<extras:Rating
+    Value="{Binding UserRating}"
+    IsRequired="True"
+    RequiredErrorMessage="Please provide a rating"
+    MinimumValue="1"
+    ValidateCommand="{Binding OnValidationCommand}" />
+```
+
+### Checking Validation State
+
+```csharp
+if (!rating.IsValid)
+{
+    foreach (var error in rating.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = rating.Validate();
+```
+
+### Validation Properties
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
@@ -170,6 +198,6 @@ By default, tapping the current rating value clears it to 0. Disable this behavi
 | RequiredErrorMessage | string | "A rating is required." | Error message when required but not provided |
 | MinimumValue | double? | null | Minimum required value for validation |
 | MinimumValueErrorMessage | string | "Rating must be at least {0}." | Error message when below minimum |
-| IsValid | bool | true | Whether current value passes validation |
-| ValidationErrors | IReadOnlyList\<string\> | - | List of current validation errors |
+| IsValid | bool | (read-only) | Whether current value passes validation |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of current validation errors |
 | ValidateCommand | ICommand | null | Command executed when validation is triggered |

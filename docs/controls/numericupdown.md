@@ -115,7 +115,7 @@ Display placeholder text when the value is null:
 
 ## Validation
 
-The control supports validation through `IsRequired` and custom validation:
+NumericUpDown implements `IValidatable` for built-in validation support.
 
 ```xml
 <extras:NumericUpDown
@@ -124,6 +124,31 @@ The control supports validation through `IsRequired` and custom validation:
     RequiredErrorMessage="Quantity is required"
     ValidateCommand="{Binding ValidateQuantityCommand}" />
 ```
+
+### Checking Validation State
+
+```csharp
+if (!numericUpDown.IsValid)
+{
+    foreach (var error in numericUpDown.ValidationErrors)
+    {
+        Debug.WriteLine(error);
+    }
+}
+
+// Trigger validation manually
+var result = numericUpDown.Validate();
+```
+
+### Validation Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| IsRequired | bool | false | Whether a value is required |
+| RequiredErrorMessage | string | "This field is required." | Error message when required but null |
+| IsValid | bool | (read-only) | Current validation state |
+| ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of validation error messages |
+| ValidateCommand | ICommand | null | Command executed when validation occurs |
 
 ## Properties
 
