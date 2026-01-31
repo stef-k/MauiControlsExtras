@@ -111,6 +111,8 @@ private void OnCountrySelectionChanged(object sender, object? selectedItem)
 }
 ```
 
+> **Note**: Event handlers are shown here for simplicity. For production apps, we recommend using commands in your ViewModel with `SelectionChangedCommand` binding instead.
+
 ## Next Steps
 
 - Explore the [ComboBox documentation](controls/combobox.md) for advanced features
