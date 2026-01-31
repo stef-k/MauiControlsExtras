@@ -145,9 +145,12 @@ WizardStep currentStep = wizard.CurrentStep;
 |-----|--------|
 | ← | Previous step |
 | → | Next step |
+| Page Up | Previous step |
+| Page Down | Next step |
+| Home | First step (non-linear mode) |
+| End | Last step (non-linear mode) |
 | Enter | Next step / Finish |
-| Escape | Cancel |
-| Tab | Focus next element |
+| Escape | Cancel wizard |
 
 ## Events
 

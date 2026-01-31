@@ -129,11 +129,12 @@ string text = await editor.GetPlainTextAsync();
 | Ctrl+B | Bold |
 | Ctrl+I | Italic |
 | Ctrl+U | Underline |
-| Ctrl+Z | Undo |
-| Ctrl+Y | Redo |
 | Ctrl+C | Copy |
 | Ctrl+X | Cut |
 | Ctrl+V | Paste |
+| Ctrl+Z | Undo |
+| Ctrl+Y | Redo |
+| Ctrl+Shift+Z | Redo |
 
 ## Events
 

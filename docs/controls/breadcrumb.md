@@ -116,9 +116,10 @@ breadcrumb.NavigateTo(2); // Navigate to 3rd item
 |-----|--------|
 | ← | Select previous item |
 | → | Select next item |
+| Home | Select first item |
+| End | Select last item |
 | Enter | Navigate to selected item |
-| Home | Navigate to first item |
-| End | Navigate to last item |
+| Space | Navigate to selected item |
 
 ## Events
 

@@ -70,11 +70,13 @@ This ensures the thumbs stay at least 10 apart.
 
 | Key | Action |
 |-----|--------|
+| ← / ↓ | Decrease active thumb value |
+| → / ↑ | Increase active thumb value |
+| Page Up | Large increase |
+| Page Down | Large decrease |
+| Home | Set to minimum |
+| End | Set to maximum |
 | Tab | Switch between thumbs |
-| ← / → | Move focused thumb |
-| Shift+← / → | Move by larger step |
-| Home | Move to minimum |
-| End | Move to maximum |
 
 ## Events
 

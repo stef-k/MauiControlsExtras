@@ -61,12 +61,14 @@ A dropdown control that allows selecting multiple items with checkboxes.
 
 | Key | Action |
 |-----|--------|
-| Alt+↓ | Open dropdown |
+| ↓ | Open dropdown / Move to next item |
+| ↑ | Move to previous item |
+| Enter | Open dropdown |
+| Space | Toggle selection on highlighted item |
 | Escape | Close dropdown |
-| ↑ / ↓ | Navigate items |
-| Space | Toggle checkbox |
-| Enter | Close dropdown |
-| Type text | Filter items |
+| Home | Move to first item |
+| End | Move to last item |
+| Ctrl+A | Select all |
 
 ## Events
 
