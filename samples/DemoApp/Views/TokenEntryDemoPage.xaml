@@ -37,7 +37,6 @@
 
                     <extras:TokenEntry Tokens="{Binding EmailTokens}"
                                        Placeholder="Enter email addresses..."
-                                       Keyboard="Email"
                                        TokenAdded="OnTokenAdded"
                                        TokenRemoved="OnTokenRemoved" />
 
