@@ -601,3 +601,28 @@ public class DataGridContextMenuAction
     }
 }
 
+/// <summary>
+/// Event arguments for row selection events.
+/// </summary>
+public class DataGridRowSelectionEventArgs : EventArgs
+{
+    /// <summary>
+    /// Gets the data item of the row.
+    /// </summary>
+    public object Item { get; }
+
+    /// <summary>
+    /// Gets the index of the row.
+    /// </summary>
+    public int RowIndex { get; }
+
+    /// <summary>
+    /// Initializes a new instance of DataGridRowSelectionEventArgs.
+    /// </summary>
+    public DataGridRowSelectionEventArgs(object item, int rowIndex)
+    {
+        Item = item;
+        RowIndex = rowIndex;
+    }
+}
+
