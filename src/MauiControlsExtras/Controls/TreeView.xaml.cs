@@ -327,7 +327,7 @@ public class TreeViewNode : INotifyPropertyChanged
 /// <summary>
 /// A hierarchical list control for displaying and interacting with tree-structured data.
 /// </summary>
-public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNavigable
+public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNavigable, Base.ISelectable
 {
     #region Private Fields
 
@@ -558,6 +558,22 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         typeof(ICommand),
         typeof(TreeView));
 
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
+        nameof(SelectAllCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
     #endregion
 
     #region Properties
@@ -784,6 +800,24 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         set => SetValue(ItemDeselectedCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the command to execute for select all operations.
+    /// </summary>
+    public ICommand? SelectAllCommand
+    {
+        get => (ICommand?)GetValue(SelectAllCommandProperty);
+        set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute for clear selection operations.
+    /// </summary>
+    public ICommand? ClearSelectionCommand
+    {
+        get => (ICommand?)GetValue(ClearSelectionCommandProperty);
+        set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
     #endregion
 
     #region Display Properties
@@ -821,7 +855,7 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     /// <summary>
     /// Occurs when the selection changes.
     /// </summary>
-    public event EventHandler<object?>? SelectionChanged;
+    public event EventHandler<Base.SelectionChangedEventArgs>? SelectionChanged;
 
     /// <summary>
     /// Occurs when an item is expanded.
@@ -857,6 +891,191 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     /// Occurs when an item is deselected.
     /// </summary>
     public event EventHandler<TreeViewItemEventArgs>? ItemDeselected;
+
+    #endregion
+
+    #region ISelectable Implementation
+
+    /// <inheritdoc />
+    public bool HasSelection => _nodeMap.Values.Any(n => n.IsSelected);
+
+    /// <inheritdoc />
+    public bool IsAllSelected
+    {
+        get
+        {
+            if (_flattenedItems.Count == 0)
+                return false;
+
+            return _flattenedItems.All(n => n.IsSelected);
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SupportsMultipleSelection => SelectionMode == TreeViewSelectionMode.Multiple;
+
+    /// <inheritdoc />
+    public void SelectAll()
+    {
+        if (SelectionMode == TreeViewSelectionMode.None)
+            return;
+
+        if (SelectAllCommand?.CanExecute(null) == true)
+        {
+            SelectAllCommand.Execute(null);
+            return;
+        }
+
+        var oldSelection = GetSelection();
+
+        if (SelectionMode == TreeViewSelectionMode.Single)
+        {
+            // In single selection mode, select the first visible item
+            if (_flattenedItems.Count > 0)
+            {
+                foreach (var n in _nodeMap.Values)
+                {
+                    if (n.IsSelected && n != _flattenedItems[0])
+                    {
+                        n.IsSelected = false;
+                        RaiseItemDeselected(n);
+                    }
+                }
+                _flattenedItems[0].IsSelected = true;
+                SelectedItem = _flattenedItems[0].DataItem;
+            }
+        }
+        else if (SelectionMode == TreeViewSelectionMode.Multiple)
+        {
+            // In multiple selection mode, select all visible items
+            foreach (var node in _flattenedItems)
+            {
+                node.IsSelected = true;
+            }
+
+            if (SelectedItems != null)
+            {
+                SelectedItems.Clear();
+                foreach (var node in _flattenedItems)
+                {
+                    SelectedItems.Add(node.DataItem);
+                }
+            }
+        }
+
+        RaiseSelectionChanged(oldSelection);
+    }
+
+    /// <inheritdoc />
+    public void ClearSelection()
+    {
+        if (ClearSelectionCommand?.CanExecute(null) == true)
+        {
+            ClearSelectionCommand.Execute(null);
+            return;
+        }
+
+        var oldSelection = GetSelection();
+
+        foreach (var node in _nodeMap.Values)
+        {
+            if (node.IsSelected)
+            {
+                node.IsSelected = false;
+                RaiseItemDeselected(node);
+            }
+        }
+
+        SelectedItem = null;
+        SelectedItems?.Clear();
+
+        RaiseSelectionChanged(oldSelection);
+    }
+
+    /// <inheritdoc />
+    public object? GetSelection()
+    {
+        if (SelectionMode == TreeViewSelectionMode.Single)
+        {
+            return SelectedItem;
+        }
+        else if (SelectionMode == TreeViewSelectionMode.Multiple)
+        {
+            var selectedItems = _nodeMap.Values
+                .Where(n => n.IsSelected)
+                .Select(n => n.DataItem)
+                .ToList();
+            return selectedItems.Count > 0 ? selectedItems : null;
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public void SetSelection(object? selection)
+    {
+        if (selection == null)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var oldSelection = GetSelection();
+
+        if (SelectionMode == TreeViewSelectionMode.Single)
+        {
+            // Clear current selection
+            foreach (var n in _nodeMap.Values)
+            {
+                if (n.IsSelected)
+                {
+                    n.IsSelected = false;
+                    RaiseItemDeselected(n);
+                }
+            }
+
+            // Select the specified item
+            if (_nodeMap.TryGetValue(selection, out var node))
+            {
+                node.IsSelected = true;
+                SelectedItem = selection;
+            }
+        }
+        else if (SelectionMode == TreeViewSelectionMode.Multiple)
+        {
+            // Clear current selection
+            foreach (var n in _nodeMap.Values)
+            {
+                if (n.IsSelected)
+                {
+                    n.IsSelected = false;
+                    RaiseItemDeselected(n);
+                }
+            }
+
+            SelectedItems?.Clear();
+
+            // Handle single item or collection
+            if (selection is System.Collections.IEnumerable items && selection is not string)
+            {
+                foreach (var item in items)
+                {
+                    if (_nodeMap.TryGetValue(item, out var node))
+                    {
+                        node.IsSelected = true;
+                        SelectedItems?.Add(item);
+                    }
+                }
+            }
+            else if (_nodeMap.TryGetValue(selection, out var node))
+            {
+                node.IsSelected = true;
+                SelectedItems?.Add(selection);
+            }
+        }
+
+        RaiseSelectionChanged(oldSelection);
+    }
 
     #endregion
 
@@ -1196,6 +1415,8 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         if (SelectionMode == TreeViewSelectionMode.None)
             return;
 
+        var oldSelection = GetSelection();
+
         if (SelectionMode == TreeViewSelectionMode.Single)
         {
             // Deselect all others and raise deselected events
@@ -1237,7 +1458,7 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
             }
         }
 
-        RaiseSelectionChanged();
+        RaiseSelectionChanged(oldSelection);
     }
 
     #endregion
@@ -1415,11 +1636,13 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
     #region Event Raising Methods
 
-    private void RaiseSelectionChanged()
+    private void RaiseSelectionChanged(object? oldSelection = null)
     {
-        SelectionChanged?.Invoke(this, SelectedItem);
+        var newSelection = GetSelection();
+        var args = new Base.SelectionChangedEventArgs(oldSelection, newSelection);
+        SelectionChanged?.Invoke(this, args);
 
-        var parameter = SelectionChangedCommandParameter ?? SelectedItem;
+        var parameter = SelectionChangedCommandParameter ?? newSelection;
         if (SelectionChangedCommand?.CanExecute(parameter) == true)
         {
             SelectionChangedCommand.Execute(parameter);
@@ -1687,10 +1910,11 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         if (e.IsShiftPressed && SelectionMode == TreeViewSelectionMode.Multiple)
         {
             // Extend selection
+            var oldSelection = GetSelection();
             _focusedIndex = newIndex;
             var node = _flattenedItems[newIndex];
             node.IsSelected = true;
-            UpdateSelectedItems();
+            UpdateSelectedItems(oldSelection);
         }
         else
         {
@@ -1710,10 +1934,11 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         if (e.IsShiftPressed && SelectionMode == TreeViewSelectionMode.Multiple)
         {
             // Extend selection
+            var oldSelection = GetSelection();
             _focusedIndex = newIndex;
             var node = _flattenedItems[newIndex];
             node.IsSelected = true;
-            UpdateSelectedItems();
+            UpdateSelectedItems(oldSelection);
         }
         else
         {
@@ -1929,7 +2154,7 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         }
     }
 
-    private void UpdateSelectedItems()
+    private void UpdateSelectedItems(object? oldSelection = null)
     {
         if (SelectedItems != null)
         {
@@ -1939,7 +2164,7 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
                 SelectedItems.Add(node.DataItem);
             }
         }
-        RaiseSelectionChanged();
+        RaiseSelectionChanged(oldSelection);
     }
 
     #endregion
