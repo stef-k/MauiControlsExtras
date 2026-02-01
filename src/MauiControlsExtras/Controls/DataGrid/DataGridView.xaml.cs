@@ -97,7 +97,7 @@ public class DataGridSortingEventArgs : EventArgs
 /// A data grid control with column sorting, selection, editing, filtering, and data binding.
 /// </summary>
 [ContentProperty(nameof(Columns))]
-public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable
+public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable, Base.ISelectable
 {
     #region Private Fields
 
@@ -671,6 +671,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public static readonly BindableProperty RowDeselectedCommandProperty = BindableProperty.Create(
         nameof(RowDeselectedCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
+        nameof(SelectAllCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommand),
         typeof(ICommand),
         typeof(DataGridView));
 
@@ -1301,6 +1317,24 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the command to execute for select all operations.
+    /// </summary>
+    public ICommand? SelectAllCommand
+    {
+        get => (ICommand?)GetValue(SelectAllCommandProperty);
+        set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute for clear selection operations.
+    /// </summary>
+    public ICommand? ClearSelectionCommand
+    {
+        get => (ICommand?)GetValue(ClearSelectionCommandProperty);
+        set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets whether to show the default context menu.
     /// </summary>
     public bool ShowDefaultContextMenu
@@ -1374,12 +1408,116 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     #endregion
 
+    #region ISelectable Implementation
+
+    /// <inheritdoc />
+    public bool HasSelection => _selectedItems.Count > 0;
+
+    /// <inheritdoc />
+    public bool IsAllSelected
+    {
+        get
+        {
+            if (_sortedItems == null || _sortedItems.Count == 0)
+                return false;
+
+            return _selectedItems.Count == _sortedItems.Count;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool SupportsMultipleSelection => SelectionMode == DataGridSelectionMode.Multiple;
+
+    /// <inheritdoc />
+    public object? GetSelection()
+    {
+        if (SelectionMode == DataGridSelectionMode.Single)
+        {
+            return SelectedItem;
+        }
+        else if (SelectionMode == DataGridSelectionMode.Multiple)
+        {
+            return _selectedItems.Count > 0 ? _selectedItems.ToList() : null;
+        }
+
+        return null;
+    }
+
+    /// <inheritdoc />
+    public void SetSelection(object? selection)
+    {
+        if (selection == null)
+        {
+            ClearSelection();
+            return;
+        }
+
+        var oldSelection = GetSelection();
+
+        if (SelectionMode == DataGridSelectionMode.Single)
+        {
+            // Clear and select single item
+            var itemsToDeselect = _selectedItems.ToList();
+            _selectedItems.Clear();
+
+            foreach (var item in itemsToDeselect)
+            {
+                var rowIndex = _sortedItems?.IndexOf(item) ?? -1;
+                RaiseRowDeselected(item, rowIndex);
+            }
+
+            if (_sortedItems?.Contains(selection) == true)
+            {
+                _selectedItems.Add(selection);
+                SelectedItem = selection;
+                var rowIndex = _sortedItems.IndexOf(selection);
+                RaiseRowSelected(selection, rowIndex);
+            }
+        }
+        else if (SelectionMode == DataGridSelectionMode.Multiple)
+        {
+            // Clear and select items from collection
+            var itemsToDeselect = _selectedItems.ToList();
+            _selectedItems.Clear();
+
+            foreach (var item in itemsToDeselect)
+            {
+                var rowIndex = _sortedItems?.IndexOf(item) ?? -1;
+                RaiseRowDeselected(item, rowIndex);
+            }
+
+            if (selection is System.Collections.IEnumerable items && selection is not string)
+            {
+                foreach (var item in items)
+                {
+                    if (_sortedItems?.Contains(item) == true)
+                    {
+                        _selectedItems.Add(item);
+                        var rowIndex = _sortedItems.IndexOf(item);
+                        RaiseRowSelected(item, rowIndex);
+                    }
+                }
+            }
+            else if (_sortedItems?.Contains(selection) == true)
+            {
+                _selectedItems.Add(selection);
+                var rowIndex = _sortedItems.IndexOf(selection);
+                RaiseRowSelected(selection, rowIndex);
+            }
+        }
+
+        RaiseSelectionChanged(oldSelection);
+        UpdateSelectionVisuals();
+    }
+
+    #endregion
+
     #region Events
 
     /// <summary>
     /// Occurs when the selection changes.
     /// </summary>
-    public event EventHandler<object?>? SelectionChanged;
+    public event EventHandler<Base.SelectionChangedEventArgs>? SelectionChanged;
 
     /// <summary>
     /// Occurs when a row is selected.
@@ -3700,6 +3838,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (SelectionMode == DataGridSelectionMode.None)
             return;
 
+        // Track old selection for event args
+        var oldSelection = GetSelection();
+
         // Track previously selected items for visual update
         var previouslySelected = _selectedItems.ToList();
 
@@ -3727,7 +3868,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         // Update only the affected rows instead of rebuilding all
         UpdateSelectionVisualState(previouslySelected);
-        RaiseSelectionChanged();
+        RaiseSelectionChanged(oldSelection);
     }
 
     private void UpdateSelectionVisualState(List<object> previouslySelected)
@@ -5206,13 +5347,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     #region Event Raising Methods
 
-    private void RaiseSelectionChanged()
+    private void RaiseSelectionChanged(object? oldSelection = null)
     {
-        SelectionChanged?.Invoke(this, SelectedItem);
+        var newSelection = GetSelection();
+        var args = new Base.SelectionChangedEventArgs(oldSelection, newSelection);
+        SelectionChanged?.Invoke(this, args);
 
-        if (SelectionChangedCommand?.CanExecute(SelectedItem) == true)
+        if (SelectionChangedCommand?.CanExecute(newSelection) == true)
         {
-            SelectionChangedCommand.Execute(SelectedItem);
+            SelectionChangedCommand.Execute(newSelection);
         }
     }
 
@@ -5811,6 +5954,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var item = _sortedItems[rowIndex];
         if (item == null) return;
 
+        var oldSelection = GetSelection();
+
         // Track items to deselect in single mode
         var itemsToDeselect = new List<object>();
         if (SelectionMode == DataGridSelectionMode.Single)
@@ -5826,7 +5971,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         SelectedItem = item;
-        RaiseSelectionChanged();
+        RaiseSelectionChanged(oldSelection);
         UpdateSelectionVisuals();
 
         // Raise deselected events for items cleared in single mode
@@ -5845,30 +5990,39 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void ToggleRowSelection(object item)
     {
+        var oldSelection = GetSelection();
         var rowIndex = _sortedItems?.IndexOf(item) ?? -1;
 
         if (_selectedItems.Contains(item))
         {
             _selectedItems.Remove(item);
-            RaiseSelectionChanged();
+            RaiseSelectionChanged(oldSelection);
             UpdateSelectionVisuals();
             RaiseRowDeselected(item, rowIndex);
         }
         else
         {
             _selectedItems.Add(item);
-            RaiseSelectionChanged();
+            RaiseSelectionChanged(oldSelection);
             UpdateSelectionVisuals();
             RaiseRowSelected(item, rowIndex);
         }
     }
 
-    private void ClearSelection()
+    /// <inheritdoc />
+    public void ClearSelection()
     {
+        if (ClearSelectionCommand?.CanExecute(null) == true)
+        {
+            ClearSelectionCommand.Execute(null);
+            return;
+        }
+
+        var oldSelection = GetSelection();
         var itemsToDeselect = _selectedItems.ToList();
         _selectedItems.Clear();
         SelectedItem = null;
-        RaiseSelectionChanged();
+        RaiseSelectionChanged(oldSelection);
         UpdateSelectionVisuals();
 
         // Raise deselected events for all cleared items
@@ -5879,29 +6033,61 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
-    private void SelectAll()
+    /// <inheritdoc />
+    public void SelectAll()
     {
+        if (SelectionMode == DataGridSelectionMode.None)
+            return;
+
+        if (SelectAllCommand?.CanExecute(null) == true)
+        {
+            SelectAllCommand.Execute(null);
+            return;
+        }
+
         if (_sortedItems == null) return;
 
+        var oldSelection = GetSelection();
         var previouslySelected = new HashSet<object>(_selectedItems);
         _selectedItems.Clear();
 
-        for (int i = 0; i < _sortedItems.Count; i++)
+        if (SelectionMode == DataGridSelectionMode.Single)
         {
-            var item = _sortedItems[i];
-            if (item != null)
+            // In single selection mode, select the first item
+            if (_sortedItems.Count > 0)
             {
-                _selectedItems.Add(item);
-
-                // Raise selected event for newly selected items
-                if (!previouslySelected.Contains(item))
+                var item = _sortedItems[0];
+                if (item != null)
                 {
-                    RaiseRowSelected(item, i);
+                    _selectedItems.Add(item);
+                    SelectedItem = item;
+                    if (!previouslySelected.Contains(item))
+                    {
+                        RaiseRowSelected(item, 0);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Multiple selection mode - select all items
+            for (int i = 0; i < _sortedItems.Count; i++)
+            {
+                var item = _sortedItems[i];
+                if (item != null)
+                {
+                    _selectedItems.Add(item);
+
+                    // Raise selected event for newly selected items
+                    if (!previouslySelected.Contains(item))
+                    {
+                        RaiseRowSelected(item, i);
+                    }
                 }
             }
         }
 
-        RaiseSelectionChanged();
+        RaiseSelectionChanged(oldSelection);
         UpdateSelectionVisuals();
     }
 
@@ -5938,6 +6124,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (ItemsSource is IList list)
         {
+            var oldSelection = GetSelection();
+
             BeginBatchOperation("Delete rows");
             try
             {
@@ -5956,7 +6144,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 }
                 _focusedRowIndex = Math.Max(0, _focusedRowIndex);
 
-                RaiseSelectionChanged();
+                RaiseSelectionChanged(oldSelection);
                 BuildDataRows();
             }
             finally
