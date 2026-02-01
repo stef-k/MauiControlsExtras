@@ -563,6 +563,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="CellEditCancelledCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CellEditCancelledCommandProperty = BindableProperty.Create(
+        nameof(CellEditCancelledCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="RowEditEndedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty RowEditEndedCommandProperty = BindableProperty.Create(
@@ -1150,6 +1158,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the command to execute when cell edit is cancelled (e.g., user presses Escape).
+    /// </summary>
+    public ICommand? CellEditCancelledCommand
+    {
+        get => (ICommand?)GetValue(CellEditCancelledCommandProperty);
+        set => SetValue(CellEditCancelledCommandProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute when row edit ends.
     /// </summary>
     public ICommand? RowEditEndedCommand
@@ -1349,6 +1366,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// Occurs after cell edit ends.
     /// </summary>
     public event EventHandler<DataGridCellEditEventArgs>? CellEditEnded;
+
+    /// <summary>
+    /// Occurs when cell edit is cancelled (e.g., user presses Escape or clicks away without saving).
+    /// </summary>
+    public event EventHandler<DataGridCellEditEventArgs>? CellEditCancelled;
 
     /// <summary>
     /// Occurs after row edit ends.
@@ -3941,6 +3963,24 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void CancelEditInternal()
     {
+        // Fire CellEditCancelled event and command before cleaning up
+        if (_editingItem != null && _editingColumn != null)
+        {
+            var cancelledArgs = new DataGridCellEditEventArgs(
+                _editingItem,
+                _editingColumn,
+                _editingRowIndex,
+                _editingColumnIndex,
+                _originalEditValue);
+
+            CellEditCancelled?.Invoke(this, cancelledArgs);
+
+            if (CellEditCancelledCommand?.CanExecute(cancelledArgs) == true)
+            {
+                CellEditCancelledCommand.Execute(cancelledArgs);
+            }
+        }
+
         EndEdit();
     }
 
