@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Windows.Input;
 
 namespace MauiControlsExtras.Controls;
@@ -6,14 +5,8 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// Represents a single expandable/collapsible item in an Accordion.
 /// </summary>
-public class AccordionItem : ContentView, INotifyPropertyChanged
+public class AccordionItem : ContentView
 {
-    #region Private Fields
-
-    private bool _isExpanded;
-
-    #endregion
-
     #region Bindable Properties
 
     /// <summary>
@@ -69,6 +62,26 @@ public class AccordionItem : ContentView, INotifyPropertyChanged
         typeof(ICommand),
         typeof(AccordionItem),
         null);
+
+    /// <summary>
+    /// Identifies the <see cref="IsExpanded"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsExpandedProperty = BindableProperty.Create(
+        nameof(IsExpanded),
+        typeof(bool),
+        typeof(AccordionItem),
+        false,
+        BindingMode.TwoWay,
+        propertyChanged: OnIsExpandedChanged);
+
+    private static void OnIsExpandedChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is AccordionItem item && oldValue != newValue)
+        {
+            item.OnPropertyChanged(nameof(ExpanderIcon));
+            item.IsExpandedChanged?.Invoke(item, (bool)newValue);
+        }
+    }
 
     #endregion
 
@@ -133,17 +146,8 @@ public class AccordionItem : ContentView, INotifyPropertyChanged
     /// </summary>
     public bool IsExpanded
     {
-        get => _isExpanded;
-        set
-        {
-            if (_isExpanded != value)
-            {
-                _isExpanded = value;
-                OnPropertyChanged(nameof(IsExpanded));
-                OnPropertyChanged(nameof(ExpanderIcon));
-                IsExpandedChanged?.Invoke(this, value);
-            }
-        }
+        get => (bool)GetValue(IsExpandedProperty);
+        set => SetValue(IsExpandedProperty, value);
     }
 
     /// <summary>
