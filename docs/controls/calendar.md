@@ -92,6 +92,17 @@ public ObservableCollection<DateTime> SelectedDates { get; } = new();
 <extras:Calendar ShowWeekNumbers="True" />
 ```
 
+## Header Styling
+
+```xml
+<extras:Calendar
+    HeaderBackgroundColor="#F0F0F0"
+    HeaderTextColor="#333333"
+    HeaderFontSize="18"
+    HeaderFontAttributes="Bold"
+    HeaderPadding="8,4" />
+```
+
 ## Styling
 
 ```xml
@@ -165,11 +176,18 @@ calendar.SelectDate(new DateTime(2024, 7, 4));
 |---------|-------------|
 | DateSelectedCommand | Execute when date is selected |
 | DisplayDateChangedCommand | Execute when display date changes |
+| ClearSelectionCommand | Clear all selected dates and reset range |
 
 ## Properties
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| HeaderBackgroundColor | Color | null | Month/year bar background |
+| HeaderTextColor | Color | null | Month/year text color |
+| HeaderFontSize | double | 16 | Header font size |
+| HeaderFontAttributes | FontAttributes | Bold | Header font style |
+| HeaderFontFamily | string | null | Header font family |
+| HeaderPadding | Thickness | 12,8 | Header padding |
 | SelectedDate | DateTime? | null | Selected date (single mode) |
 | SelectedDates | IList&lt;DateTime&gt; | empty | Selected dates (multiple mode) |
 | RangeStart | DateTime? | null | Range start (range mode) |

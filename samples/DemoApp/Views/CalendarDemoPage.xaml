@@ -42,8 +42,14 @@
                                      HorizontalOptions="Start" />
 
                     <HorizontalStackLayout Spacing="20">
-                        <Label Text="{Binding RangeStartDate, StringFormat='From: {0:d}', TargetNullValue='From: -'}" />
-                        <Label Text="{Binding RangeEndDate, StringFormat='To: {0:d}', TargetNullValue='To: -'}" />
+                        <Label Text="{Binding RangeStartDate, StringFormat='From: {0:d}', TargetNullValue='From: -'}"
+                               VerticalOptions="Center" />
+                        <Label Text="{Binding RangeEndDate, StringFormat='To: {0:d}', TargetNullValue='To: -'}"
+                               VerticalOptions="Center" />
+                        <Button Text="Clear Range"
+                                Clicked="OnClearRangeClicked"
+                                Padding="12,6"
+                                FontSize="12" />
                     </HorizontalStackLayout>
                 </VerticalStackLayout>
             </Frame>
@@ -59,7 +65,29 @@
                                      DateSelected="OnMultipleDateSelected"
                                      HorizontalOptions="Start" />
 
-                    <Label x:Name="multipleDatesLabel" Text="0 dates selected" />
+                    <HorizontalStackLayout Spacing="20">
+                        <Label x:Name="multipleDatesLabel" Text="0 dates selected" VerticalOptions="Center" />
+                        <Button Text="Clear Selection"
+                                Clicked="OnClearMultipleClicked"
+                                Padding="12,6"
+                                FontSize="12" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Header Styling -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Header Styling" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Customize the month/year navigation header appearance." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:Calendar SelectionMode="Single"
+                                     HeaderBackgroundColor="#6200EE"
+                                     HeaderTextColor="White"
+                                     HeaderFontSize="18"
+                                     HeaderFontAttributes="Bold"
+                                     HeaderPadding="12,8"
+                                     HorizontalOptions="Start" />
                 </VerticalStackLayout>
             </Frame>
 

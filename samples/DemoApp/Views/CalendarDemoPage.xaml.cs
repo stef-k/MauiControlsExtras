@@ -32,11 +32,24 @@ public partial class CalendarDemoPage : ContentPage
         }
     }
 
+    private void OnClearRangeClicked(object? sender, EventArgs e)
+    {
+        rangeCalendar.ClearSelection();
+        _viewModel.RangeStartDate = null;
+        _viewModel.RangeEndDate = null;
+    }
+
     private void OnMultipleDateSelected(object? sender, CalendarDateSelectedEventArgs e)
     {
         if (sender is Calendar calendar)
         {
             multipleDatesLabel.Text = $"{calendar.SelectedDates.Count} dates selected";
         }
+    }
+
+    private void OnClearMultipleClicked(object? sender, EventArgs e)
+    {
+        multipleCalendar.ClearSelection();
+        multipleDatesLabel.Text = "0 dates selected";
     }
 }
