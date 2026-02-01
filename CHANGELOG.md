@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Accordion**: Now inherits from `HeaderedControlBase` instead of `StyledControlBase` (#95)
+  - Adds: `HeaderFontAttributes`, `HeaderFontFamily`, `HeaderHeight`, `HeaderBorderColor`, `HeaderBorderThickness`
+  - **Breaking**: Default `HeaderFontSize` changed from 14 to 16
+  - **Breaking**: Default `HeaderPadding` changed from (12,10) to (12,8)
+  - **Breaking**: Headers are now bold by default (`HeaderFontAttributes = Bold`)
+
 ### Added
 
 - **ComboBox**: `IsSearchVisible` property to show/hide the search input in dropdowns (#91)
