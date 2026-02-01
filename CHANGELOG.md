@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Calendar**: Now inherits from `HeaderedControlBase` instead of `StyledControlBase` (#96)
+  - Adds: `HeaderBackgroundColor`, `HeaderTextColor`, `HeaderFontSize`, `HeaderFontAttributes`, `HeaderFontFamily`, `HeaderPadding`
+  - Month/year navigation header can now be styled via properties
 - **Accordion**: Now inherits from `HeaderedControlBase` instead of `StyledControlBase` (#95)
   - Adds: `HeaderFontAttributes`, `HeaderFontFamily`, `HeaderHeight`, `HeaderBorderColor`, `HeaderBorderThickness`
   - **Breaking**: Default `HeaderFontSize` changed from 14 to 16
@@ -62,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Calendar**: Range selection now works correctly - second click completes the range instead of resetting
 - **DataGridView**: Filter icon now distinct from sort arrows (⫶ vs ▲/▼) (#63)
 - **DataGridView**: Feature toggle checkboxes now update UI correctly (#64)
 - **DataGridView**: Selection performance with targeted visual updates (#52, #58)

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<base:StyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-                        xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-                        xmlns:base="clr-namespace:MauiControlsExtras.Base"
-                        xmlns:local="clr-namespace:MauiControlsExtras.Controls"
-                        x:Class="MauiControlsExtras.Controls.Calendar"
-                        x:Name="thisControl">
+<base:HeaderedControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                          xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                          xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                          xmlns:local="clr-namespace:MauiControlsExtras.Controls"
+                          x:Class="MauiControlsExtras.Controls.Calendar"
+                          x:Name="thisControl">
 
     <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
             Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
@@ -19,7 +19,8 @@
             <!-- Navigation Header -->
             <Grid Grid.Row="0"
                   ColumnDefinitions="Auto,*,Auto"
-                  Padding="4">
+                  BackgroundColor="{Binding EffectiveHeaderBackgroundColor, Source={x:Reference thisControl}}"
+                  Padding="{Binding HeaderPadding, Source={x:Reference thisControl}}">
 
                 <Button x:Name="previousButton"
                         Grid.Column="0"
@@ -35,9 +36,10 @@
                        Grid.Column="1"
                        HorizontalOptions="Center"
                        VerticalOptions="Center"
-                       FontSize="16"
-                       FontAttributes="Bold"
-                       TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}">
+                       FontSize="{Binding HeaderFontSize, Source={x:Reference thisControl}}"
+                       FontAttributes="{Binding HeaderFontAttributes, Source={x:Reference thisControl}}"
+                       FontFamily="{Binding EffectiveHeaderFontFamily, Source={x:Reference thisControl}}"
+                       TextColor="{Binding EffectiveHeaderTextColor, Source={x:Reference thisControl}}">
                     <Label.GestureRecognizers>
                         <TapGestureRecognizer Tapped="OnHeaderTapped" />
                     </Label.GestureRecognizers>
@@ -68,4 +70,4 @@
             </Grid>
         </Grid>
     </Border>
-</base:StyledControlBase>
+</base:HeaderedControlBase>

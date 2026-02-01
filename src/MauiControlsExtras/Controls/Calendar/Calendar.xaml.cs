@@ -9,7 +9,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A calendar control for date selection with month/year/decade views.
 /// </summary>
-public partial class Calendar : StyledControlBase, IKeyboardNavigable, ISelectable
+public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelectable
 {
     #region Private Fields
 
@@ -20,6 +20,7 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable, ISelectab
     private int _focusedRow;
     private int _focusedCol;
     private bool _hasKeyboardFocus;
+    private bool _isInternalSelectionUpdate;
 
     #endregion
 
@@ -819,49 +820,57 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable, ISelectab
         var oldSelection = _selectedDates.ToList();
         var normalizedDate = date.Date;
 
-        switch (SelectionMode)
+        _isInternalSelectionUpdate = true;
+        try
         {
-            case CalendarSelectionMode.Single:
-                _selectedDates.Clear();
-                _selectedDates.Add(normalizedDate);
-                SelectedDate = normalizedDate;
-                break;
-
-            case CalendarSelectionMode.Multiple:
-                if (_selectedDates.Contains(normalizedDate))
-                {
-                    _selectedDates.Remove(normalizedDate);
-                }
-                else
-                {
-                    _selectedDates.Add(normalizedDate);
-                }
-                SelectedDate = _selectedDates.FirstOrDefault();
-                break;
-
-            case CalendarSelectionMode.Range:
-                if (_rangeStart == null)
-                {
-                    _rangeStart = normalizedDate;
+            switch (SelectionMode)
+            {
+                case CalendarSelectionMode.Single:
                     _selectedDates.Clear();
                     _selectedDates.Add(normalizedDate);
-                }
-                else
-                {
-                    _selectedDates.Clear();
-                    var start = _rangeStart.Value < normalizedDate ? _rangeStart.Value : normalizedDate;
-                    var end = _rangeStart.Value < normalizedDate ? normalizedDate : _rangeStart.Value;
-                    for (var d = start; d <= end; d = d.AddDays(1))
+                    SelectedDate = normalizedDate;
+                    break;
+
+                case CalendarSelectionMode.Multiple:
+                    if (_selectedDates.Contains(normalizedDate))
                     {
-                        if (IsDateEnabled(d))
-                        {
-                            _selectedDates.Add(d);
-                        }
+                        _selectedDates.Remove(normalizedDate);
                     }
-                    _rangeStart = null;
-                }
-                SelectedDate = normalizedDate;
-                break;
+                    else
+                    {
+                        _selectedDates.Add(normalizedDate);
+                    }
+                    SelectedDate = _selectedDates.FirstOrDefault();
+                    break;
+
+                case CalendarSelectionMode.Range:
+                    if (_rangeStart == null)
+                    {
+                        _rangeStart = normalizedDate;
+                        _selectedDates.Clear();
+                        _selectedDates.Add(normalizedDate);
+                    }
+                    else
+                    {
+                        _selectedDates.Clear();
+                        var start = _rangeStart.Value < normalizedDate ? _rangeStart.Value : normalizedDate;
+                        var end = _rangeStart.Value < normalizedDate ? normalizedDate : _rangeStart.Value;
+                        for (var d = start; d <= end; d = d.AddDays(1))
+                        {
+                            if (IsDateEnabled(d))
+                            {
+                                _selectedDates.Add(d);
+                            }
+                        }
+                        _rangeStart = null;
+                    }
+                    SelectedDate = normalizedDate;
+                    break;
+            }
+        }
+        finally
+        {
+            _isInternalSelectionUpdate = false;
         }
 
         RebuildCalendar();
@@ -1225,6 +1234,10 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable, ISelectab
     {
         if (bindable is Calendar calendar && newValue is DateTime date)
         {
+            // Skip if this is an internal update from SelectDate()
+            if (calendar._isInternalSelectionUpdate)
+                return;
+
             calendar._displayDate = date;
             calendar._selectedDates.Clear();
             calendar._selectedDates.Add(date.Date);
@@ -1279,6 +1292,36 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable, ISelectab
         {
             calendar.RebuildCalendar();
         }
+    }
+
+    #endregion
+
+    #region HeaderedControlBase Overrides
+
+    /// <inheritdoc/>
+    protected override void OnHeaderBackgroundColorChanged(Color? oldValue, Color? newValue)
+        => OnPropertyChanged(nameof(EffectiveHeaderBackgroundColor));
+
+    /// <inheritdoc/>
+    protected override void OnHeaderTextColorChanged(Color? oldValue, Color? newValue)
+        => OnPropertyChanged(nameof(EffectiveHeaderTextColor));
+
+    /// <inheritdoc/>
+    protected override void OnHeaderFontSizeChanged(double oldValue, double newValue)
+        => RebuildCalendar();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderFontAttributesChanged(FontAttributes oldValue, FontAttributes newValue)
+        => RebuildCalendar();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderFontFamilyChanged(string? oldValue, string? newValue)
+        => RebuildCalendar();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderPaddingChanged(Thickness oldValue, Thickness newValue)
+    {
+        // Handled by XAML binding
     }
 
     #endregion
