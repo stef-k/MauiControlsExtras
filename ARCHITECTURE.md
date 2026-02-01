@@ -56,7 +56,7 @@ ContentView
             ├── HeaderedControlBase        (+ header styling)
             │       └── Accordion, PropertyGrid, Calendar, etc.
             ├── NavigationControlBase      (+ navigation states)
-            │       └── Wizard, Breadcrumb, BindingNavigator, etc.
+            │       └── Wizard, Breadcrumb, etc. (UI navigation)
             └── AnimatedControlBase        (+ animation support)
                     └── [animated controls]
 ```
@@ -69,8 +69,9 @@ ContentView
 | Dropdown/combo controls | `TextStyledControlBase` | Font, text color, placeholder |
 | List/grid controls | `ListStyledControlBase` | Alternating rows, selection colors, separators |
 | Accordion/expandable | `HeaderedControlBase` | Header styling, border |
-| Wizard/stepper | `NavigationControlBase` | Active/inactive/visited states |
+| Wizard/stepper (UI navigation) | `NavigationControlBase` | Active/inactive/visited states |
 | Animated controls | `AnimatedControlBase` | Duration, easing, enable flag |
+| Data navigation (BindingNavigator) | `StyledControlBase` | No per-item visual states |
 | Simple styled controls | `StyledControlBase` | Just colors, borders, shadows |
 
 ### StyledControlBase Properties
