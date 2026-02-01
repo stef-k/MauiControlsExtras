@@ -9,7 +9,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A breadcrumb navigation control showing the current location in a hierarchy.
 /// </summary>
-public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable
+public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelectable
 {
     #region Private Fields
 
@@ -195,6 +195,30 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable
     /// </summary>
     public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
         nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(Breadcrumb));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
+        nameof(SelectAllCommand),
+        typeof(ICommand),
+        typeof(Breadcrumb));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommand),
+        typeof(ICommand),
+        typeof(Breadcrumb));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommand),
         typeof(ICommand),
         typeof(Breadcrumb));
 
@@ -386,6 +410,27 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable
         set => SetValue(KeyPressCommandProperty, value);
     }
 
+    /// <inheritdoc/>
+    public ICommand? SelectAllCommand
+    {
+        get => (ICommand?)GetValue(SelectAllCommandProperty);
+        set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? ClearSelectionCommand
+    {
+        get => (ICommand?)GetValue(ClearSelectionCommandProperty);
+        set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? SelectionChangedCommand
+    {
+        get => (ICommand?)GetValue(SelectionChangedCommandProperty);
+        set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
     #endregion
 
     #region Events
@@ -404,6 +449,9 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable
     /// Occurs when the home icon is clicked.
     /// </summary>
     public event EventHandler? HomeClicked;
+
+    /// <inheritdoc/>
+    public event EventHandler<Base.SelectionChangedEventArgs>? SelectionChanged;
 
     /// <inheritdoc/>
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusGained;
@@ -505,6 +553,132 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable
 
         RebuildUI();
         return true;
+    }
+
+    #endregion
+
+    #region ISelectable Implementation
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// For Breadcrumb, returns true when there are items in the trail.
+    /// The "selection" is the current location (last item).
+    /// </remarks>
+    public bool HasSelection => _items.Count > 0;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// For Breadcrumb, always returns false as multi-selection is not supported.
+    /// </remarks>
+    public bool IsAllSelected => false;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Breadcrumb only supports single selection (the current location).
+    /// </remarks>
+    public bool SupportsMultipleSelection => false;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// For Breadcrumb, SelectAll is a no-op as it doesn't make sense
+    /// to select all items in a navigation trail.
+    /// </remarks>
+    public void SelectAll()
+    {
+        // No-op for breadcrumb - selecting all items doesn't make sense
+        // for a navigation trail where only one location is "current"
+        SelectAllCommand?.Execute(null);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// For Breadcrumb, ClearSelection navigates to the root (first item)
+    /// by removing all items after it.
+    /// </remarks>
+    public void ClearSelection()
+    {
+        if (_items.Count <= 1)
+        {
+            ClearSelectionCommand?.Execute(null);
+            return;
+        }
+
+        var oldSelection = GetSelection();
+
+        // Navigate to root (first item)
+        NavigateTo(0);
+
+        var newSelection = GetSelection();
+
+        // Only raise if selection actually changed (NavigateTo might be cancelled)
+        if (!ReferenceEquals(oldSelection, newSelection))
+        {
+            RaiseSelectionChanged(oldSelection, newSelection);
+        }
+
+        ClearSelectionCommand?.Execute(null);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Returns the current location (last item in the breadcrumb trail),
+    /// or null if the trail is empty.
+    /// </remarks>
+    public object? GetSelection()
+    {
+        return _items.Count > 0 ? _items[^1] : null;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// For Breadcrumb, SetSelection navigates to the specified item if it exists in the trail.
+    /// Pass a BreadcrumbItem or an index (int) to navigate.
+    /// Pass null to navigate to root.
+    /// </remarks>
+    public void SetSelection(object? selection)
+    {
+        var oldSelection = GetSelection();
+
+        if (selection == null)
+        {
+            // Navigate to root
+            if (_items.Count > 1)
+            {
+                NavigateTo(0);
+            }
+        }
+        else if (selection is int index)
+        {
+            if (index >= 0 && index < _items.Count)
+            {
+                NavigateTo(index);
+            }
+        }
+        else if (selection is BreadcrumbItem item)
+        {
+            var itemIndex = _items.IndexOf(item);
+            if (itemIndex >= 0)
+            {
+                NavigateTo(itemIndex);
+            }
+        }
+
+        var newSelection = GetSelection();
+        if (!ReferenceEquals(oldSelection, newSelection))
+        {
+            RaiseSelectionChanged(oldSelection, newSelection);
+        }
+    }
+
+    private void RaiseSelectionChanged(object? oldSelection, object? newSelection)
+    {
+        var args = new Base.SelectionChangedEventArgs(oldSelection, newSelection);
+        SelectionChanged?.Invoke(this, args);
+
+        if (SelectionChangedCommand?.CanExecute(newSelection) == true)
+        {
+            SelectionChangedCommand.Execute(newSelection);
+        }
     }
 
     #endregion
