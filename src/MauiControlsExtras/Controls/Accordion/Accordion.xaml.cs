@@ -11,7 +11,7 @@ namespace MauiControlsExtras.Controls;
 /// Supports single or multiple expansion modes.
 /// </summary>
 [ContentProperty(nameof(Items))]
-public partial class Accordion : StyledControlBase, IKeyboardNavigable
+public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelectable
 {
     #region Private Fields
 
@@ -177,6 +177,30 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable
     /// </summary>
     public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
         nameof(KeyPressCommand),
+        typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
+        nameof(SelectAllCommand),
+        typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommand),
+        typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommand),
         typeof(ICommand),
         typeof(Accordion));
 
@@ -368,6 +392,27 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable
         set => SetValue(KeyPressCommandProperty, value);
     }
 
+    /// <inheritdoc/>
+    public ICommand? SelectAllCommand
+    {
+        get => (ICommand?)GetValue(SelectAllCommandProperty);
+        set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? ClearSelectionCommand
+    {
+        get => (ICommand?)GetValue(ClearSelectionCommandProperty);
+        set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? SelectionChangedCommand
+    {
+        get => (ICommand?)GetValue(SelectionChangedCommandProperty);
+        set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
     #endregion
 
     #region Events
@@ -402,6 +447,9 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable
 #pragma warning disable CS0067
     public event EventHandler<KeyEventArgs>? KeyReleased;
 #pragma warning restore CS0067
+
+    /// <inheritdoc/>
+    public event EventHandler<Base.SelectionChangedEventArgs>? SelectionChanged;
 
     #endregion
 
@@ -494,6 +542,140 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable
         }
 
         return true;
+    }
+
+    #endregion
+
+    #region ISelectable Implementation
+
+    /// <inheritdoc/>
+    public bool HasSelection => _items.Any(i => i.IsExpanded);
+
+    /// <inheritdoc/>
+    public bool IsAllSelected
+    {
+        get
+        {
+            if (_items.Count == 0) return false;
+
+            // In Single mode, having one expanded is "all" that can be selected
+            if (ExpandMode == AccordionExpandMode.Single)
+                return _items.Any(i => i.IsExpanded);
+
+            return _items.All(i => i.IsExpanded);
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool SupportsMultipleSelection => ExpandMode != AccordionExpandMode.Single;
+
+    /// <inheritdoc/>
+    void ISelectable.SelectAll()
+    {
+        var oldSelection = GetExpandedItems();
+        ExpandAll();
+        var newSelection = GetExpandedItems();
+        OnSelectionChanged(oldSelection, newSelection);
+    }
+
+    /// <inheritdoc/>
+    void ISelectable.ClearSelection()
+    {
+        var oldSelection = GetExpandedItems();
+        CollapseAll();
+        var newSelection = GetExpandedItems();
+        OnSelectionChanged(oldSelection, newSelection);
+    }
+
+    /// <inheritdoc/>
+    public object? GetSelection()
+    {
+        var expanded = GetExpandedItems();
+        return expanded.Count switch
+        {
+            0 => null,
+            1 => expanded[0],
+            _ => expanded
+        };
+    }
+
+    /// <inheritdoc/>
+    public void SetSelection(object? selection)
+    {
+        var oldSelection = GetExpandedItems();
+
+        if (selection is null)
+        {
+            CollapseAll();
+        }
+        else if (selection is AccordionItem item)
+        {
+            if (_items.Contains(item))
+            {
+                ExpandItem(item);
+            }
+        }
+        else if (selection is IEnumerable<AccordionItem> items)
+        {
+            foreach (var i in items.Where(i => _items.Contains(i)))
+            {
+                ExpandItem(i);
+            }
+        }
+        else if (selection is int index)
+        {
+            ExpandItem(index);
+        }
+        else if (selection is IEnumerable<int> indices)
+        {
+            foreach (var i in indices)
+            {
+                ExpandItem(i);
+            }
+        }
+        else
+        {
+            throw new ArgumentException(
+                $"Selection type {selection.GetType().Name} is not supported. " +
+                "Use AccordionItem, IEnumerable<AccordionItem>, int, or IEnumerable<int>.",
+                nameof(selection));
+        }
+
+        var newSelection = GetExpandedItems();
+        OnSelectionChanged(oldSelection, newSelection);
+    }
+
+    private List<AccordionItem> GetExpandedItems() =>
+        _items.Where(i => i.IsExpanded).ToList();
+
+    private void OnSelectionChanged(List<AccordionItem> oldSelection, List<AccordionItem> newSelection)
+    {
+        // Convert to single item or list for event args
+        object? oldValue = oldSelection.Count switch
+        {
+            0 => null,
+            1 => oldSelection[0],
+            _ => oldSelection
+        };
+
+        object? newValue = newSelection.Count switch
+        {
+            0 => null,
+            1 => newSelection[0],
+            _ => newSelection
+        };
+
+        // Only raise event if selection actually changed
+        var oldSet = new HashSet<AccordionItem>(oldSelection);
+        var newSet = new HashSet<AccordionItem>(newSelection);
+        if (oldSet.SetEquals(newSet)) return;
+
+        var args = new Base.SelectionChangedEventArgs(oldValue, newValue);
+        SelectionChanged?.Invoke(this, args);
+        SelectionChangedCommand?.Execute(newValue);
+
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsAllSelected));
     }
 
     #endregion
@@ -922,6 +1104,10 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable
         var args = new AccordionItemExpandedEventArgs(item, item.Index, true);
         ItemExpanded?.Invoke(this, args);
         ItemExpandedCommand?.Execute(args);
+
+        // Update ISelectable state
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsAllSelected));
     }
 
     private async void CollapseItemInternal(AccordionItem item)
@@ -952,6 +1138,10 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable
         var args = new AccordionItemExpandedEventArgs(item, item.Index, false);
         ItemCollapsed?.Invoke(this, args);
         ItemCollapsedCommand?.Execute(args);
+
+        // Update ISelectable state
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsAllSelected));
     }
 
     #endregion
