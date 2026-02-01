@@ -723,6 +723,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
     private void OnWindowsTextBoxKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
+        // Handle Alt+Down/Alt+Up regardless of expanded state (standard Windows accessibility pattern)
+        if (HandleAltKeyCombo(e)) return;
+
         if (!_isExpanded) return;
         HandleWindowsKeyDown(e);
     }
@@ -747,8 +750,45 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
     private void OnWindowsKeyboardCaptureKeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
     {
+        // Handle Alt+Down/Alt+Up regardless of expanded state (standard Windows accessibility pattern)
+        if (HandleAltKeyCombo(e)) return;
+
         if (!_isExpanded) return;
         HandleWindowsKeyDown(e);
+    }
+
+    /// <summary>
+    /// Handles Alt+Down (open dropdown) and Alt+Up (close dropdown) keyboard shortcuts.
+    /// This is a standard Windows accessibility pattern for combo boxes.
+    /// </summary>
+    private bool HandleAltKeyCombo(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        var isAltDown = Microsoft.UI.Input.InputKeyboardSource
+            .GetKeyStateForCurrentThread(Windows.System.VirtualKey.Menu)
+            .HasFlag(Windows.UI.Core.CoreVirtualKeyStates.Down);
+
+        if (!isAltDown) return false;
+
+        if (e.Key == Windows.System.VirtualKey.Down)
+        {
+            if (!_isExpanded)
+            {
+                Open();
+                e.Handled = true;
+                return true;
+            }
+        }
+        else if (e.Key == Windows.System.VirtualKey.Up)
+        {
+            if (_isExpanded)
+            {
+                Close();
+                e.Handled = true;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void HandleWindowsKeyDown(Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
@@ -1617,6 +1657,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             _keyboardShortcuts.AddRange(new[]
             {
+                new Base.KeyboardShortcut { Key = "Alt+Down", Description = "Open dropdown", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Alt+Up", Description = "Close dropdown", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Down", Description = "Open dropdown / Move to next item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Enter", Description = "Select highlighted item / Open dropdown", Category = "Action" },
