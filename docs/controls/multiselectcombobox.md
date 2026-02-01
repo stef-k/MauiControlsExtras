@@ -21,6 +21,25 @@ A dropdown control that allows selecting multiple items with checkboxes.
     Placeholder="Select categories..." />
 ```
 
+## Custom Item Templates
+
+For complete control over item appearance, use `ItemTemplate` with a `DataTemplate`:
+
+```xml
+<extras:MultiSelectComboBox ItemsSource="{Binding Tags}" SelectedItems="{Binding SelectedTags}">
+    <extras:MultiSelectComboBox.ItemTemplate>
+        <DataTemplate x:DataType="models:Tag">
+            <HorizontalStackLayout Spacing="8">
+                <BoxView Color="{Binding Color}" WidthRequest="16" HeightRequest="16" CornerRadius="8" />
+                <Label Text="{Binding Name}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </DataTemplate>
+    </extras:MultiSelectComboBox.ItemTemplate>
+</extras:MultiSelectComboBox>
+```
+
+> **Note:** The checkbox for selection is automatically added to the left of your template content.
+
 ## Display Options
 
 ```xml

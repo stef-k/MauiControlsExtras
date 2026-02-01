@@ -99,6 +99,37 @@ public string? ValueMemberPath { get; set; }
 
 ---
 
+#### ItemTemplate
+
+Gets or sets a custom `DataTemplate` for rendering items. When set, this takes precedence over `DisplayMemberPath`. The template content is automatically wrapped with a checkbox for multi-selection.
+
+```csharp
+public DataTemplate? ItemTemplate { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `DataTemplate?` | `null` | Yes |
+
+**Example:**
+
+```xml
+<extras:MultiSelectComboBox ItemsSource="{Binding Tags}" SelectedItems="{Binding SelectedTags}">
+    <extras:MultiSelectComboBox.ItemTemplate>
+        <DataTemplate x:DataType="models:Tag">
+            <HorizontalStackLayout Spacing="8">
+                <BoxView Color="{Binding Color}" WidthRequest="16" HeightRequest="16" CornerRadius="8" />
+                <Label Text="{Binding Name}" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+        </DataTemplate>
+    </extras:MultiSelectComboBox.ItemTemplate>
+</extras:MultiSelectComboBox>
+```
+
+> **Note:** The checkbox is automatically added to the left of your template content.
+
+---
+
 #### MaxSelections
 
 Gets or sets the maximum number of selections allowed.

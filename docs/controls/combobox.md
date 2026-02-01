@@ -42,6 +42,28 @@ public class Activity
                  Placeholder="Select an activity..." />
 ```
 
+## Custom Item Templates
+
+For complete control over item appearance, use `ItemTemplate` with a `DataTemplate`:
+
+```xml
+<extras:ComboBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}">
+    <extras:ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="models:User">
+            <HorizontalStackLayout Spacing="10" Padding="5">
+                <Image Source="{Binding AvatarUrl}" WidthRequest="32" HeightRequest="32" />
+                <VerticalStackLayout>
+                    <Label Text="{Binding FullName}" FontAttributes="Bold" />
+                    <Label Text="{Binding Email}" FontSize="12" TextColor="Gray" />
+                </VerticalStackLayout>
+            </HorizontalStackLayout>
+        </DataTemplate>
+    </extras:ComboBox.ItemTemplate>
+</extras:ComboBox>
+```
+
+> **Note:** When `ItemTemplate` is set, it takes precedence over `DisplayMemberPath` and `IconMemberPath`.
+
 ## Displaying Icons
 
 To show images alongside text, set `IconMemberPath`:
