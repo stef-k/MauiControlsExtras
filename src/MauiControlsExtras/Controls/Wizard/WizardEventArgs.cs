@@ -151,3 +151,78 @@ public class WizardCancellingEventArgs : EventArgs
         CurrentIndex = currentIndex;
     }
 }
+
+/// <summary>
+/// Navigation direction for wizard step transitions.
+/// </summary>
+public enum WizardNavigationDirection
+{
+    /// <summary>
+    /// Moving forward to a higher step index.
+    /// </summary>
+    Forward,
+
+    /// <summary>
+    /// Moving backward to a lower step index.
+    /// </summary>
+    Backward
+}
+
+/// <summary>
+/// Event arguments for wizard step validation (cancelable with validation errors).
+/// </summary>
+public class WizardStepValidatingEventArgs : EventArgs
+{
+    /// <summary>
+    /// Gets the current step.
+    /// </summary>
+    public WizardStep? CurrentStep { get; }
+
+    /// <summary>
+    /// Gets the target step.
+    /// </summary>
+    public WizardStep? TargetStep { get; }
+
+    /// <summary>
+    /// Gets the current step index.
+    /// </summary>
+    public int CurrentStepIndex { get; }
+
+    /// <summary>
+    /// Gets the target step index.
+    /// </summary>
+    public int TargetStepIndex { get; }
+
+    /// <summary>
+    /// Gets the navigation direction.
+    /// </summary>
+    public WizardNavigationDirection Direction { get; }
+
+    /// <summary>
+    /// Gets or sets whether the navigation should be cancelled.
+    /// </summary>
+    public bool Cancel { get; set; }
+
+    /// <summary>
+    /// Gets the collection of validation errors to display.
+    /// </summary>
+    public IList<string> ValidationErrors { get; } = new List<string>();
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WizardStepValidatingEventArgs"/> class.
+    /// </summary>
+    public WizardStepValidatingEventArgs(
+        WizardStep? currentStep,
+        WizardStep? targetStep,
+        int currentStepIndex,
+        int targetStepIndex)
+    {
+        CurrentStep = currentStep;
+        TargetStep = targetStep;
+        CurrentStepIndex = currentStepIndex;
+        TargetStepIndex = targetStepIndex;
+        Direction = targetStepIndex > currentStepIndex
+            ? WizardNavigationDirection.Forward
+            : WizardNavigationDirection.Backward;
+    }
+}

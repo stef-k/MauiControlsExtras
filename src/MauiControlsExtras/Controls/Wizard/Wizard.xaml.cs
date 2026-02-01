@@ -194,6 +194,14 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="StepValidatingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepValidatingCommandProperty = BindableProperty.Create(
+        nameof(StepValidatingCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="FinishedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty FinishedCommandProperty = BindableProperty.Create(
@@ -444,6 +452,17 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the cancelable command executed before step validation.
+    /// The command parameter is <see cref="WizardStepValidatingEventArgs"/>.
+    /// Set Cancel = true to prevent navigation.
+    /// </summary>
+    public ICommand? StepValidatingCommand
+    {
+        get => (ICommand?)GetValue(StepValidatingCommandProperty);
+        set => SetValue(StepValidatingCommandProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when the wizard finishes.
     /// </summary>
     public ICommand? FinishedCommand
@@ -495,6 +514,11 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     /// Occurs before the current step changes (cancelable).
     /// </summary>
     public event EventHandler<WizardStepChangingEventArgs>? StepChanging;
+
+    /// <summary>
+    /// Occurs before step validation (cancelable with validation errors).
+    /// </summary>
+    public event EventHandler<WizardStepValidatingEventArgs>? StepValidating;
 
     /// <summary>
     /// Occurs when the wizard finishes.
@@ -711,6 +735,18 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
         var oldStep = CurrentStep;
         var newStep = _steps[index];
         var oldIndex = _currentIndex;
+
+        // Raise validating event/command first
+        var validatingArgs = new WizardStepValidatingEventArgs(oldStep, newStep, oldIndex, index);
+        StepValidating?.Invoke(this, validatingArgs);
+
+        if (StepValidatingCommand?.CanExecute(validatingArgs) == true)
+        {
+            StepValidatingCommand.Execute(validatingArgs);
+        }
+
+        if (validatingArgs.Cancel)
+            return false;
 
         // Raise changing event
         var changingArgs = new WizardStepChangingEventArgs(oldStep, newStep, oldIndex, index);
