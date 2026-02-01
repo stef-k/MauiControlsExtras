@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Theming;
+using Microsoft.Maui.Controls.Shapes;
 
 namespace MauiControlsExtras.Controls;
 
@@ -11,13 +12,14 @@ namespace MauiControlsExtras.Controls;
 /// Supports single or multiple expansion modes.
 /// </summary>
 [ContentProperty(nameof(Items))]
-public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelectable
+public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelectable
 {
     #region Private Fields
 
     private readonly ObservableCollection<AccordionItem> _items = new();
     private int _selectedIndex = -1;
     private bool _hasKeyboardFocus;
+    private VerticalStackLayout? itemsContainer;
 
     #endregion
 
@@ -69,44 +71,6 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
         typeof(uint),
         typeof(Accordion),
         (uint)200);
-
-    /// <summary>
-    /// Identifies the <see cref="HeaderBackgroundColor"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty HeaderBackgroundColorProperty = BindableProperty.Create(
-        nameof(HeaderBackgroundColor),
-        typeof(Color),
-        typeof(Accordion),
-        null,
-        propertyChanged: OnHeaderBackgroundColorChanged);
-
-    /// <summary>
-    /// Identifies the <see cref="HeaderTextColor"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty HeaderTextColorProperty = BindableProperty.Create(
-        nameof(HeaderTextColor),
-        typeof(Color),
-        typeof(Accordion),
-        null,
-        propertyChanged: OnHeaderTextColorChanged);
-
-    /// <summary>
-    /// Identifies the <see cref="HeaderFontSize"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty HeaderFontSizeProperty = BindableProperty.Create(
-        nameof(HeaderFontSize),
-        typeof(double),
-        typeof(Accordion),
-        14.0);
-
-    /// <summary>
-    /// Identifies the <see cref="HeaderPadding"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty HeaderPaddingProperty = BindableProperty.Create(
-        nameof(HeaderPadding),
-        typeof(Thickness),
-        typeof(Accordion),
-        new Thickness(12, 10));
 
     /// <summary>
     /// Identifies the <see cref="ContentPadding"/> bindable property.
@@ -254,42 +218,6 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
     }
 
     /// <summary>
-    /// Gets or sets the header background color.
-    /// </summary>
-    public Color? HeaderBackgroundColor
-    {
-        get => (Color?)GetValue(HeaderBackgroundColorProperty);
-        set => SetValue(HeaderBackgroundColorProperty, value);
-    }
-
-    /// <summary>
-    /// Gets or sets the header text color.
-    /// </summary>
-    public Color? HeaderTextColor
-    {
-        get => (Color?)GetValue(HeaderTextColorProperty);
-        set => SetValue(HeaderTextColorProperty, value);
-    }
-
-    /// <summary>
-    /// Gets or sets the header font size.
-    /// </summary>
-    public double HeaderFontSize
-    {
-        get => (double)GetValue(HeaderFontSizeProperty);
-        set => SetValue(HeaderFontSizeProperty, value);
-    }
-
-    /// <summary>
-    /// Gets or sets the header padding.
-    /// </summary>
-    public Thickness HeaderPadding
-    {
-        get => (Thickness)GetValue(HeaderPaddingProperty);
-        set => SetValue(HeaderPaddingProperty, value);
-    }
-
-    /// <summary>
     /// Gets or sets the content padding.
     /// </summary>
     public Thickness ContentPadding
@@ -336,18 +264,6 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
         _selectedIndex >= 0 && _selectedIndex < _items.Count
             ? _items[_selectedIndex]
             : null;
-
-    /// <summary>
-    /// Gets the effective header background color.
-    /// </summary>
-    public Color EffectiveHeaderBackgroundColor =>
-        HeaderBackgroundColor ?? MauiControlsExtrasTheme.GetSurfaceColor();
-
-    /// <summary>
-    /// Gets the effective header text color.
-    /// </summary>
-    public Color EffectiveHeaderTextColor =>
-        HeaderTextColor ?? EffectiveForegroundColor;
 
     #endregion
 
@@ -688,7 +604,53 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
     public Accordion()
     {
         InitializeComponent();
+        BuildVisualTree();
         _items.CollectionChanged += OnItemsCollectionChanged;
+    }
+
+    /// <summary>
+    /// Builds the visual tree in code to avoid conflict with [ContentProperty(nameof(Items))].
+    /// </summary>
+    private void BuildVisualTree()
+    {
+        // Create the items container
+        itemsContainer = new VerticalStackLayout { Spacing = 0 };
+
+        // Create the ScrollView
+        var scrollView = new ScrollView
+        {
+            Orientation = ScrollOrientation.Vertical,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Default,
+            Content = itemsContainer
+        };
+
+        // Create the corner radius shape
+        var cornerRadiusShape = new RoundRectangle();
+        cornerRadiusShape.SetBinding(
+            RoundRectangle.CornerRadiusProperty,
+            new Binding(nameof(EffectiveCornerRadius), source: this));
+
+        // Create the border
+        var border = new Border
+        {
+            StrokeShape = cornerRadiusShape,
+            Content = scrollView
+        };
+
+        // Set up bindings for border
+        border.SetBinding(
+            Border.StrokeThicknessProperty,
+            new Binding(nameof(EffectiveBorderThickness), source: this));
+        border.SetBinding(
+            Border.StrokeProperty,
+            new Binding(nameof(EffectiveBorderColor), source: this));
+
+        // Set background color with theme support
+        border.SetAppThemeColor(Border.BackgroundColorProperty,
+            Color.FromArgb("#FFFFFF"),
+            Color.FromArgb("#1E1E1E"));
+
+        Content = border;
     }
 
     #endregion
@@ -884,6 +846,9 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
 
     private void RebuildUI()
     {
+        if (itemsContainer == null)
+            return;
+
         itemsContainer.Children.Clear();
 
         for (int i = 0; i < _items.Count; i++)
@@ -894,6 +859,7 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
 
             var itemView = CreateItemView(item, i);
             itemsContainer.Children.Add(itemView);
+            System.Diagnostics.Trace.WriteLine($"[Accordion] Added item {i}: {item.Header}");
         }
     }
 
@@ -982,6 +948,8 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
             {
                 Text = item.Icon,
                 FontSize = HeaderFontSize,
+                FontAttributes = HeaderFontAttributes,
+                FontFamily = EffectiveHeaderFontFamily,
                 VerticalOptions = LayoutOptions.Center,
                 TextColor = EffectiveHeaderTextColor
             };
@@ -1015,6 +983,8 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
             {
                 Text = item.Header,
                 FontSize = HeaderFontSize,
+                FontAttributes = HeaderFontAttributes,
+                FontFamily = EffectiveHeaderFontFamily,
                 VerticalOptions = LayoutOptions.Center,
                 TextColor = item.IsEnabled ? EffectiveHeaderTextColor : EffectiveDisabledColor
             };
@@ -1150,6 +1120,7 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
 
     private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        System.Diagnostics.Trace.WriteLine($"[Accordion] OnItemsCollectionChanged: Action={e.Action}, Items.Count={_items.Count}");
         RebuildUI();
 
         // Ensure AtLeastOne mode has one expanded
@@ -1196,24 +1167,6 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
         }
     }
 
-    private static void OnHeaderBackgroundColorChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        if (bindable is Accordion accordion)
-        {
-            accordion.OnPropertyChanged(nameof(EffectiveHeaderBackgroundColor));
-            accordion.RebuildUI();
-        }
-    }
-
-    private static void OnHeaderTextColorChanged(BindableObject bindable, object oldValue, object newValue)
-    {
-        if (bindable is Accordion accordion)
-        {
-            accordion.OnPropertyChanged(nameof(EffectiveHeaderTextColor));
-            accordion.RebuildUI();
-        }
-    }
-
     private static void OnShowDividersChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is Accordion accordion)
@@ -1221,6 +1174,34 @@ public partial class Accordion : StyledControlBase, IKeyboardNavigable, ISelecta
             accordion.RebuildUI();
         }
     }
+
+    #endregion
+
+    #region HeaderedControlBase Overrides
+
+    /// <inheritdoc/>
+    protected override void OnHeaderBackgroundColorChanged(Color? oldValue, Color? newValue)
+        => RebuildUI();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderTextColorChanged(Color? oldValue, Color? newValue)
+        => RebuildUI();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderFontSizeChanged(double oldValue, double newValue)
+        => RebuildUI();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderFontAttributesChanged(FontAttributes oldValue, FontAttributes newValue)
+        => RebuildUI();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderFontFamilyChanged(string? oldValue, string? newValue)
+        => RebuildUI();
+
+    /// <inheritdoc/>
+    protected override void OnHeaderPaddingChanged(Thickness oldValue, Thickness newValue)
+        => RebuildUI();
 
     #endregion
 }

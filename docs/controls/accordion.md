@@ -84,7 +84,28 @@ An accordion control with expandable/collapsible sections.
 <extras:Accordion
     HeaderBackgroundColor="#F5F5F5"
     HeaderTextColor="#333333"
-    HeaderFontSize="16"
+    HeaderFontSize="18"
+    HeaderFontAttributes="Bold"
+    HeaderFontFamily="OpenSans"
+    HeaderPadding="16,12" />
+```
+
+### Removing Bold Headers
+
+Headers are bold by default. To use regular weight:
+
+```xml
+<extras:Accordion HeaderFontAttributes="None" />
+```
+
+### Legacy Styling
+
+To match pre-migration styling (smaller, non-bold headers):
+
+```xml
+<extras:Accordion
+    HeaderFontSize="14"
+    HeaderFontAttributes="None"
     HeaderPadding="12,10" />
 ```
 
@@ -180,8 +201,13 @@ bool isExpanded = accordion.IsItemExpanded(0);
 | AnimationDuration | uint | 200 | Animation duration (ms) |
 | HeaderBackgroundColor | Color | null | Header background |
 | HeaderTextColor | Color | null | Header text color |
-| HeaderFontSize | double | 14 | Header font size |
-| HeaderPadding | Thickness | 12,10 | Header padding |
+| HeaderFontSize | double | 16 | Header font size |
+| HeaderFontAttributes | FontAttributes | Bold | Header font style (Bold, Italic, None) |
+| HeaderFontFamily | string | null | Header font family |
+| HeaderPadding | Thickness | 12,8 | Header padding |
+| HeaderHeight | double | -1 | Header height (-1 = auto) |
+| HeaderBorderColor | Color | null | Header border color |
+| HeaderBorderThickness | Thickness | 0,0,0,1 | Header border thickness |
 | ContentPadding | Thickness | 12,8 | Content padding |
 | ShowDividers | bool | true | Show section dividers |
 
