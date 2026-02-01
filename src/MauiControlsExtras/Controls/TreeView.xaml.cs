@@ -97,6 +97,25 @@ public class TreeViewItemEventArgs : EventArgs
 }
 
 /// <summary>
+/// Event arguments for cancelable tree view item events.
+/// </summary>
+public class TreeViewItemCancelEventArgs : TreeViewItemEventArgs
+{
+    /// <summary>
+    /// Gets or sets whether to cancel the operation.
+    /// </summary>
+    public bool Cancel { get; set; }
+
+    /// <summary>
+    /// Initializes a new instance of TreeViewItemCancelEventArgs.
+    /// </summary>
+    public TreeViewItemCancelEventArgs(object item, TreeViewNode node)
+        : base(item, node)
+    {
+    }
+}
+
+/// <summary>
 /// Represents a node in the flattened tree view.
 /// </summary>
 public class TreeViewNode : INotifyPropertyChanged
@@ -523,6 +542,22 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         typeof(ICommand),
         typeof(TreeView));
 
+    /// <summary>
+    /// Identifies the <see cref="ItemCollapsingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ItemCollapsingCommandProperty = BindableProperty.Create(
+        nameof(ItemCollapsingCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the <see cref="ItemDeselectedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ItemDeselectedCommandProperty = BindableProperty.Create(
+        nameof(ItemDeselectedCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
     #endregion
 
     #region Properties
@@ -729,6 +764,26 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         set => SetValue(ItemCheckedCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the cancelable command to execute before an item is collapsed.
+    /// The command parameter is <see cref="TreeViewItemCancelEventArgs"/>.
+    /// Set Cancel = true to prevent the collapse.
+    /// </summary>
+    public ICommand? ItemCollapsingCommand
+    {
+        get => (ICommand?)GetValue(ItemCollapsingCommandProperty);
+        set => SetValue(ItemCollapsingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when an item is deselected.
+    /// </summary>
+    public ICommand? ItemDeselectedCommand
+    {
+        get => (ICommand?)GetValue(ItemDeselectedCommandProperty);
+        set => SetValue(ItemDeselectedCommandProperty, value);
+    }
+
     #endregion
 
     #region Display Properties
@@ -792,6 +847,16 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     /// Occurs when an item's check state changes.
     /// </summary>
     public event EventHandler<TreeViewItemEventArgs>? ItemChecked;
+
+    /// <summary>
+    /// Occurs before an item is collapsed (cancelable).
+    /// </summary>
+    public event EventHandler<TreeViewItemCancelEventArgs>? ItemCollapsing;
+
+    /// <summary>
+    /// Occurs when an item is deselected.
+    /// </summary>
+    public event EventHandler<TreeViewItemEventArgs>? ItemDeselected;
 
     #endregion
 
@@ -1072,6 +1137,15 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         if (!node.HasChildren)
             return;
 
+        // Check if collapsing should be cancelled
+        if (node.IsExpanded)
+        {
+            if (RaiseItemCollapsing(node))
+            {
+                return; // Collapse was cancelled
+            }
+        }
+
         // Handle lazy loading
         if (!node.ChildrenLoaded && LoadChildrenCommand != null)
         {
@@ -1124,16 +1198,21 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
         if (SelectionMode == TreeViewSelectionMode.Single)
         {
-            // Deselect all others
+            // Deselect all others and raise deselected events
             foreach (var n in _nodeMap.Values)
             {
-                n.IsSelected = false;
+                if (n.IsSelected && n != node)
+                {
+                    n.IsSelected = false;
+                    RaiseItemDeselected(n);
+                }
             }
             node.IsSelected = true;
             SelectedItem = node.DataItem;
         }
         else if (SelectionMode == TreeViewSelectionMode.Multiple)
         {
+            var wasSelected = node.IsSelected;
             node.IsSelected = !node.IsSelected;
 
             if (SelectedItems != null)
@@ -1149,6 +1228,12 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
                 {
                     SelectedItems.Remove(node.DataItem);
                 }
+            }
+
+            // Raise deselected event if item was deselected
+            if (wasSelected && !node.IsSelected)
+            {
+                RaiseItemDeselected(node);
             }
         }
 
@@ -1393,6 +1478,30 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         if (ItemCheckedCommand?.CanExecute(node.DataItem) == true)
         {
             ItemCheckedCommand.Execute(node.DataItem);
+        }
+    }
+
+    private bool RaiseItemCollapsing(TreeViewNode node)
+    {
+        var args = new TreeViewItemCancelEventArgs(node.DataItem, node);
+        ItemCollapsing?.Invoke(this, args);
+
+        if (ItemCollapsingCommand?.CanExecute(args) == true)
+        {
+            ItemCollapsingCommand.Execute(args);
+        }
+
+        return args.Cancel;
+    }
+
+    private void RaiseItemDeselected(TreeViewNode node)
+    {
+        var args = new TreeViewItemEventArgs(node.DataItem, node);
+        ItemDeselected?.Invoke(this, args);
+
+        if (ItemDeselectedCommand?.CanExecute(node.DataItem) == true)
+        {
+            ItemDeselectedCommand.Execute(node.DataItem);
         }
     }
 
