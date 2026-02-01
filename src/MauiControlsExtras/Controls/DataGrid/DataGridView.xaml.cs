@@ -651,6 +651,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="ColumnReorderedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ColumnReorderedCommandProperty = BindableProperty.Create(
+        nameof(ColumnReorderedCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="UndoLimit"/> bindable property.
     /// </summary>
     public static readonly BindableProperty UndoLimitProperty = BindableProperty.Create(
@@ -1244,6 +1252,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         get => (ICommand?)GetValue(PasteCommandProperty);
         set => SetValue(PasteCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when a column is reordered.
+    /// The command parameter is <see cref="DataGridColumnReorderEventArgs"/>.
+    /// </summary>
+    public ICommand? ColumnReorderedCommand
+    {
+        get => (ICommand?)GetValue(ColumnReorderedCommandProperty);
+        set => SetValue(ColumnReorderedCommandProperty, value);
     }
 
     /// <summary>
@@ -4669,6 +4687,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             _columns.Move(_draggingColumnIndex, targetIndex);
             ColumnReordered?.Invoke(this, args);
+
+            if (ColumnReorderedCommand?.CanExecute(args) == true)
+            {
+                ColumnReorderedCommand.Execute(args);
+            }
+
             BuildGrid();
         }
 
