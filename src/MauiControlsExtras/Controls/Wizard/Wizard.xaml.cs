@@ -20,6 +20,18 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     private int _currentIndex;
     private bool _hasKeyboardFocus;
 
+    // Visual tree elements (built in code to avoid ContentProperty conflict)
+    private Border stepIndicatorTop = null!;
+    private HorizontalStackLayout stepIndicatorContainer = null!;
+    private Label stepTitleLabel = null!;
+    private Label stepDescriptionLabel = null!;
+    private ContentView stepContentContainer = null!;
+    private Label emptyLabel = null!;
+    private Button cancelButton = null!;
+    private Button skipButton = null!;
+    private Button backButton = null!;
+    private Button nextButton = null!;
+
     #endregion
 
     #region Bindable Properties
@@ -674,7 +686,214 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     public Wizard()
     {
         InitializeComponent();
+        BuildVisualTree();
         _steps.CollectionChanged += OnStepsCollectionChanged;
+    }
+
+    /// <summary>
+    /// Builds the visual tree in code to avoid conflict with [ContentProperty(nameof(Steps))].
+    /// </summary>
+    private void BuildVisualTree()
+    {
+        // Step indicator container
+        stepIndicatorContainer = new HorizontalStackLayout
+        {
+            Spacing = 0,
+            HorizontalOptions = LayoutOptions.Center
+        };
+
+        var indicatorScrollView = new ScrollView
+        {
+            Orientation = ScrollOrientation.Horizontal,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Never,
+            Content = stepIndicatorContainer
+        };
+
+        // Step indicator top border
+        stepIndicatorTop = new Border
+        {
+            Content = indicatorScrollView
+        };
+        stepIndicatorTop.SetBinding(Border.BackgroundColorProperty,
+            new Binding(nameof(EffectiveHeaderBackgroundColor), source: this));
+        stepIndicatorTop.SetBinding(Border.PaddingProperty,
+            new Binding(nameof(HeaderPadding), source: this));
+
+        // Step title label
+        stepTitleLabel = new Label
+        {
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        stepTitleLabel.SetBinding(Label.FontSizeProperty,
+            new Binding(nameof(HeaderFontSize), source: this));
+        stepTitleLabel.SetBinding(Label.FontAttributesProperty,
+            new Binding(nameof(HeaderFontAttributes), source: this));
+        stepTitleLabel.SetBinding(Label.TextColorProperty,
+            new Binding(nameof(EffectiveForegroundColor), source: this));
+
+        // Step description label
+        stepDescriptionLabel = new Label
+        {
+            FontSize = 13,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+        stepDescriptionLabel.SetAppThemeColor(Label.TextColorProperty,
+            Color.FromArgb("#666666"),
+            Color.FromArgb("#AAAAAA"));
+
+        // Step content container
+        stepContentContainer = new ContentView();
+
+        // Empty label
+        emptyLabel = new Label
+        {
+            Text = "No steps defined",
+            IsVisible = false,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center
+        };
+        emptyLabel.SetAppThemeColor(Label.TextColorProperty,
+            Color.FromArgb("#999999"),
+            Color.FromArgb("#666666"));
+
+        // Content grid (title, description, content, empty state)
+        var contentGrid = new Grid
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Star)
+            }
+        };
+        contentGrid.Add(stepTitleLabel, 0, 0);
+        contentGrid.Add(stepDescriptionLabel, 0, 1);
+        contentGrid.Add(stepContentContainer, 0, 2);
+        contentGrid.Add(emptyLabel, 0, 0);
+        Grid.SetRowSpan(emptyLabel, 3);
+
+        // Content area border
+        var contentBorder = new Border
+        {
+            Padding = new Thickness(16),
+            BackgroundColor = Colors.Transparent,
+            Content = contentGrid
+        };
+
+        // Navigation buttons
+        cancelButton = new Button
+        {
+            BackgroundColor = Colors.Transparent
+        };
+        cancelButton.SetBinding(Button.TextProperty,
+            new Binding(nameof(CancelButtonText), source: this));
+        cancelButton.SetBinding(Button.IsVisibleProperty,
+            new Binding(nameof(ShowCancelButton), source: this));
+        cancelButton.SetAppThemeColor(Button.TextColorProperty,
+            Color.FromArgb("#666666"),
+            Color.FromArgb("#AAAAAA"));
+        cancelButton.Clicked += OnCancelClicked;
+
+        skipButton = new Button
+        {
+            IsVisible = false,
+            BackgroundColor = Colors.Transparent,
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        skipButton.SetBinding(Button.TextProperty,
+            new Binding(nameof(SkipButtonText), source: this));
+        skipButton.SetAppThemeColor(Button.TextColorProperty,
+            Color.FromArgb("#666666"),
+            Color.FromArgb("#AAAAAA"));
+        skipButton.Clicked += OnSkipClicked;
+
+        backButton = new Button
+        {
+            Margin = new Thickness(0, 0, 8, 0)
+        };
+        backButton.SetBinding(Button.TextProperty,
+            new Binding(nameof(BackButtonText), source: this));
+        backButton.SetBinding(Button.IsVisibleProperty,
+            new Binding(nameof(ShowBackButton), source: this));
+        backButton.SetAppThemeColor(Button.BackgroundColorProperty,
+            Color.FromArgb("#E0E0E0"),
+            Color.FromArgb("#404040"));
+        backButton.SetBinding(Button.TextColorProperty,
+            new Binding(nameof(EffectiveForegroundColor), source: this));
+        backButton.Clicked += OnBackClicked;
+
+        nextButton = new Button
+        {
+            TextColor = Colors.White
+        };
+        nextButton.SetBinding(Button.TextProperty,
+            new Binding(nameof(NextButtonText), source: this));
+        nextButton.SetBinding(Button.BackgroundColorProperty,
+            new Binding(nameof(EffectiveAccentColor), source: this));
+        nextButton.Clicked += OnNextClicked;
+
+        // Navigation grid
+        var navGrid = new Grid
+        {
+            ColumnDefinitions =
+            {
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Star),
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Auto),
+                new ColumnDefinition(GridLength.Auto)
+            }
+        };
+        navGrid.Add(cancelButton, 0, 0);
+        navGrid.Add(new BoxView(), 1, 0);
+        navGrid.Add(skipButton, 2, 0);
+        navGrid.Add(backButton, 3, 0);
+        navGrid.Add(nextButton, 4, 0);
+
+        // Navigation border
+        var navBorder = new Border
+        {
+            Padding = new Thickness(12, 8),
+            Content = navGrid
+        };
+        navBorder.SetAppThemeColor(Border.BackgroundColorProperty,
+            Color.FromArgb("#F5F5F5"),
+            Color.FromArgb("#2D2D2D"));
+
+        // Main grid
+        var mainGrid = new Grid
+        {
+            RowDefinitions =
+            {
+                new RowDefinition(GridLength.Auto),
+                new RowDefinition(GridLength.Star),
+                new RowDefinition(GridLength.Auto)
+            }
+        };
+        mainGrid.Add(stepIndicatorTop, 0, 0);
+        mainGrid.Add(contentBorder, 0, 1);
+        mainGrid.Add(navBorder, 0, 2);
+
+        // Corner radius shape
+        var cornerRadiusShape = new RoundRectangle();
+        cornerRadiusShape.SetBinding(RoundRectangle.CornerRadiusProperty,
+            new Binding(nameof(EffectiveCornerRadius), source: this));
+
+        // Outer border
+        var outerBorder = new Border
+        {
+            StrokeShape = cornerRadiusShape,
+            Content = mainGrid
+        };
+        outerBorder.SetBinding(Border.StrokeThicknessProperty,
+            new Binding(nameof(EffectiveBorderThickness), source: this));
+        outerBorder.SetBinding(Border.StrokeProperty,
+            new Binding(nameof(EffectiveBorderColor), source: this));
+        outerBorder.SetAppThemeColor(Border.BackgroundColorProperty,
+            Color.FromArgb("#FFFFFF"),
+            Color.FromArgb("#1E1E1E"));
+
+        Content = outerBorder;
     }
 
     #endregion
@@ -1181,6 +1400,7 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
         }
         else
         {
+            UpdateStepContent();
             UpdateStepIndicator();
             UpdateNavigationButtons();
         }

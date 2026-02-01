@@ -59,9 +59,9 @@
                         <Label Text="Step 4: Confirmation" FontSize="18" FontAttributes="Bold" />
                         <Label Text="Please review your information:" />
 
-                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="15" RowSpacing="8">
+                        <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="15" RowSpacing="8">
                             <Label Grid.Row="0" Grid.Column="0" Text="Name:" FontAttributes="Bold" />
-                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding FirstName, StringFormat='{0}'}" />
+                            <Label Grid.Row="0" Grid.Column="1" Text="{Binding FirstName}" />
 
                             <Label Grid.Row="1" Grid.Column="0" Text="Last Name:" FontAttributes="Bold" />
                             <Label Grid.Row="1" Grid.Column="1" Text="{Binding LastName}" />
@@ -73,7 +73,10 @@
                             <Label Grid.Row="3" Grid.Column="1" Text="{Binding Phone}" />
 
                             <Label Grid.Row="4" Grid.Column="0" Text="Address:" FontAttributes="Bold" />
-                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding Address, StringFormat='{0}, '}" />
+                            <Label Grid.Row="4" Grid.Column="1" Text="{Binding Address}" />
+
+                            <Label Grid.Row="5" Grid.Column="0" Text="City:" FontAttributes="Bold" />
+                            <Label Grid.Row="5" Grid.Column="1" Text="{Binding City}" />
                         </Grid>
 
                         <HorizontalStackLayout Spacing="10" Margin="0,20,0,0">
