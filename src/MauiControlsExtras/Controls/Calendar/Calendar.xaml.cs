@@ -9,7 +9,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A calendar control for date selection with month/year/decade views.
 /// </summary>
-public partial class Calendar : StyledControlBase, IKeyboardNavigable
+public partial class Calendar : StyledControlBase, IKeyboardNavigable, ISelectable
 {
     #region Private Fields
 
@@ -178,6 +178,30 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
         typeof(ICommand),
         typeof(Calendar));
 
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
+        nameof(SelectAllCommand),
+        typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommand),
+        typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommand),
+        typeof(ICommand),
+        typeof(Calendar));
+
     #endregion
 
     #region Properties
@@ -337,6 +361,27 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
         set => SetValue(KeyPressCommandProperty, value);
     }
 
+    /// <inheritdoc/>
+    public ICommand? SelectAllCommand
+    {
+        get => (ICommand?)GetValue(SelectAllCommandProperty);
+        set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? ClearSelectionCommand
+    {
+        get => (ICommand?)GetValue(ClearSelectionCommandProperty);
+        set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? SelectionChangedCommand
+    {
+        get => (ICommand?)GetValue(SelectionChangedCommandProperty);
+        set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
     #endregion
 
     #region Events
@@ -371,6 +416,9 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
 #pragma warning disable CS0067
     public event EventHandler<KeyEventArgs>? KeyReleased;
 #pragma warning restore CS0067
+
+    /// <inheritdoc/>
+    public event EventHandler<Base.SelectionChangedEventArgs>? SelectionChanged;
 
     #endregion
 
@@ -459,6 +507,164 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
         GotFocusCommand?.Execute(this);
         RebuildCalendar();
         return true;
+    }
+
+    #endregion
+
+    #region ISelectable Implementation
+
+    /// <inheritdoc/>
+    public bool HasSelection => _selectedDates.Count > 0;
+
+    /// <inheritdoc/>
+    public bool IsAllSelected
+    {
+        get
+        {
+            if (SelectionMode == CalendarSelectionMode.Single || SelectionMode == CalendarSelectionMode.None)
+                return _selectedDates.Count > 0;
+
+            // Check if all enabled dates in current month are selected
+            var enabledDates = GetEnabledDatesInCurrentMonth();
+            return enabledDates.Count > 0 && enabledDates.All(d => _selectedDates.Contains(d));
+        }
+    }
+
+    /// <inheritdoc/>
+    public bool SupportsMultipleSelection =>
+        SelectionMode == CalendarSelectionMode.Multiple || SelectionMode == CalendarSelectionMode.Range;
+
+    /// <inheritdoc/>
+    void ISelectable.SelectAll()
+    {
+        if (SelectionMode == CalendarSelectionMode.None) return;
+
+        var oldSelection = _selectedDates.ToList();
+
+        if (SelectionMode == CalendarSelectionMode.Single)
+        {
+            // In single mode, select today if nothing selected
+            if (_selectedDates.Count == 0)
+            {
+                var today = DateTime.Today;
+                if (IsDateEnabled(today))
+                {
+                    SelectDate(today);
+                }
+            }
+        }
+        else
+        {
+            // In multiple/range mode, select all enabled dates in current month
+            var enabledDates = GetEnabledDatesInCurrentMonth();
+            foreach (var date in enabledDates)
+            {
+                _selectedDates.Add(date);
+            }
+            SelectedDate = enabledDates.FirstOrDefault();
+            RebuildCalendar();
+        }
+
+        RaiseSelectionChanged(oldSelection, _selectedDates.ToList());
+    }
+
+    /// <inheritdoc/>
+    void ISelectable.ClearSelection()
+    {
+        var oldSelection = _selectedDates.ToList();
+        ClearSelection();
+        RaiseSelectionChanged(oldSelection, _selectedDates.ToList());
+    }
+
+    /// <inheritdoc/>
+    public object? GetSelection()
+    {
+        return _selectedDates.Count switch
+        {
+            0 => null,
+            1 => _selectedDates.First(),
+            _ => _selectedDates.OrderBy(d => d).ToList()
+        };
+    }
+
+    /// <inheritdoc/>
+    public void SetSelection(object? selection)
+    {
+        var oldSelection = _selectedDates.ToList();
+
+        if (selection is null)
+        {
+            ClearSelection();
+        }
+        else if (selection is DateTime date)
+        {
+            SelectDate(date);
+        }
+        else if (selection is IEnumerable<DateTime> dates)
+        {
+            _selectedDates.Clear();
+            foreach (var d in dates.Where(IsDateEnabled))
+            {
+                _selectedDates.Add(d.Date);
+            }
+            SelectedDate = _selectedDates.FirstOrDefault();
+            RebuildCalendar();
+        }
+        else
+        {
+            throw new ArgumentException(
+                $"Selection type {selection.GetType().Name} is not supported. " +
+                "Use DateTime or IEnumerable<DateTime>.",
+                nameof(selection));
+        }
+
+        RaiseSelectionChanged(oldSelection, _selectedDates.ToList());
+    }
+
+    private List<DateTime> GetEnabledDatesInCurrentMonth()
+    {
+        var result = new List<DateTime>();
+        var daysInMonth = DateTime.DaysInMonth(_displayDate.Year, _displayDate.Month);
+
+        for (int day = 1; day <= daysInMonth; day++)
+        {
+            var date = new DateTime(_displayDate.Year, _displayDate.Month, day);
+            if (IsDateEnabled(date))
+            {
+                result.Add(date);
+            }
+        }
+
+        return result;
+    }
+
+    private void RaiseSelectionChanged(List<DateTime> oldSelection, List<DateTime> newSelection)
+    {
+        // Only raise event if selection actually changed
+        var oldSet = new HashSet<DateTime>(oldSelection);
+        var newSet = new HashSet<DateTime>(newSelection);
+        if (oldSet.SetEquals(newSet)) return;
+
+        object? oldValue = oldSelection.Count switch
+        {
+            0 => null,
+            1 => oldSelection[0],
+            _ => oldSelection
+        };
+
+        object? newValue = newSelection.Count switch
+        {
+            0 => null,
+            1 => newSelection[0],
+            _ => newSelection
+        };
+
+        var args = new Base.SelectionChangedEventArgs(oldValue, newValue);
+        SelectionChanged?.Invoke(this, args);
+        SelectionChangedCommand?.Execute(newValue);
+
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsAllSelected));
     }
 
     #endregion
@@ -610,6 +816,7 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
         DateSelecting?.Invoke(this, selectingArgs);
         if (selectingArgs.Cancel) return;
 
+        var oldSelection = _selectedDates.ToList();
         var normalizedDate = date.Date;
 
         switch (SelectionMode)
@@ -662,6 +869,9 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
         var selectedArgs = new CalendarDateSelectedEventArgs(normalizedDate, true);
         DateSelected?.Invoke(this, selectedArgs);
         DateSelectedCommand?.Execute(selectedArgs);
+
+        // Raise ISelectable events
+        RaiseSelectionChanged(oldSelection, _selectedDates.ToList());
     }
 
     /// <summary>
@@ -673,6 +883,10 @@ public partial class Calendar : StyledControlBase, IKeyboardNavigable
         _rangeStart = null;
         SelectedDate = null;
         RebuildCalendar();
+
+        // Update ISelectable state
+        OnPropertyChanged(nameof(HasSelection));
+        OnPropertyChanged(nameof(IsAllSelected));
     }
 
     private bool IsDateEnabled(DateTime date)
