@@ -69,7 +69,7 @@
                     <extras:ComboBox ItemsSource="{Binding Countries}"
                                      SelectedItem="{Binding SearchableCountry}"
                                      DisplayMemberPath="Name"
-                                     IsSearchEnabled="True"
+                                     IsSearchVisible="True"
                                      Placeholder="Search countries..."
                                      WidthRequest="300"
                                      HorizontalOptions="Start">
@@ -96,7 +96,7 @@
                     <extras:ComboBox ItemsSource="{Binding Employees}"
                                      SelectedItem="{Binding SelectedEmployee}"
                                      DisplayMemberPath="Name"
-                                     IsSearchEnabled="True"
+                                     IsSearchVisible="True"
                                      Placeholder="Select an employee..."
                                      WidthRequest="350"
                                      HorizontalOptions="Start">
