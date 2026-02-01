@@ -606,6 +606,12 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         InitializeComponent();
         BuildVisualTree();
         _items.CollectionChanged += OnItemsCollectionChanged;
+
+        // Initialize UI for items already added via XAML (before CollectionChanged was hooked up)
+        if (_items.Count > 0)
+        {
+            RebuildUI();
+        }
     }
 
     /// <summary>

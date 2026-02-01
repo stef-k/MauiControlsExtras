@@ -205,6 +205,16 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         200.0);
 
     /// <summary>
+    /// Identifies the <see cref="ItemTemplate"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ItemTemplateProperty = BindableProperty.Create(
+        nameof(ItemTemplate),
+        typeof(DataTemplate),
+        typeof(ComboBox),
+        null,
+        propertyChanged: OnItemTemplateChanged);
+
+    /// <summary>
     /// Identifies the <see cref="SelectedIconSource"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectedIconSourceProperty = BindableProperty.Create(
@@ -484,6 +494,16 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         get => (double)GetValue(ListMaxHeightProperty);
         private set => SetValue(ListMaxHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets a custom template for dropdown items.
+    /// When set, overrides the default template created from DisplayMemberPath.
+    /// </summary>
+    public DataTemplate? ItemTemplate
+    {
+        get => (DataTemplate?)GetValue(ItemTemplateProperty);
+        set => SetValue(ItemTemplateProperty, value);
     }
 
     /// <summary>
@@ -919,6 +939,14 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         }
     }
 
+    private static void OnItemTemplateChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is ComboBox comboBox)
+        {
+            comboBox.SetupItemTemplate();
+        }
+    }
+
     private void OnSelectedItemChangedInternal(object? newValue)
     {
         if (_isUpdatingFromSelection)
@@ -1172,6 +1200,14 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
     private void SetupItemTemplate()
     {
+        // If a custom ItemTemplate is provided, use it directly
+        if (ItemTemplate != null)
+        {
+            itemsList.ItemTemplate = ItemTemplate;
+            return;
+        }
+
+        // Otherwise, create default template based on DisplayMemberPath/IconMemberPath
         var displayMemberPath = DisplayMemberPath;
         var iconMemberPath = IconMemberPath;
         var hasIcon = !string.IsNullOrEmpty(iconMemberPath);
