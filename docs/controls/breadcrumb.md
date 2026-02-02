@@ -2,6 +2,8 @@
 
 A breadcrumb navigation control showing the current location in a hierarchy.
 
+![Breadcrumb](../images/breadcrumb.JPG)
+
 ## Features
 
 - **Hierarchical Navigation** - Display path to current location

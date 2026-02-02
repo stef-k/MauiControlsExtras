@@ -2,6 +2,8 @@
 
 A tag/token input control with autocomplete support.
 
+![TokenEntry](../images/token-entry.JPG)
+
 ## Features
 
 - **Token Display** - Displays values as removable chips/tags

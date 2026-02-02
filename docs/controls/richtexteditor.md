@@ -2,6 +2,8 @@
 
 A rich text editor control with HTML and Markdown support, powered by Quill.js.
 
+![RichTextEditor](../images/rich-text-editor.JPG)
+
 ## Features
 
 - **HTML & Markdown** - Two-way binding for both formats

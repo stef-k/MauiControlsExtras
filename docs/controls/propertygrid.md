@@ -2,6 +2,8 @@
 
 A property grid control that generates an editable UI from an object's properties, similar to Visual Studio's Properties panel.
 
+![PropertyGrid](../images/property-grid.JPG)
+
 ## Features
 
 - **Auto-Generation** - Automatically generates editors for properties

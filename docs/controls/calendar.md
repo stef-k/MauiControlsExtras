@@ -2,6 +2,8 @@
 
 A calendar control for date selection with month, year, and decade views.
 
+![Calendar](../images/calendar.JPG)
+
 ## Features
 
 - **Date Selection** - Single, multiple, or range selection

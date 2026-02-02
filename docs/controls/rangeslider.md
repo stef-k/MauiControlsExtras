@@ -2,6 +2,8 @@
 
 A dual-thumb slider for selecting a range of values.
 
+![RangeSlider](../images/range-slider.JPG)
+
 ## Features
 
 - **Range Selection** - Select min and max values

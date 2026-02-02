@@ -2,6 +2,8 @@
 
 A hierarchical tree control for displaying parent-child relationships.
 
+![TreeView](../images/tree-view.JPG)
+
 ## Features
 
 - **Hierarchical Data** - Display nested parent-child relationships

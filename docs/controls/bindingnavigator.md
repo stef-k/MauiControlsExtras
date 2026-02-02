@@ -2,6 +2,8 @@
 
 A navigation toolbar for browsing data collections, similar to WinForms BindingNavigator.
 
+![BindingNavigator](../images/binding-navigator.JPG)
+
 ## Features
 
 - **Navigation Buttons** - First, Previous, Next, Last

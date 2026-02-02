@@ -2,6 +2,8 @@
 
 A star/icon-based rating control.
 
+![Rating](../images/rating.JPG)
+
 ## Features
 
 - **Configurable Rating** - Set maximum value and precision mode

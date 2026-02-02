@@ -14,6 +14,8 @@ A complete demo app showcasing all controls is available in the [`samples/DemoAp
 
 > **Note**: The demo uses direct event handlers for simplicity. For production apps, we recommend proper MVVM patterns with commands and view models.
 
+![MAUI Controls Extras Demo](images/main-page.JPG)
+
 ## Available Controls
 
 | Control | Description |
