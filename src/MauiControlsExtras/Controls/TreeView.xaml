@@ -15,8 +15,7 @@
 
         <CollectionView x:Name="flattenedList"
                         ItemsSource="{Binding FlattenedItems, Source={x:Reference thisControl}}"
-                        SelectionMode="{Binding CollectionSelectionMode, Source={x:Reference thisControl}}"
-                        SelectionChanged="OnCollectionSelectionChanged">
+                        SelectionMode="None">
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="local:TreeViewNode">
                     <Grid Padding="4,2"
@@ -91,9 +90,15 @@
                                    IsVisible="{Binding HasIcon}"
                                    VerticalOptions="Center" />
 
-                            <!-- Content -->
+                            <!-- Content: Show Label for default display, ContentView for custom templates -->
+                            <Label Grid.Column="4"
+                                   Text="{Binding DisplayText}"
+                                   IsVisible="{Binding HasNoContent}"
+                                   VerticalOptions="Center"
+                                   TextColor="{Binding TextColor}" />
                             <ContentView Grid.Column="4"
                                          Content="{Binding Content}"
+                                         IsVisible="{Binding HasContent}"
                                          VerticalOptions="Center" />
                         </Grid>
                     </Grid>

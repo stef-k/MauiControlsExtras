@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGridView**: Column headers and data columns now align correctly on initial load (#98)
   - Auto-width columns previously measured independently causing misalignment
   - Added automatic column width synchronization after layout completes
+- **TreeView**: Fixed multiple issues with selection and display (#99)
+  - Selection background now uses theme-aware colors (dark theme compatible)
+  - Fixed double selection caused by CollectionView's native selection conflicting with manual selection
+  - Fixed items disappearing during expand/collapse by using DisplayText binding instead of Content views
+  - Added TextColor property to TreeViewNode for proper text coloring when selected
 
 ### Changed
 

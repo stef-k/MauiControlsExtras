@@ -123,7 +123,6 @@ public class TreeViewNode : INotifyPropertyChanged
     private bool _isExpanded;
     private bool _isSelected;
     private CheckState _checkState = CheckState.Unchecked;
-    private View? _content;
     private Color? _backgroundColor;
 
     /// <summary>
@@ -248,20 +247,89 @@ public class TreeViewNode : INotifyPropertyChanged
     public Thickness IndentMargin { get; set; }
 
     /// <summary>
-    /// Gets or sets the content view for this node.
+    /// Gets the content view for this node. Creates a fresh view each time to avoid
+    /// virtualization issues with CollectionView (a View can only have one parent).
     /// </summary>
     public View? Content
     {
-        get => _content;
+        get
+        {
+            // Create fresh content each time to avoid virtualization issues
+            if (_itemTemplate != null)
+            {
+                var content = _itemTemplate.CreateContent() as View;
+                if (content != null)
+                {
+                    content.BindingContext = DataItem;
+                    return content;
+                }
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the item template used to create content.
+    /// </summary>
+    internal DataTemplate? ItemTemplate
+    {
+        get => _itemTemplate;
         set
         {
-            if (_content != value)
+            if (_itemTemplate != value)
             {
-                _content = value;
+                _itemTemplate = value;
+                OnPropertyChanged(nameof(Content));
+                OnPropertyChanged(nameof(HasContent));
+                OnPropertyChanged(nameof(HasNoContent));
+            }
+        }
+    }
+    private DataTemplate? _itemTemplate;
+
+    /// <summary>
+    /// Gets whether this node has custom content (from ItemTemplate).
+    /// </summary>
+    public bool HasContent => _itemTemplate != null;
+
+    /// <summary>
+    /// Gets whether this node has no custom content (show DisplayText instead).
+    /// </summary>
+    public bool HasNoContent => _itemTemplate == null;
+
+    /// <summary>
+    /// Gets or sets the display text for this node.
+    /// </summary>
+    public string DisplayText
+    {
+        get => _displayText;
+        set
+        {
+            if (_displayText != value)
+            {
+                _displayText = value;
                 OnPropertyChanged();
             }
         }
     }
+    private string _displayText = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the text color for this node.
+    /// </summary>
+    public Color TextColor
+    {
+        get => _textColor;
+        set
+        {
+            if (_textColor != value)
+            {
+                _textColor = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+    private Color _textColor = Colors.Black;
 
     /// <summary>
     /// Gets or sets the background color.
@@ -296,9 +364,32 @@ public class TreeViewNode : INotifyPropertyChanged
 
     private void UpdateBackgroundColor()
     {
-        BackgroundColor = IsSelected
-            ? Color.FromArgb("#E3F2FD")
-            : Colors.Transparent;
+        var isDarkTheme = Application.Current?.RequestedTheme == AppTheme.Dark;
+
+        if (IsSelected)
+        {
+            // Use theme-aware selection colors
+            BackgroundColor = isDarkTheme
+                ? Color.FromArgb("#3D5A80")  // Dark theme: muted blue background
+                : Color.FromArgb("#E3F2FD"); // Light theme: light blue background
+            TextColor = isDarkTheme
+                ? Colors.White               // Dark theme: white text on selection
+                : Color.FromArgb("#1565C0"); // Light theme: dark blue text on selection
+        }
+        else
+        {
+            BackgroundColor = Colors.Transparent;
+            // Use theme-appropriate text color for non-selected items
+            TextColor = isDarkTheme ? Colors.White : Colors.Black;
+        }
+    }
+
+    /// <summary>
+    /// Updates the visual properties based on current theme.
+    /// </summary>
+    internal void UpdateTheme()
+    {
+        UpdateBackgroundColor();
     }
 
     /// <summary>
@@ -827,16 +918,6 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     /// </summary>
     public ObservableCollection<TreeViewNode> FlattenedItems => _flattenedItems;
 
-    /// <summary>
-    /// Gets the collection view selection mode based on TreeView selection mode.
-    /// </summary>
-    public SelectionMode CollectionSelectionMode => SelectionMode switch
-    {
-        TreeViewSelectionMode.None => Microsoft.Maui.Controls.SelectionMode.None,
-        TreeViewSelectionMode.Single => Microsoft.Maui.Controls.SelectionMode.Single,
-        TreeViewSelectionMode.Multiple => Microsoft.Maui.Controls.SelectionMode.Multiple,
-        _ => Microsoft.Maui.Controls.SelectionMode.Single
-    };
 
     /// <summary>
     /// Gets the expander color.
@@ -1212,8 +1293,15 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
         _nodeMap[item] = node;
 
-        // Set up content
-        node.Content = CreateItemContent(item);
+        // Set display text
+        node.DisplayText = GetDisplayText(item);
+
+        // Set initial text color based on theme
+        var isDarkTheme = Application.Current?.RequestedTheme == AppTheme.Dark;
+        node.TextColor = isDarkTheme ? Colors.White : Colors.Black;
+
+        // Set ItemTemplate reference so Content can be created on demand
+        node.ItemTemplate = ItemTemplate;
 
         // Set up icon
         if (!string.IsNullOrEmpty(IconMemberPath))
@@ -1267,27 +1355,6 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         return node;
     }
 
-    private View CreateItemContent(object item)
-    {
-        if (ItemTemplate != null)
-        {
-            var content = ItemTemplate.CreateContent() as View;
-            if (content != null)
-            {
-                content.BindingContext = item;
-                return content;
-            }
-        }
-
-        // Default: show display member or ToString
-        var displayText = GetDisplayText(item);
-        return new Label
-        {
-            Text = displayText,
-            VerticalOptions = LayoutOptions.Center,
-            TextColor = EffectiveForegroundColor
-        };
-    }
 
     private string GetDisplayText(object item)
     {
@@ -1564,10 +1631,6 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         }
     }
 
-    private void OnCollectionSelectionChanged(object? sender, Microsoft.Maui.Controls.SelectionChangedEventArgs e)
-    {
-        // Sync with our internal selection state
-    }
 
     #endregion
 
@@ -1617,10 +1680,8 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
     private static void OnSelectionModeChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        if (bindable is TreeView treeView)
-        {
-            treeView.OnPropertyChanged(nameof(CollectionSelectionMode));
-        }
+        // Selection is handled manually via BackgroundColor, not via CollectionView.SelectionMode
+        // No action needed when SelectionMode changes
     }
 
     private static void OnItemTemplateChanged(BindableObject bindable, object oldValue, object newValue)
