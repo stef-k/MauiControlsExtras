@@ -55,19 +55,20 @@
 
         <!-- DataGrid -->
         <Frame Grid.Row="2" Style="{StaticResource DemoCardStyle}" Padding="0">
-            <extras:DataGridView x:Name="dataGrid"
-                                 ItemsSource="{Binding Employees}"
-                                 SelectedItem="{Binding SelectedEmployee}"
-                                 CanUserSort="{Binding CanUserSort}"
-                                 CanUserFilter="{Binding CanUserFilter}"
-                                 CanUserEdit="{Binding CanUserEdit}"
-                                 EnablePagination="{Binding EnablePagination}"
-                                 ShowDefaultContextMenu="True"
-                                 AutoGenerateColumns="False"
-                                 VerticalOptions="FillAndExpand"
-                                 HorizontalOptions="FillAndExpand"
-                                 MinHeightRequest="300"
-                                 SelectionChanged="OnSelectionChanged" />
+            <Grid MinimumHeightRequest="300">
+                <extras:DataGridView x:Name="dataGrid"
+                                     ItemsSource="{Binding Employees}"
+                                     SelectedItem="{Binding SelectedEmployee}"
+                                     CanUserSort="{Binding CanUserSort}"
+                                     CanUserFilter="{Binding CanUserFilter}"
+                                     CanUserEdit="{Binding CanUserEdit}"
+                                     EnablePagination="{Binding EnablePagination}"
+                                     ShowDefaultContextMenu="True"
+                                     AutoGenerateColumns="False"
+                                     VerticalOptions="FillAndExpand"
+                                     HorizontalOptions="FillAndExpand"
+                                     SelectionChanged="OnSelectionChanged" />
+            </Grid>
         </Frame>
 
         <!-- Status -->
