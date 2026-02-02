@@ -12,6 +12,7 @@
 
             <!-- Converters -->
             <converters:IconConverter x:Key="IconConverter" />
+            <converters:IsNotZeroConverter x:Key="IsNotZeroConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

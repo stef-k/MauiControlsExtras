@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:DemoApp.Views"
     Shell.FlyoutBehavior="Flyout"
+    FlyoutBackgroundColor="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}"
     Title="MauiControlsExtras Demo">
 
     <Shell.FlyoutHeader>
@@ -21,6 +22,40 @@
             </VerticalStackLayout>
         </Grid>
     </Shell.FlyoutHeader>
+
+    <Shell.ItemTemplate>
+        <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*" Padding="15,10" BackgroundColor="Transparent">
+                <Image Source="{Binding FlyoutIcon}"
+                       HeightRequest="24"
+                       WidthRequest="24"
+                       VerticalOptions="Center" />
+                <Label Grid.Column="1"
+                       Text="{Binding Title}"
+                       FontSize="16"
+                       VerticalOptions="Center"
+                       Margin="15,0,0,0"
+                       TextColor="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
+            </Grid>
+        </DataTemplate>
+    </Shell.ItemTemplate>
+
+    <Shell.MenuItemTemplate>
+        <DataTemplate>
+            <Grid ColumnDefinitions="Auto,*" Padding="15,10" BackgroundColor="Transparent">
+                <Image Source="{Binding Icon}"
+                       HeightRequest="24"
+                       WidthRequest="24"
+                       VerticalOptions="Center" />
+                <Label Grid.Column="1"
+                       Text="{Binding Text}"
+                       FontSize="16"
+                       VerticalOptions="Center"
+                       Margin="15,0,0,0"
+                       TextColor="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
+            </Grid>
+        </DataTemplate>
+    </Shell.MenuItemTemplate>
 
     <!-- Gallery (Home) -->
     <FlyoutItem Title="Gallery" Icon="{OnPlatform 'home.png', Android='home.png', iOS='home.png'}">
