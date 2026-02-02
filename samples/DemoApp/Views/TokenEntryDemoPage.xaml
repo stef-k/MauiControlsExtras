@@ -56,7 +56,7 @@
                                        TokenAdded="OnTokenAdded"
                                        TokenRemoved="OnTokenRemoved" />
 
-                    <HorizontalStackLayout Spacing="5" FlexLayout.Wrap="Wrap">
+                    <HorizontalStackLayout Spacing="5">
                         <Label Text="Selected:" FontAttributes="Bold" />
                         <Label Text="{Binding TagTokens.Count, StringFormat='{0} tags'}" />
                     </HorizontalStackLayout>
