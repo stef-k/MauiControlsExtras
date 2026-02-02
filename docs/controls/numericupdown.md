@@ -2,6 +2,8 @@
 
 A numeric input control with increment/decrement buttons.
 
+![NumericUpDown](../images/numeric-up-down.JPG)
+
 ## Features
 
 - **Increment/Decrement** - Buttons to adjust value

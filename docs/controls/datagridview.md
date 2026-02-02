@@ -2,6 +2,8 @@
 
 A feature-rich data grid control for displaying and editing tabular data.
 
+![DataGridView](../images/datagridview.JPG)
+
 ## Features
 
 - **Sorting** - Click column headers to sort

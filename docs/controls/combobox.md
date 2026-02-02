@@ -2,6 +2,8 @@
 
 The ComboBox control provides a dropdown selection experience similar to WinForms ComboBox, with additional features for mobile and cross-platform scenarios.
 
+![ComboBox](../images/combobox.JPG)
+
 ## Features
 
 - **Searchable Dropdown** - Built-in search with debounced input (100ms)

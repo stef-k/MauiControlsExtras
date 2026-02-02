@@ -2,6 +2,8 @@
 
 A dropdown control that allows selecting multiple items with checkboxes.
 
+![MultiSelectComboBox](../images/multi-select-combo-box.JPG)
+
 ## Features
 
 - **Multiple Selection** - Select multiple items via checkboxes

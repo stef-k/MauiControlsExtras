@@ -2,6 +2,8 @@
 
 A text input control with format masking for structured data entry.
 
+![MaskedEntry](../images/masked-entry.JPG)
+
 ## Features
 
 - **Format Masks** - Predefined and custom masks

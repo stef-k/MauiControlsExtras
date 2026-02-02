@@ -2,6 +2,8 @@
 
 A wizard/stepper control for multi-step workflows with step indicators and navigation.
 
+![Wizard](../images/wizard.JPG)
+
 ## Features
 
 - **Step Indicators** - Visual step progress with numbers or custom icons

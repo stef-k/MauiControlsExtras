@@ -2,6 +2,8 @@
 
 An accordion control with expandable/collapsible sections.
 
+![Accordion](../images/accordion.JPG)
+
 ## Features
 
 - **Expand Modes** - Single or multiple sections open
