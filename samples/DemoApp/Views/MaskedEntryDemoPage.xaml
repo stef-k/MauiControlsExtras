@@ -23,7 +23,6 @@
                     <extras:MaskedEntry Mask="(000) 000-0000"
                                         Text="{Binding PhoneNumber}"
                                         Placeholder="(555) 123-4567"
-                                        Keyboard="Telephone"
                                         WidthRequest="250"
                                         HorizontalOptions="Start" />
 
@@ -40,7 +39,6 @@
                     <extras:MaskedEntry Mask="00/00/0000"
                                         Text="{Binding DateValue}"
                                         Placeholder="01/15/2025"
-                                        Keyboard="Numeric"
                                         WidthRequest="200"
                                         HorizontalOptions="Start" />
 
@@ -57,7 +55,6 @@
                     <extras:MaskedEntry Mask="000-00-0000"
                                         Text="{Binding SsnValue}"
                                         Placeholder="123-45-6789"
-                                        Keyboard="Numeric"
                                         WidthRequest="200"
                                         HorizontalOptions="Start" />
 
@@ -74,7 +71,6 @@
                     <extras:MaskedEntry Mask="0000 0000 0000 0000"
                                         Text="{Binding CreditCardValue}"
                                         Placeholder="4111 1111 1111 1111"
-                                        Keyboard="Numeric"
                                         WidthRequest="280"
                                         HorizontalOptions="Start" />
 
@@ -91,7 +87,6 @@
                     <extras:MaskedEntry Mask="00000-0000"
                                         Text="{Binding ZipCodeValue}"
                                         Placeholder="12345-6789"
-                                        Keyboard="Numeric"
                                         WidthRequest="180"
                                         HorizontalOptions="Start" />
 
@@ -108,7 +103,6 @@
                     <extras:MaskedEntry Mask="000.000.000.000"
                                         Text="{Binding IpAddressValue}"
                                         Placeholder="192.168.001.001"
-                                        Keyboard="Numeric"
                                         WidthRequest="220"
                                         HorizontalOptions="Start" />
 

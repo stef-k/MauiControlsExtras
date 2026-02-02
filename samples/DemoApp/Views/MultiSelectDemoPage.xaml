@@ -41,7 +41,7 @@
                                                 SelectedItems="{Binding SelectedCountries}"
                                                 DisplayMemberPath="Name"
                                                 Placeholder="Select countries..."
-                                                IsSearchEnabled="True"
+                                                IsSearchable="True"
                                                 WidthRequest="350"
                                                 HorizontalOptions="Start">
                         <extras:MultiSelectComboBox.ItemTemplate>
@@ -67,7 +67,7 @@
                     <extras:MultiSelectComboBox ItemsSource="{Binding Skills}"
                                                 SelectedItems="{Binding SelectedSkills}"
                                                 Placeholder="Select skills..."
-                                                IsSearchEnabled="True"
+                                                IsSearchable="True"
                                                 MaxSelections="5"
                                                 WidthRequest="350"
                                                 HorizontalOptions="Start" />

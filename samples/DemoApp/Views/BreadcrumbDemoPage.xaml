@@ -63,7 +63,7 @@
 
                     <extras:Breadcrumb x:Name="StyledBreadcrumb"
                                        Separator="/"
-                                       TextColor="{StaticResource Primary}"
+                                       InactiveItemColor="{StaticResource Primary}"
                                        SeparatorColor="{StaticResource Gray300}"
                                        ActiveItemColor="{StaticResource Tertiary}"
                                        HorizontalOptions="Start" />

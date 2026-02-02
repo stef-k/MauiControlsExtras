@@ -36,7 +36,7 @@
 
                     <extras:Rating Value="{Binding ProductRating}"
                                    Maximum="5"
-                                   AllowHalfStars="True"
+                                   Precision="Half"
                                    HorizontalOptions="Start" />
 
                     <Label Text="{Binding ProductRating, StringFormat='Product rating: {0:F1} / 5 stars'}" />
@@ -51,7 +51,7 @@
 
                     <extras:Rating Value="{Binding FeedbackRating}"
                                    Maximum="5"
-                                   StarSize="40"
+                                   IconSize="40"
                                    FilledColor="{StaticResource Success}"
                                    HorizontalOptions="Start" />
 
@@ -70,7 +70,7 @@
 
                     <extras:Rating Value="{Binding CustomRating}"
                                    Maximum="10"
-                                   StarSize="25"
+                                   IconSize="25"
                                    FilledColor="{StaticResource Warning}"
                                    HorizontalOptions="Start" />
 
@@ -87,7 +87,7 @@
                     <HorizontalStackLayout Spacing="10">
                         <extras:Rating Value="{Binding ReadOnlyRating}"
                                        Maximum="5"
-                                       AllowHalfStars="True"
+                                       Precision="Half"
                                        IsEnabled="False"
                                        HorizontalOptions="Start" />
                         <Label Text="{Binding ReadOnlyRating, StringFormat='({0:F1})'}"

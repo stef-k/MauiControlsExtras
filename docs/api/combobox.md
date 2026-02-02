@@ -100,6 +100,38 @@ public string? IconMemberPath { get; set; }
 
 ---
 
+### ItemTemplate
+
+Gets or sets a custom `DataTemplate` for rendering items. When set, this takes precedence over `DisplayMemberPath` and `IconMemberPath`.
+
+```csharp
+public DataTemplate? ItemTemplate { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `DataTemplate?` | `null` | Yes |
+
+**Example:**
+
+```xml
+<extras:ComboBox ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}">
+    <extras:ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="models:User">
+            <HorizontalStackLayout Spacing="10" Padding="5">
+                <Image Source="{Binding AvatarUrl}" WidthRequest="32" HeightRequest="32" />
+                <VerticalStackLayout>
+                    <Label Text="{Binding FullName}" FontAttributes="Bold" />
+                    <Label Text="{Binding Email}" FontSize="12" TextColor="Gray" />
+                </VerticalStackLayout>
+            </HorizontalStackLayout>
+        </DataTemplate>
+    </extras:ComboBox.ItemTemplate>
+</extras:ComboBox>
+```
+
+---
+
 ### Placeholder
 
 Gets or sets the placeholder text shown when no item is selected.

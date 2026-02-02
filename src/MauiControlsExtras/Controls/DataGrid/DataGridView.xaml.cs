@@ -2809,6 +2809,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         BuildDataRows();
         BuildFooter();
 
+        // Synchronize column widths after layout is complete
+        ScheduleColumnWidthSync();
+
         // Show/hide empty view
         UpdateEmptyView();
 
@@ -4832,6 +4835,86 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (adjustedIndex < footerDefs.Count)
                 footerDefs[adjustedIndex].Width = new GridLength(newWidth);
         }
+    }
+
+    private void ScheduleColumnWidthSync()
+    {
+        // Schedule synchronization after layout is complete
+        Dispatcher.Dispatch(() =>
+        {
+            // Give layout time to complete, then sync
+            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), SynchronizeColumnWidths);
+        });
+    }
+
+    private void SynchronizeColumnWidths()
+    {
+        if (_isUpdating)
+            return;
+
+        var frozenColumns = GetFrozenColumns();
+        var scrollableColumns = GetScrollableColumns();
+
+        // Sync frozen columns
+        SyncColumnWidthsBetweenGrids(frozenHeaderGrid, frozenDataGrid, frozenFooterGrid, frozenColumns);
+
+        // Sync scrollable columns
+        SyncColumnWidthsBetweenGrids(headerGrid, dataGrid, footerGrid, scrollableColumns);
+    }
+
+    private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
+    {
+        if (headerGridRef.ColumnDefinitions.Count == 0 || dataGridRef.ColumnDefinitions.Count == 0)
+            return;
+
+        for (int i = 0; i < columns.Count && i < headerGridRef.ColumnDefinitions.Count && i < dataGridRef.ColumnDefinitions.Count; i++)
+        {
+            var column = columns[i];
+
+            // Skip columns with explicit widths (not Auto)
+            if (column.Width >= 0)
+                continue;
+
+            // Get the actual rendered widths
+            var headerWidth = GetColumnActualWidth(headerGridRef, i);
+            var dataWidth = GetColumnActualWidth(dataGridRef, i);
+
+            // Use the maximum width to ensure alignment
+            var maxWidth = Math.Max(headerWidth, dataWidth);
+
+            // Only update if we have a valid width
+            if (maxWidth > 0)
+            {
+                var newGridLength = new GridLength(maxWidth);
+                headerGridRef.ColumnDefinitions[i].Width = newGridLength;
+                dataGridRef.ColumnDefinitions[i].Width = newGridLength;
+
+                // Update footer if visible
+                if (ShowFooter && i < footerGridRef.ColumnDefinitions.Count)
+                    footerGridRef.ColumnDefinitions[i].Width = newGridLength;
+
+                // Update the column's actual width
+                column.ActualWidth = maxWidth;
+            }
+        }
+    }
+
+    private double GetColumnActualWidth(Grid grid, int columnIndex)
+    {
+        // Find the widest child in this column
+        double maxWidth = 0;
+
+        foreach (var child in grid.Children)
+        {
+            if (child is View view && Grid.GetColumn(view) == columnIndex)
+            {
+                var width = view.Width;
+                if (width > 0 && width > maxWidth)
+                    maxWidth = width;
+            }
+        }
+
+        return maxWidth;
     }
 
     private void OnColumnDragStarting(DataGridColumn column, int columnIndex, DragStartingEventArgs e)

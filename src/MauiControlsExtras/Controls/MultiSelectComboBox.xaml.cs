@@ -107,6 +107,13 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         typeof(MultiSelectComboBox),
         200.0);
 
+    public static readonly BindableProperty ItemTemplateProperty = BindableProperty.Create(
+        nameof(ItemTemplate),
+        typeof(DataTemplate),
+        typeof(MultiSelectComboBox),
+        null,
+        propertyChanged: OnItemTemplateChanged);
+
     public static readonly BindableProperty IsRequiredProperty = BindableProperty.Create(
         nameof(IsRequired),
         typeof(bool),
@@ -275,6 +282,16 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         get => (double)GetValue(ListMaxHeightProperty);
         private set => SetValue(ListMaxHeightProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets a custom template for dropdown items.
+    /// When set, overrides the default template created from DisplayMemberPath.
+    /// </summary>
+    public DataTemplate? ItemTemplate
+    {
+        get => (DataTemplate?)GetValue(ItemTemplateProperty);
+        set => SetValue(ItemTemplateProperty, value);
     }
 
     /// <summary>
@@ -580,6 +597,14 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     }
 
     private static void OnIconMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.SetupItemTemplate();
+        }
+    }
+
+    private static void OnItemTemplateChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is MultiSelectComboBox control)
         {
@@ -920,6 +945,67 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
     private void SetupItemTemplate()
     {
+        // If a custom ItemTemplate is provided, wrap it with checkbox support
+        if (ItemTemplate != null)
+        {
+            itemsList.ItemTemplate = new DataTemplate(() =>
+            {
+                var grid = new Grid
+                {
+                    Padding = new Thickness(12, 8),
+                    ColumnSpacing = 8,
+                    ColumnDefinitions =
+                    {
+                        new ColumnDefinition(new GridLength(32)),
+                        new ColumnDefinition(GridLength.Star)
+                    }
+                };
+
+                // Checkbox
+                var checkBox = new CheckBox
+                {
+                    VerticalOptions = LayoutOptions.Center
+                };
+                checkBox.SetBinding(CheckBox.ColorProperty, new Binding(nameof(EffectiveAccentColor), source: this));
+                checkBox.CheckedChanged += OnItemCheckChanged;
+                Grid.SetColumn(checkBox, 0);
+                grid.Add(checkBox);
+
+                // Store reference for later updates
+                grid.Loaded += (s, e) =>
+                {
+                    if (grid.BindingContext != null)
+                    {
+                        _itemCheckboxes[grid.BindingContext] = checkBox;
+                        checkBox.IsChecked = IsItemSelected(grid.BindingContext);
+
+                        if (IsMaxReached && !checkBox.IsChecked)
+                        {
+                            checkBox.IsEnabled = false;
+                            checkBox.Opacity = 0.5;
+                        }
+                    }
+                };
+
+                // Custom template content
+                var contentView = new ContentView
+                {
+                    VerticalOptions = LayoutOptions.Center
+                };
+                var templateContent = ItemTemplate.CreateContent();
+                if (templateContent is View view)
+                {
+                    contentView.Content = view;
+                }
+                Grid.SetColumn(contentView, 1);
+                grid.Add(contentView);
+
+                return grid;
+            });
+            return;
+        }
+
+        // Default template based on DisplayMemberPath/IconMemberPath
         var displayMemberPath = DisplayMemberPath;
         var iconMemberPath = IconMemberPath;
         var hasIcon = !string.IsNullOrEmpty(iconMemberPath);

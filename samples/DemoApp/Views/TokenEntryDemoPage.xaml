@@ -37,7 +37,6 @@
 
                     <extras:TokenEntry Tokens="{Binding EmailTokens}"
                                        Placeholder="Enter email addresses..."
-                                       Keyboard="Email"
                                        TokenAdded="OnTokenAdded"
                                        TokenRemoved="OnTokenRemoved" />
 
@@ -52,13 +51,12 @@
                     <Label Text="Start typing to see tag suggestions from a predefined list." Style="{StaticResource SectionDescriptionStyle}" />
 
                     <extras:TokenEntry Tokens="{Binding TagTokens}"
-                                       Suggestions="{Binding AvailableTags}"
+                                       SuggestionsSource="{Binding AvailableTags}"
                                        Placeholder="Add tags..."
-                                       ShowSuggestions="True"
                                        TokenAdded="OnTokenAdded"
                                        TokenRemoved="OnTokenRemoved" />
 
-                    <HorizontalStackLayout Spacing="5" FlexLayout.Wrap="Wrap">
+                    <HorizontalStackLayout Spacing="5">
                         <Label Text="Selected:" FontAttributes="Bold" />
                         <Label Text="{Binding TagTokens.Count, StringFormat='{0} tags'}" />
                     </HorizontalStackLayout>
@@ -72,9 +70,8 @@
                     <Label Text="Add programming skills with auto-complete." Style="{StaticResource SectionDescriptionStyle}" />
 
                     <extras:TokenEntry Tokens="{Binding SkillTokens}"
-                                       Suggestions="{Binding AvailableSkills}"
+                                       SuggestionsSource="{Binding AvailableSkills}"
                                        Placeholder="Add skills..."
-                                       ShowSuggestions="True"
                                        MaxTokens="10"
                                        TokenAdded="OnTokenAdded"
                                        TokenRemoved="OnTokenRemoved" />
