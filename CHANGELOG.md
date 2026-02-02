@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **DataGridView**: Column headers and data columns now align correctly on initial load (#98)
+  - Auto-width columns previously measured independently causing misalignment
+  - Added automatic column width synchronization after layout completes
+
 ### Changed
 
 - **Calendar**: Now inherits from `HeaderedControlBase` instead of `StyledControlBase` (#96)
