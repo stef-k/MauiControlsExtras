@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
+using MauiControlsExtras.ContextMenu;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace MauiControlsExtras.Controls;
@@ -11,7 +12,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A text entry control that converts typed values into removable tokens/chips.
 /// </summary>
-public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
+public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable, Base.IClipboardSupport, Base.IContextMenuSupport
 {
     #region Fields
 
@@ -22,6 +23,7 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
     private int _selectedTokenIndex = -1;
     private bool _isKeyboardNavigationEnabled = true;
     private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
+    private readonly ContextMenuItemCollection _contextMenuItems = new();
 
     #endregion
 
@@ -147,6 +149,40 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         typeof(ICommand),
         typeof(TokenEntry),
         default(ICommand));
+
+    #endregion
+
+    #region Clipboard Command Properties
+
+    public static readonly BindableProperty CopyCommandProperty = BindableProperty.Create(
+        nameof(CopyCommand),
+        typeof(ICommand),
+        typeof(TokenEntry),
+        default(ICommand));
+
+    public static readonly BindableProperty CutCommandProperty = BindableProperty.Create(
+        nameof(CutCommand),
+        typeof(ICommand),
+        typeof(TokenEntry),
+        default(ICommand));
+
+    public static readonly BindableProperty PasteCommandProperty = BindableProperty.Create(
+        nameof(PasteCommand),
+        typeof(ICommand),
+        typeof(TokenEntry),
+        default(ICommand));
+
+    public static readonly BindableProperty PasteDelimitersProperty = BindableProperty.Create(
+        nameof(PasteDelimiters),
+        typeof(char[]),
+        typeof(TokenEntry),
+        new[] { ',', ';', '\n', '\t' });
+
+    public static readonly BindableProperty ShowDefaultContextMenuProperty = BindableProperty.Create(
+        nameof(ShowDefaultContextMenu),
+        typeof(bool),
+        typeof(TokenEntry),
+        true);
 
     #endregion
 
@@ -414,6 +450,31 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
     /// </summary>
     public event EventHandler<string>? InvalidTokenAttempted;
 
+    /// <summary>
+    /// Occurs before a copy operation. Can be cancelled.
+    /// </summary>
+    public event EventHandler<TokenClipboardEventArgs>? Copying;
+
+    /// <summary>
+    /// Occurs before a cut operation. Can be cancelled.
+    /// </summary>
+    public event EventHandler<TokenClipboardEventArgs>? Cutting;
+
+    /// <summary>
+    /// Occurs before a paste operation. Can be cancelled.
+    /// </summary>
+    public event EventHandler<TokenClipboardEventArgs>? Pasting;
+
+    /// <summary>
+    /// Occurs after a paste operation completes, with details about skipped tokens.
+    /// </summary>
+    public event EventHandler<TokenClipboardEventArgs>? Pasted;
+
+    /// <summary>
+    /// Occurs before the context menu is opened. Allows customization of menu items and cancellation.
+    /// </summary>
+    public event EventHandler<ContextMenuOpeningEventArgs>? ContextMenuOpening;
+
     #endregion
 
     #region Constructor
@@ -567,9 +628,11 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         // Add token chips
         if (Tokens != null)
         {
-            foreach (var token in Tokens)
+            for (var i = 0; i < Tokens.Count; i++)
             {
-                var chip = CreateTokenChip(token);
+                var token = Tokens[i];
+                var isSelected = i == _selectedTokenIndex;
+                var chip = CreateTokenChip(token, i, isSelected);
                 tokensContainer.Children.Add(chip);
             }
         }
@@ -579,12 +642,18 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         tokensContainer.Children.Add(_inputEntry!);
     }
 
-    private View CreateTokenChip(string token)
+    private View CreateTokenChip(string token, int index, bool isSelected)
     {
+        var accentColor = EffectiveAccentColor ?? Colors.Gray;
+        var backgroundColor = isSelected
+            ? accentColor.WithAlpha(0.35f)
+            : accentColor.WithAlpha(0.15f);
+
         var chipBorder = new Border
         {
-            BackgroundColor = EffectiveAccentColor.WithAlpha(0.15f),
-            StrokeThickness = 0,
+            BackgroundColor = backgroundColor,
+            StrokeThickness = isSelected ? 1.5 : 0,
+            Stroke = accentColor,
             Padding = new Thickness(10, 6),
             Margin = new Thickness(2),
             StrokeShape = new RoundRectangle { CornerRadius = 14 }
@@ -604,8 +673,9 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         {
             Text = token,
             FontSize = 13,
-            TextColor = EffectiveAccentColor,
-            VerticalOptions = LayoutOptions.Center
+            TextColor = accentColor,
+            VerticalOptions = LayoutOptions.Center,
+            FontAttributes = isSelected ? FontAttributes.Bold : FontAttributes.None
         };
         Grid.SetColumn(textLabel, 0);
         chipGrid.Add(textLabel);
@@ -614,7 +684,7 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         {
             Text = "✕",
             FontSize = 11,
-            TextColor = EffectiveAccentColor.WithAlpha(0.7f),
+            TextColor = accentColor.WithAlpha(0.7f),
             VerticalOptions = LayoutOptions.Center
         };
         var removeTap = new TapGestureRecognizer();
@@ -624,7 +694,101 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         chipGrid.Add(removeLabel);
 
         chipBorder.Content = chipGrid;
+
+        // Add tap to select
+        var selectTap = new TapGestureRecognizer();
+        selectTap.Tapped += (s, e) =>
+        {
+            _selectedTokenIndex = index;
+            UpdateTokenSelection();
+        };
+        chipBorder.GestureRecognizers.Add(selectTap);
+
+        // Add context menu gestures
+        AddContextMenuGestures(chipBorder, token, index);
+
         return chipBorder;
+    }
+
+    private void AddContextMenuGestures(View view, string token, int tokenIndex)
+    {
+#if WINDOWS
+        // Windows: Use right-click via handler
+        view.HandlerChanged += (s, e) =>
+        {
+            if (view.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
+            {
+                element.RightTapped += async (sender, args) =>
+                {
+                    args.Handled = true;
+                    _selectedTokenIndex = tokenIndex;
+                    UpdateTokenSelection();
+                    var position = new Point(args.GetPosition(element).X, args.GetPosition(element).Y);
+                    await ShowContextMenuAsync(position, token);
+                };
+            }
+        };
+#endif
+
+        // All platforms: Long-press gesture
+        var longPressRecognizer = new PointerGestureRecognizer();
+        DateTime? pressStartTime = null;
+        Point? pressStartPosition = null;
+        CancellationTokenSource? longPressCts = null;
+
+        longPressRecognizer.PointerPressed += (s, e) =>
+        {
+            pressStartTime = DateTime.UtcNow;
+            var positions = e.GetPosition(view);
+            pressStartPosition = positions;
+            longPressCts?.Cancel();
+            longPressCts = new CancellationTokenSource();
+
+            var cts = longPressCts;
+            _ = Task.Delay(500, cts.Token).ContinueWith(t =>
+            {
+                if (!t.IsCanceled && pressStartTime.HasValue)
+                {
+                    MainThread.BeginInvokeOnMainThread(async () =>
+                    {
+                        _selectedTokenIndex = tokenIndex;
+                        UpdateTokenSelection();
+                        await ShowContextMenuAsync(pressStartPosition, token);
+                    });
+                    pressStartTime = null;
+                }
+            });
+        };
+
+        longPressRecognizer.PointerMoved += (s, e) =>
+        {
+            if (pressStartPosition.HasValue)
+            {
+                var currentPos = e.GetPosition(view);
+                if (currentPos.HasValue)
+                {
+                    var distance = Math.Sqrt(
+                        Math.Pow(currentPos.Value.X - pressStartPosition.Value.X, 2) +
+                        Math.Pow(currentPos.Value.Y - pressStartPosition.Value.Y, 2));
+
+                    if (distance > 10)
+                    {
+                        // Movement detected, cancel long press
+                        longPressCts?.Cancel();
+                        pressStartTime = null;
+                    }
+                }
+            }
+        };
+
+        longPressRecognizer.PointerReleased += (s, e) =>
+        {
+            longPressCts?.Cancel();
+            pressStartTime = null;
+            pressStartPosition = null;
+        };
+
+        view.GestureRecognizers.Add(longPressRecognizer);
     }
 
     private void CreateInputEntry()
@@ -699,6 +863,9 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
 
     private void OnInputUnfocused(object? sender, FocusEventArgs e)
     {
+        // Guard against app shutdown - don't try to modify UI when disposed
+        if (Handler == null) return;
+
         OnPropertyChanged(nameof(CurrentBorderColor));
 
         if (CreateTokenOnFocusLost && !string.IsNullOrWhiteSpace(_inputEntry?.Text))
@@ -712,7 +879,10 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         // Delay hiding to allow suggestion tap
         Task.Delay(200).ContinueWith(_ =>
         {
-            MainThread.BeginInvokeOnMainThread(HideSuggestions);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                if (Handler != null) HideSuggestions();
+            });
         });
 
         Validate();
@@ -988,6 +1158,22 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
             return HandleSelectAllTokens();
         }
 
+        // Handle clipboard shortcuts
+        if (e.Key == "C" && e.IsPlatformCommandPressed)
+        {
+            return HandleCopyKey();
+        }
+
+        if (e.Key == "X" && e.IsPlatformCommandPressed)
+        {
+            return HandleCutKey();
+        }
+
+        if (e.Key == "V" && e.IsPlatformCommandPressed)
+        {
+            return HandlePasteKey();
+        }
+
         return false;
     }
 
@@ -1003,6 +1189,9 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
                 new Base.KeyboardShortcut { Key = "Delete", Description = "Delete selected token", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Left", Description = "Select previous token", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Right", Description = "Deselect token", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Ctrl+C", Description = "Copy selected token", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Ctrl+X", Description = "Cut selected token", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Ctrl+V", Description = "Paste tokens from clipboard", Category = "Clipboard" },
             });
         }
         return _keyboardShortcuts;
@@ -1068,6 +1257,344 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         // Select all is not really applicable for token entry
         // but we can return true to prevent default browser behavior
         return false;
+    }
+
+    #endregion
+
+    #region IClipboardSupport Implementation
+
+    /// <inheritdoc />
+    public bool CanCopy => _selectedTokenIndex >= 0 && Tokens != null && Tokens.Count > _selectedTokenIndex;
+
+    /// <inheritdoc />
+    public bool CanCut => CanCopy;
+
+    /// <inheritdoc />
+    public bool CanPaste => IsEnabled && !IsMaxReached;
+
+    /// <summary>
+    /// Gets or sets the command executed when a copy operation is performed.
+    /// </summary>
+    public ICommand? CopyCommand
+    {
+        get => (ICommand?)GetValue(CopyCommandProperty);
+        set => SetValue(CopyCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when a cut operation is performed.
+    /// </summary>
+    public ICommand? CutCommand
+    {
+        get => (ICommand?)GetValue(CutCommandProperty);
+        set => SetValue(CutCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed when a paste operation is performed.
+    /// </summary>
+    public ICommand? PasteCommand
+    {
+        get => (ICommand?)GetValue(PasteCommandProperty);
+        set => SetValue(PasteCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the characters used to split clipboard text during paste operations.
+    /// Default: comma, semicolon, newline, tab.
+    /// </summary>
+    public char[] PasteDelimiters
+    {
+        get => (char[])GetValue(PasteDelimitersProperty);
+        set => SetValue(PasteDelimitersProperty, value);
+    }
+
+    /// <inheritdoc />
+    public void Copy()
+    {
+        if (!CanCopy) return;
+
+        var token = Tokens![_selectedTokenIndex];
+        var args = new TokenClipboardEventArgs(TokenClipboardOperation.Copy, token);
+
+        Copying?.Invoke(this, args);
+        if (args.Cancel) return;
+
+        Clipboard.Default.SetTextAsync(token).ConfigureAwait(false);
+
+        if (CopyCommand?.CanExecute(token) == true)
+        {
+            CopyCommand.Execute(token);
+        }
+    }
+
+    /// <inheritdoc />
+    public void Cut()
+    {
+        if (!CanCut) return;
+
+        var token = Tokens![_selectedTokenIndex];
+        var args = new TokenClipboardEventArgs(TokenClipboardOperation.Cut, token);
+
+        Cutting?.Invoke(this, args);
+        if (args.Cancel) return;
+
+        Clipboard.Default.SetTextAsync(token).ConfigureAwait(false);
+
+        var removedIndex = _selectedTokenIndex;
+        RemoveToken(token);
+
+        // Adjust selection after removal
+        if (Tokens != null && Tokens.Count > 0)
+        {
+            _selectedTokenIndex = Math.Min(removedIndex, Tokens.Count - 1);
+        }
+        else
+        {
+            _selectedTokenIndex = -1;
+        }
+
+        UpdateTokenSelection();
+
+        if (CutCommand?.CanExecute(token) == true)
+        {
+            CutCommand.Execute(token);
+        }
+    }
+
+    /// <inheritdoc />
+    public void Paste()
+    {
+        _ = PasteAsync();
+    }
+
+    /// <summary>
+    /// Asynchronously pastes tokens from the clipboard.
+    /// </summary>
+    public async Task PasteAsync()
+    {
+        if (!CanPaste) return;
+
+        var clipboardText = await Clipboard.Default.GetTextAsync();
+        if (string.IsNullOrWhiteSpace(clipboardText)) return;
+
+        var tokenCandidates = clipboardText
+            .Split(PasteDelimiters, StringSplitOptions.RemoveEmptyEntries)
+            .Select(t => t.Trim())
+            .Where(t => !string.IsNullOrEmpty(t))
+            .ToList();
+
+        if (tokenCandidates.Count == 0) return;
+
+        var args = new TokenClipboardEventArgs(TokenClipboardOperation.Paste, tokenCandidates, clipboardText);
+
+        Pasting?.Invoke(this, args);
+        if (args.Cancel) return;
+
+        var addedTokens = new List<string>();
+        var skippedTokens = new List<string>();
+        var skipReasons = new Dictionary<string, string>();
+
+        foreach (var token in tokenCandidates)
+        {
+            var processedToken = token;
+
+            // Check max tokens limit
+            if (IsMaxReached)
+            {
+                skippedTokens.Add(token);
+                skipReasons[token] = "Maximum token count reached";
+                continue;
+            }
+
+            // Truncate if exceeds max length
+            if (MaxTokenLength.HasValue && processedToken.Length > MaxTokenLength.Value)
+            {
+                processedToken = processedToken[..MaxTokenLength.Value];
+            }
+
+            // Check for duplicates
+            if (!AllowDuplicates && Tokens?.Contains(processedToken, StringComparer.OrdinalIgnoreCase) == true)
+            {
+                skippedTokens.Add(token);
+                skipReasons[token] = "Duplicate token not allowed";
+                continue;
+            }
+
+            // Custom validation
+            if (ValidationFunc != null && !ValidationFunc(processedToken))
+            {
+                skippedTokens.Add(token);
+                skipReasons[token] = "Failed custom validation";
+                continue;
+            }
+
+            if (AddToken(processedToken))
+            {
+                addedTokens.Add(processedToken);
+            }
+            else
+            {
+                skippedTokens.Add(token);
+                skipReasons[token] = "Failed to add token";
+            }
+        }
+
+        // Raise Pasted event with results
+        var pastedArgs = new TokenClipboardEventArgs(TokenClipboardOperation.Paste, addedTokens, clipboardText)
+        {
+            SkippedTokens = skippedTokens,
+            SkipReasons = skipReasons,
+            SuccessCount = addedTokens.Count
+        };
+
+        Pasted?.Invoke(this, pastedArgs);
+
+        if (PasteCommand?.CanExecute(pastedArgs) == true)
+        {
+            PasteCommand.Execute(pastedArgs);
+        }
+    }
+
+    /// <inheritdoc />
+    public object? GetClipboardContent()
+    {
+        if (!CanCopy) return null;
+        return Tokens![_selectedTokenIndex];
+    }
+
+    private void UpdateTokenSelection()
+    {
+        RebuildTokenChips();
+        OnPropertyChanged(nameof(CanCopy));
+        OnPropertyChanged(nameof(CanCut));
+    }
+
+    private bool HandleCopyKey()
+    {
+        if (CanCopy)
+        {
+            Copy();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandleCutKey()
+    {
+        if (CanCut)
+        {
+            Cut();
+            return true;
+        }
+        return false;
+    }
+
+    private bool HandlePasteKey()
+    {
+        if (CanPaste)
+        {
+            Paste();
+            return true;
+        }
+        return false;
+    }
+
+    #endregion
+
+    #region IContextMenuSupport Implementation
+
+    /// <inheritdoc />
+    public ContextMenuItemCollection ContextMenuItems => _contextMenuItems;
+
+    /// <summary>
+    /// Gets or sets whether to show default context menu items (Copy, Cut, Paste).
+    /// </summary>
+    public bool ShowDefaultContextMenu
+    {
+        get => (bool)GetValue(ShowDefaultContextMenuProperty);
+        set => SetValue(ShowDefaultContextMenuProperty, value);
+    }
+
+    /// <inheritdoc />
+    public void ShowContextMenu(Point? position = null)
+    {
+        _ = ShowContextMenuAsync(position);
+    }
+
+    /// <summary>
+    /// Asynchronously shows the context menu.
+    /// </summary>
+    /// <param name="position">The position to show the menu at.</param>
+    /// <param name="targetToken">The token that triggered the context menu, if any.</param>
+    public async Task ShowContextMenuAsync(Point? position = null, string? targetToken = null)
+    {
+        var menuItems = new ContextMenuItemCollection();
+
+        // Add custom items first
+        foreach (var item in _contextMenuItems)
+        {
+            menuItems.Add(item);
+        }
+
+        // Add separator if we have custom items and will add default items
+        if (_contextMenuItems.Count > 0 && ShowDefaultContextMenu)
+        {
+            menuItems.AddSeparator();
+        }
+
+        // Add default clipboard items
+        if (ShowDefaultContextMenu)
+        {
+            var copyItem = ContextMenuItem.Create(
+                "Copy",
+                Copy,
+                "\uE8C8", // Copy icon
+                GetPlatformShortcutText("C"));
+            copyItem.IsEnabled = CanCopy;
+            menuItems.Add(copyItem);
+
+            var cutItem = ContextMenuItem.Create(
+                "Cut",
+                Cut,
+                "\uE8C6", // Cut icon
+                GetPlatformShortcutText("X"));
+            cutItem.IsEnabled = CanCut;
+            menuItems.Add(cutItem);
+
+            var pasteItem = ContextMenuItem.Create(
+                "Paste",
+                Paste,
+                "\uE77F", // Paste icon
+                GetPlatformShortcutText("V"));
+            pasteItem.IsEnabled = CanPaste;
+            menuItems.Add(pasteItem);
+        }
+
+        if (menuItems.Count == 0) return;
+
+        // Raise opening event
+        var eventArgs = new ContextMenuOpeningEventArgs(
+            menuItems,
+            position ?? Point.Zero,
+            this,
+            targetToken);
+
+        ContextMenuOpening?.Invoke(this, eventArgs);
+
+        if (eventArgs.Cancel) return;
+        if (eventArgs.Handled) return;
+
+        await ContextMenuService.Current.ShowAsync(this, menuItems.ToList(), position);
+    }
+
+    private static string GetPlatformShortcutText(string key)
+    {
+#if MACCATALYST || IOS
+        return $"⌘{key}";
+#else
+        return $"Ctrl+{key}";
+#endif
     }
 
     #endregion

@@ -11,7 +11,7 @@ using MauiControlsExtras.Controls;
 ## Class Definition
 
 ```csharp
-public partial class TokenEntry : TextStyledControlBase, IValidatable, IKeyboardNavigable
+public partial class TokenEntry : TextStyledControlBase, IValidatable, IKeyboardNavigable, IClipboardSupport, IContextMenuSupport
 ```
 
 ## Inheritance
@@ -22,6 +22,8 @@ Inherits from [TextStyledControlBase](base-classes.md#textstyledcontrolbase). Se
 
 - [IValidatable](interfaces.md#ivalidatable) - Validation support
 - [IKeyboardNavigable](interfaces.md#ikeyboardnavigable) - Keyboard navigation support
+- [IClipboardSupport](interfaces.md#iclipboardsupport) - Copy, cut, and paste operations
+- [IContextMenuSupport](interfaces.md#icontextmenusupport) - Right-click and long-press context menus
 
 ---
 
@@ -373,6 +375,92 @@ public IReadOnlyList<string> ValidationErrors { get; }
 
 ---
 
+### Clipboard Properties
+
+#### PasteDelimiters
+
+Gets or sets the characters used to split clipboard text during paste operations.
+
+```csharp
+public char[] PasteDelimiters { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `char[]` | `[',', ';', '\n', '\t']` | Yes |
+
+---
+
+#### ShowDefaultContextMenu
+
+Gets or sets whether the default Copy/Cut/Paste context menu is shown.
+
+```csharp
+public bool ShowDefaultContextMenu { get; set; }
+```
+
+| Type | Default | Bindable |
+|------|---------|----------|
+| `bool` | `true` | Yes |
+
+---
+
+#### CanCopy (Read-only)
+
+Gets whether a copy operation is currently available.
+
+```csharp
+public bool CanCopy { get; }
+```
+
+| Type | Description |
+|------|-------------|
+| `bool` | True when a token is selected |
+
+---
+
+#### CanCut (Read-only)
+
+Gets whether a cut operation is currently available.
+
+```csharp
+public bool CanCut { get; }
+```
+
+| Type | Description |
+|------|-------------|
+| `bool` | True when a token is selected |
+
+---
+
+#### CanPaste (Read-only)
+
+Gets whether a paste operation is currently available.
+
+```csharp
+public bool CanPaste { get; }
+```
+
+| Type | Description |
+|------|-------------|
+| `bool` | True when control is enabled and not at max tokens |
+
+---
+
+#### ContextMenuItems
+
+Gets the collection of custom context menu items.
+
+```csharp
+public ContextMenuItemCollection ContextMenuItems { get; }
+```
+
+| Type | Description |
+|------|-------------|
+| `ContextMenuItemCollection` | Custom items shown in context menu |
+
+---
+
 ## Events
 
 ### TokenAdded
@@ -427,6 +515,94 @@ Occurs when a suggestion is selected.
 ```csharp
 public event EventHandler<string>? SuggestionSelected;
 ```
+
+---
+
+### Copying
+
+Occurs before a copy operation. Can be cancelled.
+
+```csharp
+public event EventHandler<TokenClipboardEventArgs>? Copying;
+```
+
+**Event Args:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Operation | `TokenClipboardOperation` | `Copy` |
+| Tokens | `IReadOnlyList<string>` | Token being copied |
+| Content | `string` | Clipboard text |
+| Cancel | `bool` | Set to `true` to cancel |
+
+---
+
+### Cutting
+
+Occurs before a cut operation. Can be cancelled.
+
+```csharp
+public event EventHandler<TokenClipboardEventArgs>? Cutting;
+```
+
+**Event Args:** Same as `Copying`, with `Operation` set to `Cut`.
+
+---
+
+### Pasting
+
+Occurs before a paste operation. Can be cancelled.
+
+```csharp
+public event EventHandler<TokenClipboardEventArgs>? Pasting;
+```
+
+**Event Args:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Operation | `TokenClipboardOperation` | `Paste` |
+| Tokens | `IReadOnlyList<string>` | Tokens that will be added |
+| Content | `string` | Raw clipboard text |
+| Cancel | `bool` | Set to `true` to cancel |
+
+---
+
+### Pasted
+
+Occurs after a paste operation completes.
+
+```csharp
+public event EventHandler<TokenClipboardEventArgs>? Pasted;
+```
+
+**Event Args:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Tokens | `IReadOnlyList<string>` | Tokens that were added |
+| SkippedTokens | `IReadOnlyList<string>` | Tokens that were skipped |
+| SkipReasons | `IReadOnlyDictionary<string, string>` | Why each token was skipped |
+| SuccessCount | `int` | Number of tokens added |
+
+---
+
+### ContextMenuOpening
+
+Occurs before the context menu is displayed. Allows modification and cancellation.
+
+```csharp
+public event EventHandler<ContextMenuOpeningEventArgs>? ContextMenuOpening;
+```
+
+**Event Args:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| Items | `ContextMenuItemCollection` | Menu items (modifiable) |
+| Position | `Point` | Where menu will appear |
+| TargetElement | `object?` | Token that triggered the menu |
+| Cancel | `bool` | Set to `true` to cancel |
 
 ---
 
@@ -485,6 +661,48 @@ public ICommand? ValidateCommand { get; set; }
 | Parameter | Type |
 |-----------|------|
 | Result | `ValidationResult` |
+
+---
+
+### CopyCommand
+
+Executed after a copy operation.
+
+```csharp
+public ICommand? CopyCommand { get; set; }
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| Token | `string` | The copied token |
+
+---
+
+### CutCommand
+
+Executed after a cut operation.
+
+```csharp
+public ICommand? CutCommand { get; set; }
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| Token | `string` | The cut token |
+
+---
+
+### PasteCommand
+
+Executed after a paste operation.
+
+```csharp
+public ICommand? PasteCommand { get; set; }
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| Args | `TokenClipboardEventArgs` | Results of the paste operation |
 
 ---
 
@@ -552,6 +770,94 @@ public ValidationResult Validate()
 
 ---
 
+### Copy()
+
+Copies the selected token to the clipboard.
+
+```csharp
+public void Copy()
+```
+
+Does nothing if `CanCopy` is false.
+
+---
+
+### Cut()
+
+Cuts the selected token to the clipboard.
+
+```csharp
+public void Cut()
+```
+
+Does nothing if `CanCut` is false.
+
+---
+
+### Paste()
+
+Pastes tokens from the clipboard (synchronous, fire-and-forget).
+
+```csharp
+public void Paste()
+```
+
+Does nothing if `CanPaste` is false.
+
+---
+
+### PasteAsync()
+
+Asynchronously pastes tokens from the clipboard.
+
+```csharp
+public async Task PasteAsync()
+```
+
+| Returns | Description |
+|---------|-------------|
+| `Task` | Completes when paste operation finishes |
+
+---
+
+### GetClipboardContent()
+
+Gets the content that would be copied to the clipboard.
+
+```csharp
+public object? GetClipboardContent()
+```
+
+| Returns | Description |
+|---------|-------------|
+| `object?` | The selected token, or null if nothing can be copied |
+
+---
+
+### ShowContextMenu(Point? position)
+
+Programmatically shows the context menu.
+
+```csharp
+public void ShowContextMenu(Point? position = null)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| position | `Point?` | Position to show menu, or null for default |
+
+---
+
+### ShowContextMenuAsync(Point? position, string? targetToken)
+
+Asynchronously shows the context menu with optional target token context.
+
+```csharp
+public async Task ShowContextMenuAsync(Point? position = null, string? targetToken = null)
+```
+
+---
+
 ## Keyboard Shortcuts
 
 | Key | Description |
@@ -565,6 +871,9 @@ public ValidationResult Validate()
 | Arrow Up/Down | Navigate suggestions |
 | Escape | Close suggestions dropdown |
 | Tab | Accept first suggestion or move focus |
+| Ctrl+C / ⌘C | Copy selected token |
+| Ctrl+X / ⌘X | Cut selected token |
+| Ctrl+V / ⌘V | Paste tokens from clipboard |
 
 ---
 

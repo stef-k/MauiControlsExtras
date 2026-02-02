@@ -85,6 +85,119 @@ public ICommand ValidateTagCommand => new Command<TokenValidationEventArgs>(e =>
 | Delete | Delete selected token |
 | ← | Select previous token |
 | → | Deselect token |
+| Ctrl+C (⌘C) | Copy selected token |
+| Ctrl+X (⌘X) | Cut selected token |
+| Ctrl+V (⌘V) | Paste tokens from clipboard |
+
+## Clipboard Support
+
+TokenEntry implements `IClipboardSupport` for copy, cut, and paste operations.
+
+### Copy/Cut
+
+Select a token using arrow keys or by clicking on it, then:
+- **Desktop**: Press Ctrl+C/Ctrl+X or right-click for context menu
+- **Mobile**: Long-press on a token to show context menu
+
+```csharp
+// Programmatic clipboard operations
+if (tokenEntry.CanCopy)
+    tokenEntry.Copy();
+
+if (tokenEntry.CanCut)
+    tokenEntry.Cut();
+```
+
+### Paste
+
+Paste text from clipboard to add multiple tokens at once:
+- Clipboard text is split by configurable delimiters (default: comma, semicolon, newline, tab)
+- Each token is validated before adding
+- Invalid tokens are skipped and reported via the `Pasted` event
+
+```csharp
+// Paste tokens from clipboard
+await tokenEntry.PasteAsync();
+```
+
+### Customizing Paste Delimiters
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags}"
+    PasteDelimiters=",;&#x0A;&#x09;" />
+```
+
+```csharp
+tokenEntry.PasteDelimiters = new[] { ',', ';', '\n', '\t', '|' };
+```
+
+### Clipboard Events
+
+```csharp
+tokenEntry.Copying += (sender, e) =>
+{
+    // e.Tokens contains the token being copied
+    // e.Cancel = true to prevent the operation
+};
+
+tokenEntry.Cutting += (sender, e) =>
+{
+    // Same as Copying, but token will be removed after copy
+};
+
+tokenEntry.Pasting += (sender, e) =>
+{
+    // e.Content is the raw clipboard text
+    // e.Tokens contains the parsed tokens that will be added
+    // e.Cancel = true to prevent the operation
+};
+
+tokenEntry.Pasted += (sender, e) =>
+{
+    // e.SuccessCount - number of tokens successfully added
+    // e.SkippedTokens - tokens that were not added
+    // e.SkipReasons - dictionary of token -> reason why skipped
+    if (e.SkippedTokens.Count > 0)
+    {
+        Debug.WriteLine($"Skipped {e.SkippedTokens.Count} tokens");
+    }
+};
+```
+
+## Context Menu
+
+TokenEntry implements `IContextMenuSupport` for right-click (desktop) and long-press (mobile) context menus.
+
+### Default Context Menu
+
+By default, a context menu with Copy, Cut, and Paste options is shown. Disable with:
+
+```xml
+<extras:TokenEntry
+    Tokens="{Binding Tags}"
+    ShowDefaultContextMenu="False" />
+```
+
+### Custom Context Menu Items
+
+```csharp
+tokenEntry.ContextMenuItems.Add("Select All", () => SelectAllTokens());
+tokenEntry.ContextMenuItems.Add("Clear All", () => tokenEntry.Clear());
+```
+
+### Context Menu Event
+
+```csharp
+tokenEntry.ContextMenuOpening += (sender, e) =>
+{
+    // e.Items - the menu items collection (add/remove items)
+    // e.Cancel = true to prevent showing the menu
+    // e.TargetElement - the token that triggered the menu (if any)
+
+    e.Items.Add("Custom Action", () => DoSomething());
+};
+```
 
 ## Events
 
@@ -94,6 +207,11 @@ public ICommand ValidateTagCommand => new Command<TokenValidationEventArgs>(e =>
 | TokenRemoved | Token was removed |
 | TokenValidating | Token about to be added |
 | TextChanged | Input text changed |
+| Copying | Before copy operation (cancellable) |
+| Cutting | Before cut operation (cancellable) |
+| Pasting | Before paste operation (cancellable) |
+| Pasted | After paste completes with skipped token details |
+| ContextMenuOpening | Before context menu shows (cancellable) |
 
 ## Commands
 
@@ -102,6 +220,9 @@ public ICommand ValidateTagCommand => new Command<TokenValidationEventArgs>(e =>
 | TokenAddedCommand | Execute when token added |
 | TokenRemovedCommand | Execute when token removed |
 | ValidateTokenCommand | Validate before adding |
+| CopyCommand | Execute when copy performed |
+| CutCommand | Execute when cut performed |
+| PasteCommand | Execute when paste performed |
 
 ## Validation
 
@@ -151,3 +272,9 @@ var result = tokenEntry.Validate();
 | MaxTokens | int | Maximum token count |
 | TokenSeparators | string | Characters that create tokens |
 | Placeholder | string | Input placeholder text |
+| PasteDelimiters | char[] | Characters used to split clipboard text |
+| ShowDefaultContextMenu | bool | Show built-in Copy/Cut/Paste context menu |
+| CanCopy | bool | (read-only) Whether copy is available |
+| CanCut | bool | (read-only) Whether cut is available |
+| CanPaste | bool | (read-only) Whether paste is available |
+| ContextMenuItems | ContextMenuItemCollection | Custom context menu items |
