@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **TreeView**: Context menu support with `IContextMenuSupport` interface implementation
+  - `ShowDefaultContextMenu` property to enable built-in menu items (Expand, Collapse, Expand All, Collapse All)
+  - `ContextMenuItems` collection for custom menu items
+  - `ContextMenuOpening` event for dynamic menu customization
+  - `ShowContextMenu()` and `ShowContextMenuAsync()` methods for programmatic display
+  - Default menu includes "Select All Children" / "Deselect All Children" when checkboxes enabled
+  - Platform support: Windows (right-click), macOS (secondary click), mobile (long-press)
+- **TreeViewContextMenuOpeningEventArgs**: Event args with `Node`, `DataItem`, `Level`, `IsLeafNode`, `ParentNode` properties
+
+### Changed
+
+- **DemoApp**: TreeViewDemoPage now showcases all TreeView features
+  - Basic TreeView with icons and selection status display
+  - Interactive features section with checkbox/lines toggles and expand/collapse buttons
+  - Custom ItemTemplate section with badge counts
+  - Context menu demonstration with custom actions
+  - Styling options with accent color and border width pickers
+
 ### Fixed
 
 - **DataGridView**: Column headers and data columns now align correctly on initial load (#98)

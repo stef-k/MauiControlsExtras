@@ -25,6 +25,8 @@
                                                   NumberOfTapsRequired="1" />
                             <TapGestureRecognizer Tapped="OnItemDoubleTapped"
                                                   NumberOfTapsRequired="2" />
+                            <PointerGestureRecognizer PointerPressed="OnItemPointerPressed"
+                                                      PointerReleased="OnItemPointerReleased" />
                         </Grid.GestureRecognizers>
 
                         <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*"

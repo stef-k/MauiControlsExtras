@@ -13,7 +13,7 @@ public abstract partial class BaseViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = string.Empty;
 
-    protected void UpdateStatus(string message)
+    public void UpdateStatus(string message)
     {
         StatusMessage = $"[{DateTime.Now:HH:mm:ss}] {message}";
     }

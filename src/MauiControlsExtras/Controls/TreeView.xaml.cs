@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
+using MauiControlsExtras.ContextMenu;
 
 namespace MauiControlsExtras.Controls;
 
@@ -418,7 +419,7 @@ public class TreeViewNode : INotifyPropertyChanged
 /// <summary>
 /// A hierarchical list control for displaying and interacting with tree-structured data.
 /// </summary>
-public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNavigable, Base.ISelectable
+public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNavigable, Base.ISelectable, Base.IContextMenuSupport
 {
     #region Private Fields
 
@@ -428,6 +429,9 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     private int _focusedIndex = -1;
     private bool _isKeyboardNavigationEnabled = true;
     private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
+    private ContextMenuItemCollection? _contextMenuItems;
+    private CancellationTokenSource? _longPressCts;
+    private TreeViewNode? _longPressNode;
 
     #endregion
 
@@ -662,6 +666,27 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     /// </summary>
     public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
         nameof(ClearSelectionCommand),
+        typeof(ICommand),
+        typeof(TreeView));
+
+    #endregion
+
+    #region Context Menu Bindable Properties
+
+    /// <summary>
+    /// Identifies the <see cref="ShowDefaultContextMenu"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ShowDefaultContextMenuProperty = BindableProperty.Create(
+        nameof(ShowDefaultContextMenu),
+        typeof(bool),
+        typeof(TreeView),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="ContextMenuOpeningCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ContextMenuOpeningCommandProperty = BindableProperty.Create(
+        nameof(ContextMenuOpeningCommand),
         typeof(ICommand),
         typeof(TreeView));
 
@@ -911,6 +936,40 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
     #endregion
 
+    #region Context Menu Properties
+
+    /// <summary>
+    /// Gets or sets whether to show default context menu items (Expand, Collapse, etc.).
+    /// </summary>
+    public bool ShowDefaultContextMenu
+    {
+        get => (bool)GetValue(ShowDefaultContextMenuProperty);
+        set => SetValue(ShowDefaultContextMenuProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the collection of custom context menu items.
+    /// </summary>
+    public ContextMenuItemCollection ContextMenuItems
+    {
+        get
+        {
+            _contextMenuItems ??= new ContextMenuItemCollection();
+            return _contextMenuItems;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when the context menu is opening.
+    /// </summary>
+    public ICommand? ContextMenuOpeningCommand
+    {
+        get => (ICommand?)GetValue(ContextMenuOpeningCommandProperty);
+        set => SetValue(ContextMenuOpeningCommandProperty, value);
+    }
+
+    #endregion
+
     #region Display Properties
 
     /// <summary>
@@ -972,6 +1031,11 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     /// Occurs when an item is deselected.
     /// </summary>
     public event EventHandler<TreeViewItemEventArgs>? ItemDeselected;
+
+    /// <summary>
+    /// Occurs before the context menu is opened. Allows customization of menu items and cancellation.
+    /// </summary>
+    public event EventHandler<ContextMenuOpeningEventArgs>? ContextMenuOpening;
 
     #endregion
 
@@ -1160,6 +1224,276 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
     #endregion
 
+    #region IContextMenuSupport Implementation
+
+    /// <inheritdoc />
+    public void ShowContextMenu(Point? position = null)
+    {
+        // Show context menu for the currently selected/focused node
+        var node = FocusedNode ?? _flattenedItems.FirstOrDefault(n => n.IsSelected);
+        if (node != null)
+        {
+            _ = ShowContextMenuAsync(node, position);
+        }
+    }
+
+    /// <summary>
+    /// Shows the context menu for the specified node.
+    /// </summary>
+    /// <param name="node">The node to show the context menu for.</param>
+    /// <param name="position">The position to show the menu at.</param>
+    public async Task ShowContextMenuAsync(TreeViewNode node, Point? position = null)
+    {
+        // Build the menu items collection
+        var items = new ContextMenuItemCollection();
+
+        // Add custom items from ContextMenuItems collection
+        if (_contextMenuItems != null)
+        {
+            foreach (var item in _contextMenuItems)
+            {
+                items.Add(item);
+            }
+        }
+
+        // Add separator if we have custom items and will add default items
+        if (items.Count > 0 && ShowDefaultContextMenu)
+        {
+            items.AddSeparator();
+        }
+
+        // Add default items if enabled
+        if (ShowDefaultContextMenu)
+        {
+            AddDefaultContextMenuItems(items, node);
+        }
+
+        // Create event args
+        var args = new TreeViewContextMenuOpeningEventArgs(items, position ?? Point.Zero, node, this);
+
+        // Raise the event
+        ContextMenuOpening?.Invoke(this, args);
+
+        // Execute the command if set
+        if (ContextMenuOpeningCommand?.CanExecute(args) == true)
+        {
+            ContextMenuOpeningCommand.Execute(args);
+        }
+
+        // Check if cancelled or already handled
+        if (args.Cancel || args.Handled)
+        {
+            _longPressNode = null;
+            return;
+        }
+
+        // If there are visible items, show the menu
+        var visibleItems = items.GetVisibleItems().ToList();
+        if (visibleItems.Count > 0)
+        {
+            // Select the node if not already selected
+            if (!node.IsSelected)
+            {
+                SelectNode(node);
+            }
+
+            await ContextMenuService.Current.ShowAsync(this, visibleItems, position);
+        }
+
+        // Clear the tracked node after showing menu
+        _longPressNode = null;
+    }
+
+    private void AddDefaultContextMenuItems(ContextMenuItemCollection items, TreeViewNode node)
+    {
+        // Expand/Collapse for nodes with children
+        if (node.HasChildren)
+        {
+            if (node.IsExpanded)
+            {
+                items.Add("Collapse", () =>
+                {
+                    ToggleExpand(node);
+                }, "\uE70D"); // Chevron up icon
+            }
+            else
+            {
+                items.Add("Expand", () =>
+                {
+                    ToggleExpand(node);
+                }, "\uE70E"); // Chevron down icon
+            }
+        }
+
+        // Expand All / Collapse All
+        if (node.HasChildren)
+        {
+            items.Add("Expand All", () =>
+            {
+                ExpandNodeRecursively(node);
+                RebuildFlattenedList();
+            }, "\uE8A9"); // Full screen icon
+
+            items.Add("Collapse All", () =>
+            {
+                CollapseNodeRecursively(node);
+                RebuildFlattenedList();
+            }, "\uE73F"); // Full screen exit icon
+        }
+
+        // Separator before checkbox operations
+        if (ShowCheckBoxes && node.HasChildren)
+        {
+            items.AddSeparator();
+        }
+
+        // Checkbox-related operations
+        if (ShowCheckBoxes)
+        {
+            items.Add("Select All Children", () =>
+            {
+                SetNodeAndChildrenCheckState(node, CheckState.Checked);
+            }, "\uE73A"); // Checkbox checked icon
+
+            items.Add("Deselect All Children", () =>
+            {
+                SetNodeAndChildrenCheckState(node, CheckState.Unchecked);
+            }, "\uE739"); // Checkbox unchecked icon
+        }
+    }
+
+    /// <summary>
+    /// Sets the check state of all children of a node, updating parent states in TriState/Cascade mode.
+    /// </summary>
+    private void SetNodeAndChildrenCheckState(TreeViewNode node, CheckState state)
+    {
+        // Set all children recursively
+        SetChildrenCheckState(node, state);
+
+        // In TriState mode, update the node's state based on children
+        // (if all children are checked, node becomes checked; if all unchecked, node becomes unchecked)
+        if (CheckBoxMode == CheckBoxMode.TriState || CheckBoxMode == CheckBoxMode.Cascade)
+        {
+            // Update this node's state based on children
+            if (node.Children.Count > 0)
+            {
+                var allChecked = node.Children.All(c => c.CheckState == CheckState.Checked);
+                var allUnchecked = node.Children.All(c => c.CheckState == CheckState.Unchecked);
+
+                if (allChecked)
+                    node.CheckState = CheckState.Checked;
+                else if (allUnchecked)
+                    node.CheckState = CheckState.Unchecked;
+                else
+                    node.CheckState = CheckState.Indeterminate;
+            }
+
+            // Update ancestor states
+            UpdateParentCheckState(node.Parent);
+        }
+
+        // Raise event for the node
+        RaiseItemChecked(node);
+    }
+
+    private void CollapseNodeRecursively(TreeViewNode node)
+    {
+        node.IsExpanded = false;
+        foreach (var child in node.Children)
+        {
+            CollapseNodeRecursively(child);
+        }
+    }
+
+    private void SetupContextMenuGestures()
+    {
+        // Platform-specific context menu setup happens in HandlerChanged
+        this.HandlerChanged += OnHandlerChangedForContextMenu;
+    }
+
+    private void OnHandlerChangedForContextMenu(object? sender, EventArgs e)
+    {
+#if WINDOWS
+        SetupWindowsContextMenu();
+#elif MACCATALYST
+        SetupMacContextMenu();
+#endif
+    }
+
+#if WINDOWS
+    private void SetupWindowsContextMenu()
+    {
+        if (Handler?.PlatformView is Microsoft.UI.Xaml.UIElement element)
+        {
+            element.RightTapped += OnWindowsRightTapped;
+        }
+    }
+
+    private void OnWindowsRightTapped(object sender, Microsoft.UI.Xaml.Input.RightTappedRoutedEventArgs e)
+    {
+        // Get the position relative to the element
+        var position = e.GetPosition(sender as Microsoft.UI.Xaml.UIElement);
+        var mauiPosition = new Point(position.X, position.Y);
+
+        // Use the node tracked from PointerPressed, or fall back to position-based lookup
+        var node = _longPressNode ?? FindNodeAtPosition(mauiPosition);
+        if (node != null)
+        {
+            e.Handled = true;
+            // Cancel any pending long-press timer since we're handling as right-click
+            _longPressCts?.Cancel();
+            _ = ShowContextMenuAsync(node, mauiPosition);
+        }
+    }
+#endif
+
+#if MACCATALYST
+    private void SetupMacContextMenu()
+    {
+        if (Handler?.PlatformView is UIKit.UIView view)
+        {
+            var tapRecognizer = new UIKit.UITapGestureRecognizer(OnMacSecondaryClick);
+            tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
+            view.AddGestureRecognizer(tapRecognizer);
+        }
+    }
+
+    private void OnMacSecondaryClick(UIKit.UITapGestureRecognizer recognizer)
+    {
+        var location = recognizer.LocationInView(recognizer.View);
+        var mauiPosition = new Point(location.X, location.Y);
+
+        // Use the node tracked from PointerPressed, or fall back to position-based lookup
+        var node = _longPressNode ?? FindNodeAtPosition(mauiPosition);
+        if (node != null)
+        {
+            // Cancel any pending long-press timer since we're handling as secondary click
+            _longPressCts?.Cancel();
+            _ = ShowContextMenuAsync(node, mauiPosition);
+        }
+    }
+#endif
+
+    private TreeViewNode? FindNodeAtPosition(Point position)
+    {
+        // Try to find node by position estimation based on item height
+        // This is an approximation - in practice, we may need to use
+        // the focused or selected node if position-based lookup is imprecise
+        const double estimatedItemHeight = 32.0;
+        var scrollOffset = 0.0; // Would need to track scroll position for accuracy
+
+        var index = (int)((position.Y + scrollOffset) / estimatedItemHeight);
+        if (index >= 0 && index < _flattenedItems.Count)
+        {
+            return _flattenedItems[index];
+        }
+
+        // Fallback to selected or focused node
+        return FocusedNode ?? _flattenedItems.FirstOrDefault(n => n.IsSelected);
+    }
+
+    #endregion
+
     #region Constructor
 
     /// <summary>
@@ -1168,6 +1502,7 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     public TreeView()
     {
         InitializeComponent();
+        SetupContextMenuGestures();
     }
 
     #endregion
@@ -1631,6 +1966,63 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         }
     }
 
+    private void OnItemPointerPressed(object? sender, PointerEventArgs e)
+    {
+        if (sender is BindableObject bindable && bindable.BindingContext is TreeViewNode node)
+        {
+            // Cancel any existing long-press detection
+            _longPressCts?.Cancel();
+            _longPressCts = new CancellationTokenSource();
+            _longPressNode = node;
+
+            // Get the position from the event
+            var position = e.GetPosition(this);
+
+            // Start long-press detection (500ms threshold)
+            _ = DetectLongPressAsync(_longPressCts.Token, node, position);
+        }
+    }
+
+    private void OnItemPointerReleased(object? sender, PointerEventArgs e)
+    {
+        // Cancel long-press detection but keep _longPressNode for a brief moment
+        // to allow RightTapped/SecondaryClick handlers to use it
+        _longPressCts?.Cancel();
+        _longPressCts = null;
+
+        // Clear _longPressNode after a short delay to allow platform-specific
+        // right-click handlers to access it
+        _ = ClearLongPressNodeAfterDelayAsync();
+    }
+
+    private async Task ClearLongPressNodeAfterDelayAsync()
+    {
+        await Task.Delay(100); // Brief delay to allow right-click handlers to fire
+        _longPressNode = null;
+    }
+
+    private async Task DetectLongPressAsync(CancellationToken cancellationToken, TreeViewNode node, Point? position)
+    {
+        try
+        {
+            // Wait for long-press threshold
+            await Task.Delay(500, cancellationToken);
+
+            // If we get here without being cancelled, it's a long press
+            if (!cancellationToken.IsCancellationRequested && node == _longPressNode)
+            {
+                // Show context menu on the UI thread
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await ShowContextMenuAsync(node, position);
+                });
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Long press was cancelled (pointer released or moved)
+        }
+    }
 
     #endregion
 

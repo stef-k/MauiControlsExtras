@@ -12,19 +12,22 @@
         <VerticalStackLayout Padding="20" Spacing="20">
             <!-- Title -->
             <Label Text="TreeView Demo" Style="{StaticResource PageTitleStyle}" />
-            <Label Text="A hierarchical data display with expand/collapse functionality."
+            <Label Text="A hierarchical data display with expand/collapse functionality, checkboxes, context menus, and more."
                    Style="{StaticResource PageDescriptionStyle}" />
 
-            <!-- File Explorer -->
+            <!-- Section 1: Basic TreeView with Icons -->
             <Frame Style="{StaticResource DemoCardStyle}">
                 <VerticalStackLayout Spacing="15">
-                    <Label Text="File Explorer" Style="{StaticResource SectionTitleStyle}" />
-                    <Label Text="Browse folders with expand/collapse. Click to select." Style="{StaticResource SectionDescriptionStyle}" />
+                    <Label Text="Basic TreeView with Icons" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Browse folders with expand/collapse. Click to select items."
+                           Style="{StaticResource SectionDescriptionStyle}" />
 
-                    <extras:TreeView ItemsSource="{Binding Folders}"
+                    <extras:TreeView x:Name="basicTreeView"
+                                     ItemsSource="{Binding Folders}"
                                      SelectedItem="{Binding SelectedItem}"
                                      ChildrenPath="Children"
-                                     HeightRequest="400">
+                                     SelectionChanged="OnSelectionChanged"
+                                     HeightRequest="250">
                         <extras:TreeView.ItemTemplate>
                             <DataTemplate x:DataType="models:FolderItem">
                                 <HorizontalStackLayout Spacing="8" Padding="4">
@@ -37,7 +40,207 @@
                         </extras:TreeView.ItemTemplate>
                     </extras:TreeView>
 
-                    <Label Text="{Binding SelectedItem.Name, StringFormat='Selected: {0}', TargetNullValue='No item selected'}" />
+                    <Label x:Name="selectionStatusLabel"
+                           Text="Selected: (none)"
+                           FontSize="12"
+                           TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Section 2: Interactive Features -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Interactive Features" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Toggle checkboxes and tree lines. Use buttons or right-click context menu to expand/collapse nodes. Enable checkboxes to access 'Select All Children' context menu option."
+                           Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <!-- Feature Toggles -->
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="20" RowSpacing="10">
+                        <HorizontalStackLayout Grid.Column="0" Spacing="8">
+                            <CheckBox x:Name="showCheckBoxesToggle"
+                                      IsChecked="{Binding ShowCheckBoxes}"
+                                      CheckedChanged="OnShowCheckBoxesChanged" />
+                            <Label Text="Show Checkboxes" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+
+                        <HorizontalStackLayout Grid.Column="1" Spacing="8">
+                            <CheckBox x:Name="showLinesToggle"
+                                      IsChecked="{Binding ShowLines}"
+                                      CheckedChanged="OnShowLinesChanged" />
+                            <Label Text="Show Tree Lines" VerticalOptions="Center" />
+                        </HorizontalStackLayout>
+                    </Grid>
+
+                    <!-- Action Buttons -->
+                    <HorizontalStackLayout Spacing="10" Margin="0,10,0,0">
+                        <Button Text="Expand All"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Clicked="OnExpandAllClicked" />
+                        <Button Text="Collapse All"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Clicked="OnCollapseAllClicked" />
+                    </HorizontalStackLayout>
+
+                    <extras:TreeView x:Name="interactiveTreeView"
+                                     ItemsSource="{Binding InteractiveFolders}"
+                                     ChildrenPath="Children"
+                                     ShowCheckBoxes="{Binding ShowCheckBoxes}"
+                                     ShowLines="{Binding ShowLines}"
+                                     CheckBoxMode="TriState"
+                                     ShowDefaultContextMenu="True"
+                                     ItemChecked="OnItemChecked"
+                                     HeightRequest="250">
+                        <extras:TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FolderItem">
+                                <HorizontalStackLayout Spacing="8" Padding="4">
+                                    <Label Text="{Binding Icon, Converter={StaticResource IconConverter}}"
+                                           FontFamily="SegoeFluentIcons"
+                                           VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:TreeView.ItemTemplate>
+                    </extras:TreeView>
+
+                    <Label x:Name="checkedItemsLabel"
+                           Text="Checked items: 0"
+                           FontSize="12"
+                           TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Section 3: Custom Item Template -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Custom Item Template" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Tree nodes with badges showing item counts for folders."
+                           Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TreeView x:Name="customTreeView"
+                                     ItemsSource="{Binding BadgeFolders}"
+                                     ChildrenPath="Children"
+                                     HeightRequest="200">
+                        <extras:TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FolderItem">
+                                <Grid ColumnDefinitions="Auto,*,Auto" Padding="4">
+                                    <Label Text="{Binding Icon, Converter={StaticResource IconConverter}}"
+                                           FontFamily="SegoeFluentIcons"
+                                           VerticalOptions="Center" />
+                                    <Label Grid.Column="1"
+                                           Text="{Binding Name}"
+                                           VerticalOptions="Center"
+                                           Margin="8,0" />
+                                    <!-- Badge showing children count -->
+                                    <Border Grid.Column="2"
+                                            BackgroundColor="{StaticResource Primary}"
+                                            StrokeThickness="0"
+                                            Padding="8,2"
+                                            IsVisible="{Binding Children.Count, Converter={StaticResource IsNotZeroConverter}}">
+                                        <Border.StrokeShape>
+                                            <RoundRectangle CornerRadius="10" />
+                                        </Border.StrokeShape>
+                                        <Label Text="{Binding Children.Count}"
+                                               TextColor="White"
+                                               FontSize="11"
+                                               FontAttributes="Bold"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center" />
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </extras:TreeView.ItemTemplate>
+                    </extras:TreeView>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Section 4: Context Menu -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Context Menu" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Right-click (Windows/Mac) or long-press (mobile) on items for context menu options."
+                           Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:TreeView x:Name="contextMenuTreeView"
+                                     ItemsSource="{Binding ContextMenuFolders}"
+                                     ChildrenPath="Children"
+                                     ShowDefaultContextMenu="True"
+                                     ContextMenuOpening="OnContextMenuOpening"
+                                     HeightRequest="200">
+                        <extras:TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FolderItem">
+                                <HorizontalStackLayout Spacing="8" Padding="4">
+                                    <Label Text="{Binding Icon, Converter={StaticResource IconConverter}}"
+                                           FontFamily="SegoeFluentIcons"
+                                           VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:TreeView.ItemTemplate>
+                    </extras:TreeView>
+
+                    <Label x:Name="contextMenuStatusLabel"
+                           Text="Context menu: (not opened)"
+                           FontSize="12"
+                           TextColor="{AppThemeBinding Light=Gray, Dark=LightGray}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Section 5: Styling Options -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Styling Options" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Customize colors and appearance of the TreeView."
+                           Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <!-- Color Pickers -->
+                    <Grid ColumnDefinitions="Auto,*,Auto,*" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="10">
+                        <Label Text="Accent Color:" VerticalOptions="Center" />
+                        <Picker x:Name="accentColorPicker"
+                                Grid.Column="1"
+                                SelectedIndexChanged="OnAccentColorChanged">
+                            <Picker.ItemsSource>
+                                <x:Array Type="{x:Type x:String}">
+                                    <x:String>Blue (Default)</x:String>
+                                    <x:String>Green</x:String>
+                                    <x:String>Red</x:String>
+                                    <x:String>Purple</x:String>
+                                    <x:String>Orange</x:String>
+                                </x:Array>
+                            </Picker.ItemsSource>
+                        </Picker>
+
+                        <Label Grid.Column="2" Text="Border Width:" VerticalOptions="Center" />
+                        <Picker x:Name="borderWidthPicker"
+                                Grid.Column="3"
+                                SelectedIndexChanged="OnBorderWidthChanged">
+                            <Picker.ItemsSource>
+                                <x:Array Type="{x:Type x:String}">
+                                    <x:String>None</x:String>
+                                    <x:String>Thin (1px)</x:String>
+                                    <x:String>Medium (2px)</x:String>
+                                    <x:String>Thick (3px)</x:String>
+                                </x:Array>
+                            </Picker.ItemsSource>
+                        </Picker>
+                    </Grid>
+
+                    <extras:TreeView x:Name="styledTreeView"
+                                     ItemsSource="{Binding StyledFolders}"
+                                     ChildrenPath="Children"
+                                     ShowCheckBoxes="True"
+                                     ShowDefaultContextMenu="True"
+                                     HeightRequest="200">
+                        <extras:TreeView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FolderItem">
+                                <HorizontalStackLayout Spacing="8" Padding="4">
+                                    <Label Text="{Binding Icon, Converter={StaticResource IconConverter}}"
+                                           FontFamily="SegoeFluentIcons"
+                                           VerticalOptions="Center" />
+                                    <Label Text="{Binding Name}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </DataTemplate>
+                        </extras:TreeView.ItemTemplate>
+                    </extras:TreeView>
                 </VerticalStackLayout>
             </Frame>
 
