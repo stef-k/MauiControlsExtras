@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **TokenEntry**: Clipboard support with `IClipboardSupport` and `IContextMenuSupport` interface implementations (#109)
+  - Copy/Cut/Paste operations for selected tokens
+  - Keyboard shortcuts (Ctrl+C/X/V on Windows, ⌘C/X/V on Mac)
+  - Right-click context menu on desktop, long-press on mobile
+  - Visual token selection with distinct styling (bold text, accent border)
+  - `PasteDelimiters` property for configurable clipboard text splitting
+  - `Copying`, `Cutting`, `Pasting`, `Pasted` events with cancellation support
+  - `CopyCommand`, `CutCommand`, `PasteCommand` for MVVM
+  - Paste validates tokens against MaxTokens, AllowDuplicates, MaxTokenLength, and ValidationFunc
 - **TreeView**: Context menu support with `IContextMenuSupport` interface implementation
   - `ShowDefaultContextMenu` property to enable built-in menu items (Expand, Collapse, Expand All, Collapse All)
   - `ContextMenuItems` collection for custom menu items
