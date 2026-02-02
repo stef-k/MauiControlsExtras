@@ -106,4 +106,23 @@
         <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" />
     </Style>
 
+    <!-- Shell Flyout Styles for Dark Theme -->
+    <Style TargetType="Shell" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.BackgroundColor" Value="{AppThemeBinding Light={StaticResource LightPageBackground}, Dark={StaticResource DarkPageBackground}}" />
+        <Setter Property="Shell.ForegroundColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
+        <Setter Property="Shell.TitleColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
+        <Setter Property="Shell.FlyoutBackgroundColor" Value="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" />
+    </Style>
+
+    <Style TargetType="FlyoutItem" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.FlyoutItemIsVisible" Value="True" />
+    </Style>
+
+    <!-- Shell Tab Bar Styles -->
+    <Style TargetType="TabBar" ApplyToDerivedTypes="True">
+        <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource LightCardBackground}, Dark={StaticResource DarkCardBackground}}" />
+        <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource LightText}, Dark={StaticResource DarkText}}" />
+        <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+    </Style>
+
 </ResourceDictionary>
