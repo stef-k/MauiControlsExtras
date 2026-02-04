@@ -113,11 +113,27 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         typeof(Accordion));
 
     /// <summary>
+    /// Identifies the <see cref="ItemExpandedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ItemExpandedCommandParameterProperty = BindableProperty.Create(
+        nameof(ItemExpandedCommandParameter),
+        typeof(object),
+        typeof(Accordion));
+
+    /// <summary>
     /// Identifies the <see cref="ItemCollapsedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty ItemCollapsedCommandProperty = BindableProperty.Create(
         nameof(ItemCollapsedCommand),
         typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="ItemCollapsedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ItemCollapsedCommandParameterProperty = BindableProperty.Create(
+        nameof(ItemCollapsedCommandParameter),
+        typeof(object),
         typeof(Accordion));
 
     /// <summary>
@@ -129,11 +145,27 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         typeof(Accordion));
 
     /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
+        typeof(Accordion));
+
+    /// <summary>
     /// Identifies the <see cref="LostFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
         nameof(LostFocusCommand),
         typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
         typeof(Accordion));
 
     /// <summary>
@@ -145,11 +177,27 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         typeof(Accordion));
 
     /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
+        typeof(Accordion));
+
+    /// <summary>
     /// Identifies the <see cref="SelectAllCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
         nameof(SelectAllCommand),
         typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectAllCommandParameter),
+        typeof(object),
         typeof(Accordion));
 
     /// <summary>
@@ -161,11 +209,27 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         typeof(Accordion));
 
     /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandParameterProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommandParameter),
+        typeof(object),
+        typeof(Accordion));
+
+    /// <summary>
     /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
         nameof(SelectionChangedCommand),
         typeof(ICommand),
+        typeof(Accordion));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommandParameter),
+        typeof(object),
         typeof(Accordion));
 
     #endregion
@@ -285,12 +349,32 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ItemExpandedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ItemExpandedCommandParameter
+    {
+        get => GetValue(ItemExpandedCommandParameterProperty);
+        set => SetValue(ItemExpandedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when an item is collapsed.
     /// </summary>
     public ICommand? ItemCollapsedCommand
     {
         get => (ICommand?)GetValue(ItemCollapsedCommandProperty);
         set => SetValue(ItemCollapsedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ItemCollapsedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ItemCollapsedCommandParameter
+    {
+        get => GetValue(ItemCollapsedCommandParameterProperty);
+        set => SetValue(ItemCollapsedCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -300,11 +384,31 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         set => SetValue(GotFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? LostFocusCommand
     {
         get => (ICommand?)GetValue(LostFocusCommandProperty);
         set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -314,11 +418,31 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         set => SetValue(KeyPressCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? SelectAllCommand
     {
         get => (ICommand?)GetValue(SelectAllCommandProperty);
         set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectAllCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectAllCommandParameter
+    {
+        get => GetValue(SelectAllCommandParameterProperty);
+        set => SetValue(SelectAllCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -328,11 +452,31 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         set => SetValue(ClearSelectionCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ClearSelectionCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ClearSelectionCommandParameter
+    {
+        get => GetValue(ClearSelectionCommandParameterProperty);
+        set => SetValue(ClearSelectionCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? SelectionChangedCommand
     {
         get => (ICommand?)GetValue(SelectionChangedCommandProperty);
         set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectionChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectionChangedCommandParameter
+    {
+        get => GetValue(SelectionChangedCommandParameterProperty);
+        set => SetValue(SelectionChangedCommandParameterProperty, value);
     }
 
     #endregion
@@ -398,7 +542,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
 
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -454,7 +598,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         _hasKeyboardFocus = true;
         OnPropertyChanged(nameof(HasKeyboardFocus));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
 
         if (_selectedIndex < 0 && _items.Count > 0)
         {
@@ -592,7 +736,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
 
         var args = new Base.SelectionChangedEventArgs(oldValue, newValue);
         SelectionChanged?.Invoke(this, args);
-        SelectionChangedCommand?.Execute(newValue);
+        SelectionChangedCommand?.Execute(SelectionChangedCommandParameter ?? newValue);
 
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(IsAllSelected));
@@ -1085,7 +1229,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
 
         var args = new AccordionItemExpandedEventArgs(item, item.Index, true);
         ItemExpanded?.Invoke(this, args);
-        ItemExpandedCommand?.Execute(args);
+        ItemExpandedCommand?.Execute(ItemExpandedCommandParameter ?? args);
 
         // Update ISelectable state
         OnPropertyChanged(nameof(HasSelection));
@@ -1119,7 +1263,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
 
         var args = new AccordionItemExpandedEventArgs(item, item.Index, false);
         ItemCollapsed?.Invoke(this, args);
-        ItemCollapsedCommand?.Execute(args);
+        ItemCollapsedCommand?.Execute(ItemCollapsedCommandParameter ?? args);
 
         // Update ISelectable state
         OnPropertyChanged(nameof(HasSelection));
@@ -1136,7 +1280,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         OnPropertyChanged(nameof(HasKeyboardFocus));
         OnPropertyChanged(nameof(CurrentBorderColor));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
 
         if (_selectedIndex < 0 && _items.Count > 0)
         {
@@ -1150,7 +1294,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         OnPropertyChanged(nameof(HasKeyboardFocus));
         OnPropertyChanged(nameof(CurrentBorderColor));
         KeyboardFocusLost?.Invoke(this, new KeyboardFocusEventArgs(false));
-        LostFocusCommand?.Execute(this);
+        LostFocusCommand?.Execute(LostFocusCommandParameter ?? this);
     }
 
     private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

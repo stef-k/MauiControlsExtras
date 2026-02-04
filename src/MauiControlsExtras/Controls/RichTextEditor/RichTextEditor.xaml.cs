@@ -221,11 +221,27 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(RichTextEditor));
 
     /// <summary>
+    /// Identifies the <see cref="ContentChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ContentChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(ContentChangedCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
     /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
         nameof(SelectionChangedCommand),
         typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommandParameter),
+        typeof(object),
         typeof(RichTextEditor));
 
     /// <summary>
@@ -237,11 +253,27 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(RichTextEditor));
 
     /// <summary>
+    /// Identifies the <see cref="LinkTappedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LinkTappedCommandParameterProperty = BindableProperty.Create(
+        nameof(LinkTappedCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
     /// Identifies the <see cref="FocusChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty FocusChangedCommandProperty = BindableProperty.Create(
         nameof(FocusChangedCommand),
         typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="FocusChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FocusChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(FocusChangedCommandParameter),
+        typeof(object),
         typeof(RichTextEditor));
 
     /// <summary>
@@ -253,11 +285,27 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(RichTextEditor));
 
     /// <summary>
+    /// Identifies the <see cref="CopyCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CopyCommandParameterProperty = BindableProperty.Create(
+        nameof(CopyCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
     /// Identifies the <see cref="CutCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CutCommandProperty = BindableProperty.Create(
         nameof(CutCommand),
         typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="CutCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CutCommandParameterProperty = BindableProperty.Create(
+        nameof(CutCommandParameter),
+        typeof(object),
         typeof(RichTextEditor));
 
     /// <summary>
@@ -269,11 +317,27 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(RichTextEditor));
 
     /// <summary>
+    /// Identifies the <see cref="PasteCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PasteCommandParameterProperty = BindableProperty.Create(
+        nameof(PasteCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
     /// Identifies the <see cref="UndoCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty UndoCommandProperty = BindableProperty.Create(
         nameof(UndoCommand),
         typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="UndoCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty UndoCommandParameterProperty = BindableProperty.Create(
+        nameof(UndoCommandParameter),
+        typeof(object),
         typeof(RichTextEditor));
 
     /// <summary>
@@ -285,11 +349,27 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(RichTextEditor));
 
     /// <summary>
+    /// Identifies the <see cref="RedoCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RedoCommandParameterProperty = BindableProperty.Create(
+        nameof(RedoCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
     /// Identifies the <see cref="GotFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
         nameof(GotFocusCommand),
         typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
         typeof(RichTextEditor));
 
     /// <summary>
@@ -301,11 +381,27 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         typeof(RichTextEditor));
 
     /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
     /// Identifies the <see cref="KeyPressCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
         nameof(KeyPressCommand),
         typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
         typeof(RichTextEditor));
 
     #endregion
@@ -502,12 +598,32 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ContentChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ContentChangedCommandParameter
+    {
+        get => GetValue(ContentChangedCommandParameterProperty);
+        set => SetValue(ContentChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when selection changes.
     /// </summary>
     public ICommand? SelectionChangedCommand
     {
         get => (ICommand?)GetValue(SelectionChangedCommandProperty);
         set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectionChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectionChangedCommandParameter
+    {
+        get => GetValue(SelectionChangedCommandParameterProperty);
+        set => SetValue(SelectionChangedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -520,12 +636,32 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LinkTappedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LinkTappedCommandParameter
+    {
+        get => GetValue(LinkTappedCommandParameterProperty);
+        set => SetValue(LinkTappedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when focus changes.
     /// </summary>
     public ICommand? FocusChangedCommand
     {
         get => (ICommand?)GetValue(FocusChangedCommandProperty);
         set => SetValue(FocusChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="FocusChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? FocusChangedCommandParameter
+    {
+        get => GetValue(FocusChangedCommandParameterProperty);
+        set => SetValue(FocusChangedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -538,12 +674,32 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CopyCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CopyCommandParameter
+    {
+        get => GetValue(CopyCommandParameterProperty);
+        set => SetValue(CopyCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the cut command.
     /// </summary>
     public ICommand? CutCommand
     {
         get => (ICommand?)GetValue(CutCommandProperty);
         set => SetValue(CutCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CutCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CutCommandParameter
+    {
+        get => GetValue(CutCommandParameterProperty);
+        set => SetValue(CutCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -556,12 +712,32 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PasteCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PasteCommandParameter
+    {
+        get => GetValue(PasteCommandParameterProperty);
+        set => SetValue(PasteCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the undo command.
     /// </summary>
     public ICommand? UndoCommand
     {
         get => (ICommand?)GetValue(UndoCommandProperty);
         set => SetValue(UndoCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="UndoCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? UndoCommandParameter
+    {
+        get => GetValue(UndoCommandParameterProperty);
+        set => SetValue(UndoCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -573,11 +749,31 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         set => SetValue(RedoCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="RedoCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? RedoCommandParameter
+    {
+        get => GetValue(RedoCommandParameterProperty);
+        set => SetValue(RedoCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? GotFocusCommand
     {
         get => (ICommand?)GetValue(GotFocusCommandProperty);
         set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -587,11 +783,31 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         set => SetValue(LostFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? KeyPressCommand
     {
         get => (ICommand?)GetValue(KeyPressCommandProperty);
         set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
     }
 
     #endregion
@@ -666,7 +882,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         // Execute KeyPressCommand
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -750,7 +966,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     public void Copy()
     {
         _ = ExecuteJavaScriptAsync("document.execCommand('copy')");
-        CopyCommand?.Execute(null);
+        CopyCommand?.Execute(CopyCommandParameter);
     }
 
     /// <inheritdoc/>
@@ -758,7 +974,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         if (IsReadOnly) return;
         _ = ExecuteJavaScriptAsync("document.execCommand('cut')");
-        CutCommand?.Execute(null);
+        CutCommand?.Execute(CutCommandParameter);
     }
 
     /// <inheritdoc/>
@@ -766,7 +982,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         if (IsReadOnly) return;
         _ = ExecuteJavaScriptAsync("document.execCommand('paste')");
-        PasteCommand?.Execute(null);
+        PasteCommand?.Execute(PasteCommandParameter);
     }
 
     /// <inheritdoc/>
@@ -796,7 +1012,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         if (!CanUndo || IsReadOnly) return false;
         _ = ExecuteJavaScriptAsync("quill.history.undo()");
-        UndoCommand?.Execute(null);
+        UndoCommand?.Execute(UndoCommandParameter);
         return true;
     }
 
@@ -805,7 +1021,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     {
         if (!CanRedo || IsReadOnly) return false;
         _ = ExecuteJavaScriptAsync("quill.history.redo()");
-        RedoCommand?.Execute(null);
+        RedoCommand?.Execute(RedoCommandParameter);
         return true;
     }
 
@@ -1307,7 +1523,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
             e.Cancel = true;
             var args = new RichTextLinkTappedEventArgs(e.Url, null);
             LinkTapped?.Invoke(this, args);
-            LinkTappedCommand?.Execute(args);
+            LinkTappedCommand?.Execute(LinkTappedCommandParameter ?? args);
 
             if (!args.Handled)
             {
@@ -1335,7 +1551,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 
                     var args = new RichTextContentChangedEventArgs(oldContent, html, ContentFormat.Html);
                     ContentChanged?.Invoke(this, args);
-                    ContentChangedCommand?.Execute(args);
+                    ContentChangedCommand?.Execute(ContentChangedCommandParameter ?? args);
 
                     // Update undo/redo state
                     _ = UpdateUndoRedoStateAsync();
@@ -1348,7 +1564,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
                 var text = Uri.UnescapeDataString(query["text"] ?? "");
                 var selArgs = new RichTextSelectionChangedEventArgs(start, length, text);
                 SelectionChanged?.Invoke(this, selArgs);
-                SelectionChangedCommand?.Execute(selArgs);
+                SelectionChangedCommand?.Execute(SelectionChangedCommandParameter ?? selArgs);
                 break;
 
             case "focus-changed":
@@ -1365,17 +1581,17 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
                     if (focused)
                     {
                         KeyboardFocusGained?.Invoke(this, focusEventArgs);
-                        GotFocusCommand?.Execute(this);
+                        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
                     }
                     else
                     {
                         KeyboardFocusLost?.Invoke(this, focusEventArgs);
-                        LostFocusCommand?.Execute(this);
+                        LostFocusCommand?.Execute(LostFocusCommandParameter ?? this);
                     }
 
                     var focusArgs = new RichTextFocusChangedEventArgs(focused);
                     FocusChanged?.Invoke(this, focusArgs);
-                    FocusChangedCommand?.Execute(focusArgs);
+                    FocusChangedCommand?.Execute(FocusChangedCommandParameter ?? focusArgs);
                 }
                 break;
         }

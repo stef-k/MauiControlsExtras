@@ -123,11 +123,27 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         typeof(PropertyGrid));
 
     /// <summary>
+    /// Identifies the <see cref="PropertyChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PropertyChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(PropertyChangedCommandParameter),
+        typeof(object),
+        typeof(PropertyGrid));
+
+    /// <summary>
     /// Identifies the <see cref="SelectedObjectChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectedObjectChangedCommandProperty = BindableProperty.Create(
         nameof(SelectedObjectChangedCommand),
         typeof(ICommand),
+        typeof(PropertyGrid));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectedObjectChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectedObjectChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectedObjectChangedCommandParameter),
+        typeof(object),
         typeof(PropertyGrid));
 
     /// <summary>
@@ -139,11 +155,27 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         typeof(PropertyGrid));
 
     /// <summary>
+    /// Identifies the <see cref="PropertySelectionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PropertySelectionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(PropertySelectionChangedCommandParameter),
+        typeof(object),
+        typeof(PropertyGrid));
+
+    /// <summary>
     /// Identifies the <see cref="GotFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
         nameof(GotFocusCommand),
         typeof(ICommand),
+        typeof(PropertyGrid));
+
+    /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
         typeof(PropertyGrid));
 
     /// <summary>
@@ -155,11 +187,27 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         typeof(PropertyGrid));
 
     /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
+        typeof(PropertyGrid));
+
+    /// <summary>
     /// Identifies the <see cref="KeyPressCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
         nameof(KeyPressCommand),
         typeof(ICommand),
+        typeof(PropertyGrid));
+
+    /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
         typeof(PropertyGrid));
 
     #endregion
@@ -267,12 +315,32 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PropertyChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PropertyChangedCommandParameter
+    {
+        get => GetValue(PropertyChangedCommandParameterProperty);
+        set => SetValue(PropertyChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when the selected object changes.
     /// </summary>
     public ICommand? SelectedObjectChangedCommand
     {
         get => (ICommand?)GetValue(SelectedObjectChangedCommandProperty);
         set => SetValue(SelectedObjectChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectedObjectChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectedObjectChangedCommandParameter
+    {
+        get => GetValue(SelectedObjectChangedCommandParameterProperty);
+        set => SetValue(SelectedObjectChangedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -284,11 +352,31 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         set => SetValue(PropertySelectionChangedCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PropertySelectionChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PropertySelectionChangedCommandParameter
+    {
+        get => GetValue(PropertySelectionChangedCommandParameterProperty);
+        set => SetValue(PropertySelectionChangedCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? GotFocusCommand
     {
         get => (ICommand?)GetValue(GotFocusCommandProperty);
         set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -298,11 +386,31 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         set => SetValue(LostFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? KeyPressCommand
     {
         get => (ICommand?)GetValue(KeyPressCommandProperty);
         set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
     }
 
     #endregion
@@ -374,7 +482,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
 
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -442,7 +550,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         _hasKeyboardFocus = true;
         OnPropertyChanged(nameof(HasKeyboardFocus));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
         return true;
     }
 
@@ -973,7 +1081,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
 
         var args = new PropertySelectionChangedEventArgs(oldProperty, property);
         PropertySelectionChanged?.Invoke(this, args);
-        PropertySelectionChangedCommand?.Execute(args);
+        PropertySelectionChangedCommand?.Execute(PropertySelectionChangedCommandParameter ?? args);
     }
 
     private void SelectNextProperty()
@@ -1001,7 +1109,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     private void OnPropertyValueChanged(object? sender, PropertyValueChangedEventArgs e)
     {
         PropertyValueChanged?.Invoke(this, e);
-        PropertyChangedCommand?.Execute(e);
+        PropertyChangedCommand?.Execute(PropertyChangedCommandParameter ?? e);
     }
 
     private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
@@ -1025,7 +1133,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         {
             var args = new SelectedObjectChangedEventArgs(oldValue, newValue);
             grid.SelectedObjectChanged?.Invoke(grid, args);
-            grid.SelectedObjectChangedCommand?.Execute(args);
+            grid.SelectedObjectChangedCommand?.Execute(grid.SelectedObjectChangedCommandParameter ?? args);
             grid.DiscoverProperties();
         }
     }

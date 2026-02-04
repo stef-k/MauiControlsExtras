@@ -148,11 +148,27 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         typeof(Calendar));
 
     /// <summary>
+    /// Identifies the <see cref="DateSelectedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DateSelectedCommandParameterProperty = BindableProperty.Create(
+        nameof(DateSelectedCommandParameter),
+        typeof(object),
+        typeof(Calendar));
+
+    /// <summary>
     /// Identifies the <see cref="DisplayDateChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty DisplayDateChangedCommandProperty = BindableProperty.Create(
         nameof(DisplayDateChangedCommand),
         typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="DisplayDateChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DisplayDateChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(DisplayDateChangedCommandParameter),
+        typeof(object),
         typeof(Calendar));
 
     /// <summary>
@@ -164,11 +180,27 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         typeof(Calendar));
 
     /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
+        typeof(Calendar));
+
+    /// <summary>
     /// Identifies the <see cref="LostFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
         nameof(LostFocusCommand),
         typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
         typeof(Calendar));
 
     /// <summary>
@@ -180,11 +212,27 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         typeof(Calendar));
 
     /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
+        typeof(Calendar));
+
+    /// <summary>
     /// Identifies the <see cref="SelectAllCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
         nameof(SelectAllCommand),
         typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectAllCommandParameter),
+        typeof(object),
         typeof(Calendar));
 
     /// <summary>
@@ -196,11 +244,27 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         typeof(Calendar));
 
     /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandParameterProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommandParameter),
+        typeof(object),
+        typeof(Calendar));
+
+    /// <summary>
     /// Identifies the <see cref="SelectionChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectionChangedCommandProperty = BindableProperty.Create(
         nameof(SelectionChangedCommand),
         typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommandParameter),
+        typeof(object),
         typeof(Calendar));
 
     #endregion
@@ -333,12 +397,32 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="DateSelectedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? DateSelectedCommandParameter
+    {
+        get => GetValue(DateSelectedCommandParameterProperty);
+        set => SetValue(DateSelectedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when the display date changes.
     /// </summary>
     public ICommand? DisplayDateChangedCommand
     {
         get => (ICommand?)GetValue(DisplayDateChangedCommandProperty);
         set => SetValue(DisplayDateChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="DisplayDateChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? DisplayDateChangedCommandParameter
+    {
+        get => GetValue(DisplayDateChangedCommandParameterProperty);
+        set => SetValue(DisplayDateChangedCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -348,11 +432,31 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         set => SetValue(GotFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? LostFocusCommand
     {
         get => (ICommand?)GetValue(LostFocusCommandProperty);
         set => SetValue(LostFocusCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -362,11 +466,31 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         set => SetValue(KeyPressCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? SelectAllCommand
     {
         get => (ICommand?)GetValue(SelectAllCommandProperty);
         set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectAllCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectAllCommandParameter
+    {
+        get => GetValue(SelectAllCommandParameterProperty);
+        set => SetValue(SelectAllCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -376,11 +500,31 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         set => SetValue(ClearSelectionCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ClearSelectionCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ClearSelectionCommandParameter
+    {
+        get => GetValue(ClearSelectionCommandParameterProperty);
+        set => SetValue(ClearSelectionCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? SelectionChangedCommand
     {
         get => (ICommand?)GetValue(SelectionChangedCommandProperty);
         set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectionChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectionChangedCommandParameter
+    {
+        get => GetValue(SelectionChangedCommandParameterProperty);
+        set => SetValue(SelectionChangedCommandParameterProperty, value);
     }
 
     #endregion
@@ -448,7 +592,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -505,7 +649,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         _hasKeyboardFocus = true;
         OnPropertyChanged(nameof(HasKeyboardFocus));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
         RebuildCalendar();
         return true;
     }
@@ -662,7 +806,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         var args = new Base.SelectionChangedEventArgs(oldValue, newValue);
         SelectionChanged?.Invoke(this, args);
-        SelectionChangedCommand?.Execute(newValue);
+        SelectionChangedCommand?.Execute(SelectionChangedCommandParameter ?? newValue);
 
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(IsAllSelected));
@@ -742,7 +886,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         var args = new CalendarDisplayDateChangedEventArgs(oldDate, _displayDate);
         DisplayDateChanged?.Invoke(this, args);
-        DisplayDateChangedCommand?.Execute(args);
+        DisplayDateChangedCommand?.Execute(DisplayDateChangedCommandParameter ?? args);
     }
 
     /// <summary>
@@ -757,7 +901,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         var args = new CalendarDisplayDateChangedEventArgs(oldDate, _displayDate);
         DisplayDateChanged?.Invoke(this, args);
-        DisplayDateChangedCommand?.Execute(args);
+        DisplayDateChangedCommand?.Execute(DisplayDateChangedCommandParameter ?? args);
     }
 
     /// <summary>
@@ -774,7 +918,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         {
             var args = new CalendarDisplayDateChangedEventArgs(oldDate, _displayDate);
             DisplayDateChanged?.Invoke(this, args);
-            DisplayDateChangedCommand?.Execute(args);
+            DisplayDateChangedCommand?.Execute(DisplayDateChangedCommandParameter ?? args);
         }
     }
 
@@ -877,7 +1021,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         var selectedArgs = new CalendarDateSelectedEventArgs(normalizedDate, true);
         DateSelected?.Invoke(this, selectedArgs);
-        DateSelectedCommand?.Execute(selectedArgs);
+        DateSelectedCommand?.Execute(DateSelectedCommandParameter ?? selectedArgs);
 
         // Raise ISelectable events
         RaiseSelectionChanged(oldSelection, _selectedDates.ToList());

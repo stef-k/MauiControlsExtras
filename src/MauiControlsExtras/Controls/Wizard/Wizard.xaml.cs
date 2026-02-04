@@ -233,11 +233,27 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="StepChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(StepChangedCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="StepValidatingCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty StepValidatingCommandProperty = BindableProperty.Create(
         nameof(StepValidatingCommand),
         typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="StepValidatingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepValidatingCommandParameterProperty = BindableProperty.Create(
+        nameof(StepValidatingCommandParameter),
+        typeof(object),
         typeof(Wizard));
 
     /// <summary>
@@ -249,11 +265,27 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="FinishedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FinishedCommandParameterProperty = BindableProperty.Create(
+        nameof(FinishedCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="CancelledCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CancelledCommandProperty = BindableProperty.Create(
         nameof(CancelledCommand),
         typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="CancelledCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CancelledCommandParameterProperty = BindableProperty.Create(
+        nameof(CancelledCommandParameter),
+        typeof(object),
         typeof(Wizard));
 
     /// <summary>
@@ -265,6 +297,14 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="LostFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
@@ -273,11 +313,27 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="KeyPressCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
         nameof(KeyPressCommand),
         typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
         typeof(Wizard));
 
     #endregion
@@ -530,6 +586,16 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="StepChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? StepChangedCommandParameter
+    {
+        get => GetValue(StepChangedCommandParameterProperty);
+        set => SetValue(StepChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the cancelable command executed before step validation.
     /// The command parameter is <see cref="WizardStepValidatingEventArgs"/>.
     /// Set Cancel = true to prevent navigation.
@@ -538,6 +604,16 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     {
         get => (ICommand?)GetValue(StepValidatingCommandProperty);
         set => SetValue(StepValidatingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="StepValidatingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? StepValidatingCommandParameter
+    {
+        get => GetValue(StepValidatingCommandParameterProperty);
+        set => SetValue(StepValidatingCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -550,12 +626,32 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="FinishedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? FinishedCommandParameter
+    {
+        get => GetValue(FinishedCommandParameterProperty);
+        set => SetValue(FinishedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when the wizard is cancelled.
     /// </summary>
     public ICommand? CancelledCommand
     {
         get => (ICommand?)GetValue(CancelledCommandProperty);
         set => SetValue(CancelledCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CancelledCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CancelledCommandParameter
+    {
+        get => GetValue(CancelledCommandParameterProperty);
+        set => SetValue(CancelledCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -565,6 +661,16 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         set => SetValue(GotFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? LostFocusCommand
     {
@@ -572,11 +678,31 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         set => SetValue(LostFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? KeyPressCommand
     {
         get => (ICommand?)GetValue(KeyPressCommandProperty);
         set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
     }
 
     #endregion
@@ -659,7 +785,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
 
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -736,7 +862,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         _hasKeyboardFocus = true;
         OnPropertyChanged(nameof(HasKeyboardFocus));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
         return true;
     }
 
@@ -1027,7 +1153,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
 
         if (StepValidatingCommand?.CanExecute(validatingArgs) == true)
         {
-            StepValidatingCommand.Execute(validatingArgs);
+            StepValidatingCommand.Execute(StepValidatingCommandParameter ?? validatingArgs);
         }
 
         if (validatingArgs.Cancel)
@@ -1066,7 +1192,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Raise changed event
         var changedArgs = new WizardStepChangedEventArgs(oldStep, newStep, oldIndex, index);
         StepChanged?.Invoke(this, changedArgs);
-        StepChangedCommand?.Execute(changedArgs);
+        StepChangedCommand?.Execute(StepChangedCommandParameter ?? changedArgs);
 
         return true;
     }
@@ -1105,7 +1231,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Raise finished event
         var finishedArgs = new WizardFinishedEventArgs(false, _steps.ToList());
         Finished?.Invoke(this, finishedArgs);
-        FinishedCommand?.Execute(finishedArgs);
+        FinishedCommand?.Execute(FinishedCommandParameter ?? finishedArgs);
 
         return true;
     }
@@ -1125,7 +1251,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Raise cancelled event
         var cancelledArgs = new WizardFinishedEventArgs(true, _steps.ToList());
         Cancelled?.Invoke(this, cancelledArgs);
-        CancelledCommand?.Execute(cancelledArgs);
+        CancelledCommand?.Execute(CancelledCommandParameter ?? cancelledArgs);
 
         return true;
     }
@@ -1454,7 +1580,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         OnPropertyChanged(nameof(HasKeyboardFocus));
         OnPropertyChanged(nameof(CurrentBorderColor));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
     }
 
     private void OnControlUnfocused(object? sender, FocusEventArgs e)
@@ -1463,7 +1589,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         OnPropertyChanged(nameof(HasKeyboardFocus));
         OnPropertyChanged(nameof(CurrentBorderColor));
         KeyboardFocusLost?.Invoke(this, new KeyboardFocusEventArgs(false));
-        LostFocusCommand?.Execute(this);
+        LostFocusCommand?.Execute(LostFocusCommandParameter ?? this);
     }
 
     private void OnStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
