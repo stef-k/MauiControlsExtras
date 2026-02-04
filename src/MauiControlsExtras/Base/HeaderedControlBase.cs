@@ -215,6 +215,20 @@ public abstract class HeaderedControlBase : StyledControlBase
 
     #endregion
 
+    #region Theme Change
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+        OnPropertyChanged(nameof(EffectiveHeaderBackgroundColor));
+        OnPropertyChanged(nameof(EffectiveHeaderTextColor));
+        OnPropertyChanged(nameof(EffectiveHeaderFontFamily));
+        OnPropertyChanged(nameof(EffectiveHeaderBorderColor));
+    }
+
+    #endregion
+
     #region Property Changed Handlers
 
     private static void OnHeaderBackgroundColorChanged(BindableObject bindable, object oldValue, object newValue)
