@@ -82,6 +82,14 @@ public class WizardStep : ContentView, INotifyPropertyChanged
         null);
 
     /// <summary>
+    /// Identifies the <see cref="ValidationCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ValidationCommandParameterProperty = BindableProperty.Create(
+        nameof(ValidationCommandParameter),
+        typeof(object),
+        typeof(WizardStep));
+
+    /// <summary>
     /// Identifies the <see cref="OnEnterCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty OnEnterCommandProperty = BindableProperty.Create(
@@ -91,6 +99,14 @@ public class WizardStep : ContentView, INotifyPropertyChanged
         null);
 
     /// <summary>
+    /// Identifies the <see cref="OnEnterCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty OnEnterCommandParameterProperty = BindableProperty.Create(
+        nameof(OnEnterCommandParameter),
+        typeof(object),
+        typeof(WizardStep));
+
+    /// <summary>
     /// Identifies the <see cref="OnExitCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty OnExitCommandProperty = BindableProperty.Create(
@@ -98,6 +114,14 @@ public class WizardStep : ContentView, INotifyPropertyChanged
         typeof(ICommand),
         typeof(WizardStep),
         null);
+
+    /// <summary>
+    /// Identifies the <see cref="OnExitCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty OnExitCommandParameterProperty = BindableProperty.Create(
+        nameof(OnExitCommandParameter),
+        typeof(object),
+        typeof(WizardStep));
 
     #endregion
 
@@ -168,6 +192,16 @@ public class WizardStep : ContentView, INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ValidationCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ValidationCommandParameter
+    {
+        get => GetValue(ValidationCommandParameterProperty);
+        set => SetValue(ValidationCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets a command executed when entering this step.
     /// </summary>
     public ICommand? OnEnterCommand
@@ -177,12 +211,32 @@ public class WizardStep : ContentView, INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="OnEnterCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? OnEnterCommandParameter
+    {
+        get => GetValue(OnEnterCommandParameterProperty);
+        set => SetValue(OnEnterCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets a command executed when leaving this step.
     /// </summary>
     public ICommand? OnExitCommand
     {
         get => (ICommand?)GetValue(OnExitCommandProperty);
         set => SetValue(OnExitCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="OnExitCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? OnExitCommandParameter
+    {
+        get => GetValue(OnExitCommandParameterProperty);
+        set => SetValue(OnExitCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -283,9 +337,10 @@ public class WizardStep : ContentView, INotifyPropertyChanged
 
         if (ValidationCommand != null)
         {
-            if (ValidationCommand.CanExecute(this))
+            var parameter = ValidationCommandParameter ?? this;
+            if (ValidationCommand.CanExecute(parameter))
             {
-                ValidationCommand.Execute(this);
+                ValidationCommand.Execute(parameter);
             }
         }
 
@@ -303,7 +358,7 @@ public class WizardStep : ContentView, INotifyPropertyChanged
     internal void OnEnter()
     {
         Status = WizardStepStatus.Current;
-        OnEnterCommand?.Execute(this);
+        OnEnterCommand?.Execute(OnEnterCommandParameter ?? this);
         Entered?.Invoke(this, EventArgs.Empty);
     }
 
@@ -317,7 +372,7 @@ public class WizardStep : ContentView, INotifyPropertyChanged
         {
             Status = WizardStepStatus.Completed;
         }
-        OnExitCommand?.Execute(this);
+        OnExitCommand?.Execute(OnExitCommandParameter ?? this);
         Exited?.Invoke(this, EventArgs.Empty);
     }
 

@@ -515,11 +515,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="SelectionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectionChangedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="CellTappedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CellTappedCommandProperty = BindableProperty.Create(
         nameof(CellTappedCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="CellTappedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CellTappedCommandParameterProperty = BindableProperty.Create(
+        nameof(CellTappedCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -531,11 +547,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="CellDoubleTappedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CellDoubleTappedCommandParameterProperty = BindableProperty.Create(
+        nameof(CellDoubleTappedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="SortingCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SortingCommandProperty = BindableProperty.Create(
         nameof(SortingCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="SortingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SortingCommandParameterProperty = BindableProperty.Create(
+        nameof(SortingCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -547,11 +579,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="SortedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SortedCommandParameterProperty = BindableProperty.Create(
+        nameof(SortedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="CellEditStartedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CellEditStartedCommandProperty = BindableProperty.Create(
         nameof(CellEditStartedCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="CellEditStartedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CellEditStartedCommandParameterProperty = BindableProperty.Create(
+        nameof(CellEditStartedCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -563,11 +611,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="CellEditEndedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CellEditEndedCommandParameterProperty = BindableProperty.Create(
+        nameof(CellEditEndedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="CellEditCancelledCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CellEditCancelledCommandProperty = BindableProperty.Create(
         nameof(CellEditCancelledCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="CellEditCancelledCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CellEditCancelledCommandParameterProperty = BindableProperty.Create(
+        nameof(CellEditCancelledCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -579,11 +643,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="RowEditEndedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RowEditEndedCommandParameterProperty = BindableProperty.Create(
+        nameof(RowEditEndedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="FilteringCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty FilteringCommandProperty = BindableProperty.Create(
         nameof(FilteringCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="FilteringCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FilteringCommandParameterProperty = BindableProperty.Create(
+        nameof(FilteringCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -595,11 +675,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="FilteredCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FilteredCommandParameterProperty = BindableProperty.Create(
+        nameof(FilteredCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="PageChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty PageChangedCommandProperty = BindableProperty.Create(
         nameof(PageChangedCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="PageChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PageChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(PageChangedCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -611,11 +707,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="ExportCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ExportCommandParameterProperty = BindableProperty.Create(
+        nameof(ExportCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="UndoCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty UndoCommandProperty = BindableProperty.Create(
         nameof(UndoCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="UndoCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty UndoCommandParameterProperty = BindableProperty.Create(
+        nameof(UndoCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -627,11 +739,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="RedoCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RedoCommandParameterProperty = BindableProperty.Create(
+        nameof(RedoCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="CopyCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CopyCommandProperty = BindableProperty.Create(
         nameof(CopyCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="CopyCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CopyCommandParameterProperty = BindableProperty.Create(
+        nameof(CopyCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -643,11 +771,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="CutCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CutCommandParameterProperty = BindableProperty.Create(
+        nameof(CutCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="PasteCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty PasteCommandProperty = BindableProperty.Create(
         nameof(PasteCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="PasteCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PasteCommandParameterProperty = BindableProperty.Create(
+        nameof(PasteCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -659,11 +803,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="ColumnReorderedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ColumnReorderedCommandParameterProperty = BindableProperty.Create(
+        nameof(ColumnReorderedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="RowSelectedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty RowSelectedCommandProperty = BindableProperty.Create(
         nameof(RowSelectedCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="RowSelectedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RowSelectedCommandParameterProperty = BindableProperty.Create(
+        nameof(RowSelectedCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -675,6 +835,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="RowDeselectedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RowDeselectedCommandParameterProperty = BindableProperty.Create(
+        nameof(RowDeselectedCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="SelectAllCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
@@ -683,11 +851,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="SelectAllCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectAllCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
         nameof(ClearSelectionCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandParameterProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -1144,12 +1328,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectionChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectionChangedCommandParameter
+    {
+        get => GetValue(SelectionChangedCommandParameterProperty);
+        set => SetValue(SelectionChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute when a cell is tapped.
     /// </summary>
     public ICommand? CellTappedCommand
     {
         get => (ICommand?)GetValue(CellTappedCommandProperty);
         set => SetValue(CellTappedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CellTappedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CellTappedCommandParameter
+    {
+        get => GetValue(CellTappedCommandParameterProperty);
+        set => SetValue(CellTappedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1162,12 +1366,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CellDoubleTappedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CellDoubleTappedCommandParameter
+    {
+        get => GetValue(CellDoubleTappedCommandParameterProperty);
+        set => SetValue(CellDoubleTappedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute before sorting.
     /// </summary>
     public ICommand? SortingCommand
     {
         get => (ICommand?)GetValue(SortingCommandProperty);
         set => SetValue(SortingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SortingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SortingCommandParameter
+    {
+        get => GetValue(SortingCommandParameterProperty);
+        set => SetValue(SortingCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1180,12 +1404,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SortedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SortedCommandParameter
+    {
+        get => GetValue(SortedCommandParameterProperty);
+        set => SetValue(SortedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute when cell edit starts.
     /// </summary>
     public ICommand? CellEditStartedCommand
     {
         get => (ICommand?)GetValue(CellEditStartedCommandProperty);
         set => SetValue(CellEditStartedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CellEditStartedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CellEditStartedCommandParameter
+    {
+        get => GetValue(CellEditStartedCommandParameterProperty);
+        set => SetValue(CellEditStartedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1198,12 +1442,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CellEditEndedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CellEditEndedCommandParameter
+    {
+        get => GetValue(CellEditEndedCommandParameterProperty);
+        set => SetValue(CellEditEndedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute when cell edit is cancelled (e.g., user presses Escape).
     /// </summary>
     public ICommand? CellEditCancelledCommand
     {
         get => (ICommand?)GetValue(CellEditCancelledCommandProperty);
         set => SetValue(CellEditCancelledCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CellEditCancelledCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CellEditCancelledCommandParameter
+    {
+        get => GetValue(CellEditCancelledCommandParameterProperty);
+        set => SetValue(CellEditCancelledCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1216,12 +1480,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="RowEditEndedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? RowEditEndedCommandParameter
+    {
+        get => GetValue(RowEditEndedCommandParameterProperty);
+        set => SetValue(RowEditEndedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute before filtering.
     /// </summary>
     public ICommand? FilteringCommand
     {
         get => (ICommand?)GetValue(FilteringCommandProperty);
         set => SetValue(FilteringCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="FilteringCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? FilteringCommandParameter
+    {
+        get => GetValue(FilteringCommandParameterProperty);
+        set => SetValue(FilteringCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1234,12 +1518,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="FilteredCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? FilteredCommandParameter
+    {
+        get => GetValue(FilteredCommandParameterProperty);
+        set => SetValue(FilteredCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute when page changes.
     /// </summary>
     public ICommand? PageChangedCommand
     {
         get => (ICommand?)GetValue(PageChangedCommandProperty);
         set => SetValue(PageChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PageChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PageChangedCommandParameter
+    {
+        get => GetValue(PageChangedCommandParameterProperty);
+        set => SetValue(PageChangedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1251,11 +1555,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         set => SetValue(ExportCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ExportCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ExportCommandParameter
+    {
+        get => GetValue(ExportCommandParameterProperty);
+        set => SetValue(ExportCommandParameterProperty, value);
+    }
+
     /// <inheritdoc />
     public ICommand? UndoCommand
     {
         get => (ICommand?)GetValue(UndoCommandProperty);
         set => SetValue(UndoCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="UndoCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? UndoCommandParameter
+    {
+        get => GetValue(UndoCommandParameterProperty);
+        set => SetValue(UndoCommandParameterProperty, value);
     }
 
     /// <inheritdoc />
@@ -1265,11 +1589,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         set => SetValue(RedoCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="RedoCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? RedoCommandParameter
+    {
+        get => GetValue(RedoCommandParameterProperty);
+        set => SetValue(RedoCommandParameterProperty, value);
+    }
+
     /// <inheritdoc />
     public ICommand? CopyCommand
     {
         get => (ICommand?)GetValue(CopyCommandProperty);
         set => SetValue(CopyCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CopyCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CopyCommandParameter
+    {
+        get => GetValue(CopyCommandParameterProperty);
+        set => SetValue(CopyCommandParameterProperty, value);
     }
 
     /// <inheritdoc />
@@ -1279,11 +1623,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         set => SetValue(CutCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CutCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CutCommandParameter
+    {
+        get => GetValue(CutCommandParameterProperty);
+        set => SetValue(CutCommandParameterProperty, value);
+    }
+
     /// <inheritdoc />
     public ICommand? PasteCommand
     {
         get => (ICommand?)GetValue(PasteCommandProperty);
         set => SetValue(PasteCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PasteCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PasteCommandParameter
+    {
+        get => GetValue(PasteCommandParameterProperty);
+        set => SetValue(PasteCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1297,6 +1661,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ColumnReorderedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ColumnReorderedCommandParameter
+    {
+        get => GetValue(ColumnReorderedCommandParameterProperty);
+        set => SetValue(ColumnReorderedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when a row is selected.
     /// The command parameter is <see cref="DataGridRowSelectionEventArgs"/>.
     /// </summary>
@@ -1304,6 +1678,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         get => (ICommand?)GetValue(RowSelectedCommandProperty);
         set => SetValue(RowSelectedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="RowSelectedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? RowSelectedCommandParameter
+    {
+        get => GetValue(RowSelectedCommandParameterProperty);
+        set => SetValue(RowSelectedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1317,6 +1701,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="RowDeselectedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? RowDeselectedCommandParameter
+    {
+        get => GetValue(RowDeselectedCommandParameterProperty);
+        set => SetValue(RowDeselectedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute for select all operations.
     /// </summary>
     public ICommand? SelectAllCommand
@@ -1326,12 +1720,32 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectAllCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectAllCommandParameter
+    {
+        get => GetValue(SelectAllCommandParameterProperty);
+        set => SetValue(SelectAllCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command to execute for clear selection operations.
     /// </summary>
     public ICommand? ClearSelectionCommand
     {
         get => (ICommand?)GetValue(ClearSelectionCommandProperty);
         set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ClearSelectionCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ClearSelectionCommandParameter
+    {
+        get => GetValue(ClearSelectionCommandParameterProperty);
+        set => SetValue(ClearSelectionCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1819,7 +2233,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         Exported?.Invoke(this, args);
 
         if (ExportCommand?.CanExecute(args) == true)
-            ExportCommand.Execute(args);
+            ExportCommand.Execute(ExportCommandParameter ?? args);
 
         return result;
     }
@@ -1857,7 +2271,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         Exported?.Invoke(this, args);
 
         if (ExportCommand?.CanExecute(args) == true)
-            ExportCommand.Execute(args);
+            ExportCommand.Execute(ExportCommandParameter ?? args);
 
         return result;
     }
@@ -2441,8 +2855,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         args.Content = content;
         Clipboard.Default.SetTextAsync(content);
 
-        if (CopyCommand?.CanExecute(args) == true)
-            CopyCommand.Execute(args);
+        var copyParam = CopyCommandParameter ?? args;
+        if (CopyCommand?.CanExecute(copyParam) == true)
+            CopyCommand.Execute(copyParam);
     }
 
     /// <inheritdoc />
@@ -2533,7 +2948,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             EndBatchOperation();
 
             if (PasteCommand?.CanExecute(args) == true)
-                PasteCommand.Execute(args);
+                PasteCommand.Execute(PasteCommandParameter ?? args);
 
             RefreshData();
         }
@@ -3796,7 +4211,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (SortingCommand?.CanExecute(sortingArgs) == true)
         {
-            SortingCommand.Execute(sortingArgs);
+            SortingCommand.Execute(SortingCommandParameter ?? sortingArgs);
         }
 
         if (sortingArgs.Cancel)
@@ -3828,7 +4243,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (SortedCommand?.CanExecute(column) == true)
         {
-            SortedCommand.Execute(column);
+            SortedCommand.Execute(SortedCommandParameter ?? column);
         }
     }
 
@@ -4103,7 +4518,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (CellEditStartedCommand?.CanExecute(startedArgs) == true)
         {
-            CellEditStartedCommand.Execute(startedArgs);
+            CellEditStartedCommand.Execute(CellEditStartedCommandParameter ?? startedArgs);
         }
     }
 
@@ -4163,7 +4578,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (CellEditEndedCommand?.CanExecute(endedArgs) == true)
         {
-            CellEditEndedCommand.Execute(endedArgs);
+            CellEditEndedCommand.Execute(CellEditEndedCommandParameter ?? endedArgs);
         }
 
         EndEdit();
@@ -4185,7 +4600,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             if (CellEditCancelledCommand?.CanExecute(cancelledArgs) == true)
             {
-                CellEditCancelledCommand.Execute(cancelledArgs);
+                CellEditCancelledCommand.Execute(CellEditCancelledCommandParameter ?? cancelledArgs);
             }
         }
 
@@ -4232,7 +4647,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             if (RowEditEndedCommand?.CanExecute(rowArgs) == true)
             {
-                RowEditEndedCommand.Execute(rowArgs);
+                RowEditEndedCommand.Execute(RowEditEndedCommandParameter ?? rowArgs);
             }
 
             _editedColumnsInRow.Clear();
@@ -4770,7 +5185,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (PageChangedCommand?.CanExecute(args) == true)
         {
-            PageChangedCommand.Execute(args);
+            PageChangedCommand.Execute(PageChangedCommandParameter ?? args);
         }
     }
 
@@ -4960,7 +5375,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             if (ColumnReorderedCommand?.CanExecute(args) == true)
             {
-                ColumnReorderedCommand.Execute(args);
+                ColumnReorderedCommand.Execute(ColumnReorderedCommandParameter ?? args);
             }
 
             BuildGrid();
@@ -5042,7 +5457,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (CellTappedCommand?.CanExecute(args) == true)
         {
-            CellTappedCommand.Execute(args);
+            CellTappedCommand.Execute(CellTappedCommandParameter ?? args);
         }
 
         // Check if we should begin edit
@@ -5065,7 +5480,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (CellDoubleTappedCommand?.CanExecute(args) == true)
         {
-            CellDoubleTappedCommand.Execute(args);
+            CellDoubleTappedCommand.Execute(CellDoubleTappedCommandParameter ?? args);
         }
 
         // Check if we should begin edit
@@ -5141,7 +5556,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (FilteringCommand?.CanExecute(filteringArgs) == true)
         {
-            FilteringCommand.Execute(filteringArgs);
+            FilteringCommand.Execute(FilteringCommandParameter ?? filteringArgs);
         }
 
         if (filteringArgs.Cancel)
@@ -5186,7 +5601,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (FilteredCommand?.CanExecute(filteredArgs) == true)
         {
-            FilteredCommand.Execute(filteredArgs);
+            FilteredCommand.Execute(FilteredCommandParameter ?? filteredArgs);
         }
     }
 
@@ -5438,7 +5853,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (SelectionChangedCommand?.CanExecute(newSelection) == true)
         {
-            SelectionChangedCommand.Execute(newSelection);
+            SelectionChangedCommand.Execute(SelectionChangedCommandParameter ?? newSelection);
         }
     }
 
@@ -5449,7 +5864,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (RowSelectedCommand?.CanExecute(args) == true)
         {
-            RowSelectedCommand.Execute(args);
+            RowSelectedCommand.Execute(RowSelectedCommandParameter ?? args);
         }
     }
 
@@ -5460,7 +5875,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (RowDeselectedCommand?.CanExecute(args) == true)
         {
-            RowDeselectedCommand.Execute(args);
+            RowDeselectedCommand.Execute(RowDeselectedCommandParameter ?? args);
         }
     }
 
@@ -5497,11 +5912,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the LostFocusCommand bindable property.
     /// </summary>
     public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
         nameof(LostFocusCommand),
         typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
         typeof(DataGridView));
 
     /// <summary>
@@ -5512,11 +5943,29 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(ICommand),
         typeof(DataGridView));
 
+    /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
     /// <inheritdoc />
     public ICommand? GotFocusCommand
     {
         get => (ICommand?)GetValue(GotFocusCommandProperty);
         set => SetValue(GotFocusCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
     }
 
     /// <inheritdoc />
@@ -5526,11 +5975,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         set => SetValue(LostFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc />
     public ICommand? KeyPressCommand
     {
         get => (ICommand?)GetValue(KeyPressCommandProperty);
         set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
     }
 
     /// <inheritdoc />
@@ -5561,7 +6030,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Execute command if set
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -5646,7 +6115,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (result)
         {
             KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
-            GotFocusCommand?.Execute(this);
+            GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
 
             // If no current cell, select first cell
             if (_focusedRowIndex < 0 && _sortedItems?.Count > 0)
@@ -6097,7 +6566,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         if (ClearSelectionCommand?.CanExecute(null) == true)
         {
-            ClearSelectionCommand.Execute(null);
+            ClearSelectionCommand.Execute(ClearSelectionCommandParameter);
             return;
         }
 
@@ -6124,7 +6593,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         if (SelectAllCommand?.CanExecute(null) == true)
         {
-            SelectAllCommand.Execute(null);
+            SelectAllCommand.Execute(SelectAllCommandParameter);
             return;
         }
 

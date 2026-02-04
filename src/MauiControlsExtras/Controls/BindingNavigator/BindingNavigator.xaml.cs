@@ -199,11 +199,27 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         typeof(BindingNavigator));
 
     /// <summary>
+    /// Identifies the <see cref="PositionChangedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PositionChangedCommandParameterProperty = BindableProperty.Create(
+        nameof(PositionChangedCommandParameter),
+        typeof(object),
+        typeof(BindingNavigator));
+
+    /// <summary>
     /// Identifies the <see cref="AddCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty AddCommandProperty = BindableProperty.Create(
         nameof(AddCommand),
         typeof(ICommand),
+        typeof(BindingNavigator));
+
+    /// <summary>
+    /// Identifies the <see cref="AddCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty AddCommandParameterProperty = BindableProperty.Create(
+        nameof(AddCommandParameter),
+        typeof(object),
         typeof(BindingNavigator));
 
     /// <summary>
@@ -215,11 +231,27 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         typeof(BindingNavigator));
 
     /// <summary>
+    /// Identifies the <see cref="DeleteCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DeleteCommandParameterProperty = BindableProperty.Create(
+        nameof(DeleteCommandParameter),
+        typeof(object),
+        typeof(BindingNavigator));
+
+    /// <summary>
     /// Identifies the <see cref="SaveCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SaveCommandProperty = BindableProperty.Create(
         nameof(SaveCommand),
         typeof(ICommand),
+        typeof(BindingNavigator));
+
+    /// <summary>
+    /// Identifies the <see cref="SaveCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SaveCommandParameterProperty = BindableProperty.Create(
+        nameof(SaveCommandParameter),
+        typeof(object),
         typeof(BindingNavigator));
 
     /// <summary>
@@ -231,11 +263,27 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         typeof(BindingNavigator));
 
     /// <summary>
+    /// Identifies the <see cref="CancelCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CancelCommandParameterProperty = BindableProperty.Create(
+        nameof(CancelCommandParameter),
+        typeof(object),
+        typeof(BindingNavigator));
+
+    /// <summary>
     /// Identifies the <see cref="RefreshCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty RefreshCommandProperty = BindableProperty.Create(
         nameof(RefreshCommand),
         typeof(ICommand),
+        typeof(BindingNavigator));
+
+    /// <summary>
+    /// Identifies the <see cref="RefreshCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RefreshCommandParameterProperty = BindableProperty.Create(
+        nameof(RefreshCommandParameter),
+        typeof(object),
         typeof(BindingNavigator));
 
     /// <summary>
@@ -247,6 +295,14 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         typeof(BindingNavigator));
 
     /// <summary>
+    /// Identifies the <see cref="GotFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty GotFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(GotFocusCommandParameter),
+        typeof(object),
+        typeof(BindingNavigator));
+
+    /// <summary>
     /// Identifies the <see cref="LostFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty LostFocusCommandProperty = BindableProperty.Create(
@@ -255,11 +311,27 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         typeof(BindingNavigator));
 
     /// <summary>
+    /// Identifies the <see cref="LostFocusCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty LostFocusCommandParameterProperty = BindableProperty.Create(
+        nameof(LostFocusCommandParameter),
+        typeof(object),
+        typeof(BindingNavigator));
+
+    /// <summary>
     /// Identifies the <see cref="KeyPressCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty KeyPressCommandProperty = BindableProperty.Create(
         nameof(KeyPressCommand),
         typeof(ICommand),
+        typeof(BindingNavigator));
+
+    /// <summary>
+    /// Identifies the <see cref="KeyPressCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty KeyPressCommandParameterProperty = BindableProperty.Create(
+        nameof(KeyPressCommandParameter),
+        typeof(object),
         typeof(BindingNavigator));
 
     #endregion
@@ -470,12 +542,32 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PositionChangedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PositionChangedCommandParameter
+    {
+        get => GetValue(PositionChangedCommandParameterProperty);
+        set => SetValue(PositionChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when Add is clicked.
     /// </summary>
     public ICommand? AddCommand
     {
         get => (ICommand?)GetValue(AddCommandProperty);
         set => SetValue(AddCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="AddCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? AddCommandParameter
+    {
+        get => GetValue(AddCommandParameterProperty);
+        set => SetValue(AddCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -488,12 +580,32 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="DeleteCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? DeleteCommandParameter
+    {
+        get => GetValue(DeleteCommandParameterProperty);
+        set => SetValue(DeleteCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when Save is clicked.
     /// </summary>
     public ICommand? SaveCommand
     {
         get => (ICommand?)GetValue(SaveCommandProperty);
         set => SetValue(SaveCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SaveCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SaveCommandParameter
+    {
+        get => GetValue(SaveCommandParameterProperty);
+        set => SetValue(SaveCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -506,12 +618,32 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CancelCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CancelCommandParameter
+    {
+        get => GetValue(CancelCommandParameterProperty);
+        set => SetValue(CancelCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when Refresh is clicked.
     /// </summary>
     public ICommand? RefreshCommand
     {
         get => (ICommand?)GetValue(RefreshCommandProperty);
         set => SetValue(RefreshCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="RefreshCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? RefreshCommandParameter
+    {
+        get => GetValue(RefreshCommandParameterProperty);
+        set => SetValue(RefreshCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -521,6 +653,16 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         set => SetValue(GotFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="GotFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? GotFocusCommandParameter
+    {
+        get => GetValue(GotFocusCommandParameterProperty);
+        set => SetValue(GotFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? LostFocusCommand
     {
@@ -528,11 +670,31 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         set => SetValue(LostFocusCommandProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="LostFocusCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? LostFocusCommandParameter
+    {
+        get => GetValue(LostFocusCommandParameterProperty);
+        set => SetValue(LostFocusCommandParameterProperty, value);
+    }
+
     /// <inheritdoc/>
     public ICommand? KeyPressCommand
     {
         get => (ICommand?)GetValue(KeyPressCommandProperty);
         set => SetValue(KeyPressCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="KeyPressCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? KeyPressCommandParameter
+    {
+        get => GetValue(KeyPressCommandParameterProperty);
+        set => SetValue(KeyPressCommandParameterProperty, value);
     }
 
     #endregion
@@ -617,7 +779,7 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
 
         if (KeyPressCommand?.CanExecute(e) == true)
         {
-            KeyPressCommand.Execute(e);
+            KeyPressCommand.Execute(KeyPressCommandParameter ?? e);
             if (e.Handled) return true;
         }
 
@@ -671,7 +833,7 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         _hasKeyboardFocus = true;
         OnPropertyChanged(nameof(HasKeyboardFocus));
         KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
-        GotFocusCommand?.Execute(this);
+        GotFocusCommand?.Execute(GotFocusCommandParameter ?? this);
         return true;
     }
 
@@ -770,7 +932,7 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         Adding?.Invoke(this, args);
         if (!args.Cancel)
         {
-            AddCommand?.Execute(args);
+            AddCommand?.Execute(AddCommandParameter ?? args);
         }
     }
 
@@ -785,7 +947,7 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
         Deleting?.Invoke(this, args);
         if (!args.Cancel)
         {
-            DeleteCommand?.Execute(args);
+            DeleteCommand?.Execute(DeleteCommandParameter ?? args);
         }
     }
 
@@ -795,7 +957,7 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     public void Refresh()
     {
         Refreshing?.Invoke(this, EventArgs.Empty);
-        RefreshCommand?.Execute(null);
+        RefreshCommand?.Execute(RefreshCommandParameter);
         UpdateCount();
         UpdateButtonStates();
     }
@@ -815,13 +977,13 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     private void OnSaveClicked(object? sender, EventArgs e)
     {
         Saving?.Invoke(this, EventArgs.Empty);
-        SaveCommand?.Execute(null);
+        SaveCommand?.Execute(SaveCommandParameter);
     }
 
     private void OnCancelClicked(object? sender, EventArgs e)
     {
         Cancelling?.Invoke(this, EventArgs.Empty);
-        CancelCommand?.Execute(null);
+        CancelCommand?.Execute(CancelCommandParameter);
     }
 
     private void OnPositionEntryCompleted(object? sender, EventArgs e)
@@ -883,7 +1045,7 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
 
             var args = new PositionChangedEventArgs(oldPos, newPos, navigator.CurrentItem);
             navigator.PositionChanged?.Invoke(navigator, args);
-            navigator.PositionChangedCommand?.Execute(args);
+            navigator.PositionChangedCommand?.Execute(navigator.PositionChangedCommandParameter ?? args);
         }
     }
 

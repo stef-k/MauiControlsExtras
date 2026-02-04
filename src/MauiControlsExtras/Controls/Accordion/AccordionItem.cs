@@ -55,6 +55,14 @@ public class AccordionItem : ContentView
         null);
 
     /// <summary>
+    /// Identifies the <see cref="ExpandCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ExpandCommandParameterProperty = BindableProperty.Create(
+        nameof(ExpandCommandParameter),
+        typeof(object),
+        typeof(AccordionItem));
+
+    /// <summary>
     /// Identifies the <see cref="CollapseCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CollapseCommandProperty = BindableProperty.Create(
@@ -62,6 +70,14 @@ public class AccordionItem : ContentView
         typeof(ICommand),
         typeof(AccordionItem),
         null);
+
+    /// <summary>
+    /// Identifies the <see cref="CollapseCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CollapseCommandParameterProperty = BindableProperty.Create(
+        nameof(CollapseCommandParameter),
+        typeof(object),
+        typeof(AccordionItem));
 
     /// <summary>
     /// Identifies the <see cref="IsExpanded"/> bindable property.
@@ -133,12 +149,32 @@ public class AccordionItem : ContentView
     }
 
     /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ExpandCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ExpandCommandParameter
+    {
+        get => GetValue(ExpandCommandParameterProperty);
+        set => SetValue(ExpandCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when collapsing.
     /// </summary>
     public ICommand? CollapseCommand
     {
         get => (ICommand?)GetValue(CollapseCommandProperty);
         set => SetValue(CollapseCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CollapseCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CollapseCommandParameter
+    {
+        get => GetValue(CollapseCommandParameterProperty);
+        set => SetValue(CollapseCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -192,7 +228,7 @@ public class AccordionItem : ContentView
         {
             IsExpanded = true;
             Expanded?.Invoke(this, EventArgs.Empty);
-            ExpandCommand?.Execute(this);
+            ExpandCommand?.Execute(ExpandCommandParameter ?? this);
         }
     }
 
@@ -205,7 +241,7 @@ public class AccordionItem : ContentView
         {
             IsExpanded = false;
             Collapsed?.Invoke(this, EventArgs.Empty);
-            CollapseCommand?.Execute(this);
+            CollapseCommand?.Execute(CollapseCommandParameter ?? this);
         }
     }
 
