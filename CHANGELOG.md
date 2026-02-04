@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Tests**: Base class and theme system test coverage for `StyledControlBase`, `TextStyledControlBase`, `HeaderedControlBase`, `NavigationControlBase`, `ListStyledControlBase`, `AnimatedControlBase`, `ControlsTheme`, and `MauiControlsExtrasTheme` (#165)
 - **NumericUpDown**: Mouse wheel support to increment/decrement value when focused (#168)
 - **Rating**: Mouse wheel support to adjust rating when focused (#168)
 - **RangeSlider**: Mouse wheel support to adjust active thumb when focused (#168)
