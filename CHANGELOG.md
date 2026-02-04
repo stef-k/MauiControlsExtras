@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Wizard**: Now inherits from `NavigationControlBase` instead of `HeaderedControlBase` (#103)
+  - Adds: `ActiveColor`, `InactiveColor`, `VisitedColor`, `DisabledNavigationColor`, `ActiveBackgroundColor`, `ShowNavigationIndicator`, `NavigationIndicatorColor`, `NavigationIndicatorThickness`
+  - Adds: `StepIndicatorBackgroundColor`, `StepIndicatorPadding`, `StepTitleFontSize`, `StepTitleFontAttributes`
+  - **Breaking**: `CompletedStepColor` removed, use `VisitedColor` instead
+  - **Breaking**: `ErrorStepColor` default fallback changed from `Colors.Red` to theme `ErrorColor`
+  - **Breaking**: Header properties (`HeaderBackgroundColor`, `HeaderPadding`, `HeaderFontSize`, etc.) no longer inherited; use new `StepIndicator*` / `StepTitle*` properties
+
 ### Added
 
 - **TokenEntry**: Clipboard support with `IClipboardSupport` and `IContextMenuSupport` interface implementations (#109)
