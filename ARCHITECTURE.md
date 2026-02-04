@@ -571,7 +571,6 @@ Controls with actions MUST support right-click context menus:
 #### Double-Click
 - **DataGridView** - Enter edit mode
 - **TreeView** - Expand/collapse or activate
-- **ComboBox** - Open dropdown
 
 ### Focus Management
 
