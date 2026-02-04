@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **NumericUpDown**: Mouse wheel support to increment/decrement value when focused (#168)
+- **Rating**: Mouse wheel support to adjust rating when focused (#168)
+- **RangeSlider**: Mouse wheel support to adjust active thumb when focused (#168)
+
 ### Fixed
 
 - **Keyboard**: Arrow key names now use `"Arrow*"` convention consistently across all controls (#174)
