@@ -383,6 +383,12 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
     public Color EffectiveSeparatorColor =>
         SeparatorColor ?? MauiControlsExtrasTheme.GetForegroundColor().WithAlpha(0.5f);
 
+    /// <summary>
+    /// Gets the current border color based on focus state.
+    /// </summary>
+    public Color CurrentBorderColor =>
+        _hasKeyboardFocus ? EffectiveFocusBorderColor : EffectiveBorderColor;
+
     #endregion
 
     #region Command Properties Implementation
@@ -494,9 +500,7 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusGained;
 
     /// <inheritdoc/>
-#pragma warning disable CS0067
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusLost;
-#pragma warning restore CS0067
 
     /// <inheritdoc/>
     public event EventHandler<KeyEventArgs>? KeyPressed;
@@ -729,6 +733,8 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
     {
         InitializeComponent();
         _items.CollectionChanged += OnItemsCollectionChanged;
+        Focused += OnControlFocused;
+        Unfocused += OnControlUnfocused;
     }
 
     #endregion
@@ -1027,6 +1033,32 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
         var args = new BreadcrumbItemClickedEventArgs(item, index);
         ItemClicked?.Invoke(this, args);
         ItemClickedCommand?.Execute(args);
+    }
+
+    private void OnControlFocused(object? sender, FocusEventArgs e)
+    {
+        _hasKeyboardFocus = true;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
+        GotFocusCommand?.Execute(this);
+
+        if (_selectedIndex < 0 && _items.Count > 0)
+        {
+            _selectedIndex = 0;
+        }
+
+        RebuildUI();
+    }
+
+    private void OnControlUnfocused(object? sender, FocusEventArgs e)
+    {
+        _hasKeyboardFocus = false;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusLost?.Invoke(this, new KeyboardFocusEventArgs(false));
+        LostFocusCommand?.Execute(this);
+        RebuildUI();
     }
 
     private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)

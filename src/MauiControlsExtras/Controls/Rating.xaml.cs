@@ -397,6 +397,12 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
     }
 
     /// <summary>
+    /// Gets the current border color based on focus state.
+    /// </summary>
+    public Color CurrentBorderColor =>
+        IsFocused ? EffectiveFocusBorderColor : EffectiveBorderColor;
+
+    /// <summary>
     /// Gets whether the current value is valid.
     /// </summary>
     public bool IsValid => _isValid;
@@ -467,6 +473,8 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
     {
         InitializeComponent();
         BuildIcons();
+        Focused += OnControlFocused;
+        Unfocused += OnControlUnfocused;
     }
 
     #endregion
@@ -677,10 +685,26 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
 
     #region Event Handlers
 
+    private void OnControlFocused(object? sender, FocusEventArgs e)
+    {
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusGained?.Invoke(this, new Base.KeyboardFocusEventArgs(true));
+        GotFocusCommand?.Execute(this);
+    }
+
+    private void OnControlUnfocused(object? sender, FocusEventArgs e)
+    {
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusLost?.Invoke(this, new Base.KeyboardFocusEventArgs(false));
+        LostFocusCommand?.Execute(this);
+    }
+
     private void OnIconTapped(int index, TappedEventArgs e)
     {
         if (IsReadOnly)
             return;
+
+        Focus();
 
         double newValue;
 
@@ -914,9 +938,7 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
     public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusGained;
 
     /// <inheritdoc />
-#pragma warning disable CS0067 // Event is never used (raised by platform-specific handlers)
     public event EventHandler<Base.KeyboardFocusEventArgs>? KeyboardFocusLost;
-#pragma warning restore CS0067
 
     /// <inheritdoc />
     public event EventHandler<Base.KeyEventArgs>? KeyPressed;

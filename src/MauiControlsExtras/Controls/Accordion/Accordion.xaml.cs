@@ -241,6 +241,12 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
     public ObservableCollection<AccordionItem> Items => _items;
 
     /// <summary>
+    /// Gets the current border color based on focus state.
+    /// </summary>
+    public Color CurrentBorderColor =>
+        _hasKeyboardFocus ? EffectiveFocusBorderColor : EffectiveBorderColor;
+
+    /// <summary>
     /// Gets the currently selected/focused item index.
     /// </summary>
     public int SelectedIndex
@@ -352,9 +358,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusGained;
 
     /// <inheritdoc/>
-#pragma warning disable CS0067
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusLost;
-#pragma warning restore CS0067
 
     /// <inheritdoc/>
     public event EventHandler<KeyEventArgs>? KeyPressed;
@@ -606,6 +610,8 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         InitializeComponent();
         BuildVisualTree();
         _items.CollectionChanged += OnItemsCollectionChanged;
+        Focused += OnControlFocused;
+        Unfocused += OnControlUnfocused;
 
         // Initialize UI for items already added via XAML (before CollectionChanged was hooked up)
         if (_items.Count > 0)
@@ -649,7 +655,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
             new Binding(nameof(EffectiveBorderThickness), source: this));
         border.SetBinding(
             Border.StrokeProperty,
-            new Binding(nameof(EffectiveBorderColor), source: this));
+            new Binding(nameof(CurrentBorderColor), source: this));
 
         // Set background color with theme support
         border.SetAppThemeColor(Border.BackgroundColorProperty,
@@ -1123,6 +1129,29 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
     #endregion
 
     #region Event Handlers
+
+    private void OnControlFocused(object? sender, FocusEventArgs e)
+    {
+        _hasKeyboardFocus = true;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
+        GotFocusCommand?.Execute(this);
+
+        if (_selectedIndex < 0 && _items.Count > 0)
+        {
+            SelectedIndex = 0;
+        }
+    }
+
+    private void OnControlUnfocused(object? sender, FocusEventArgs e)
+    {
+        _hasKeyboardFocus = false;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusLost?.Invoke(this, new KeyboardFocusEventArgs(false));
+        LostFocusCommand?.Execute(this);
+    }
 
     private void OnItemsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
