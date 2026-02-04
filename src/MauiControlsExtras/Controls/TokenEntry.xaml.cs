@@ -685,13 +685,24 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
             Text = "✕",
             FontSize = 11,
             TextColor = accentColor.WithAlpha(0.7f),
-            VerticalOptions = LayoutOptions.Center
+            VerticalOptions = LayoutOptions.Center,
+            HorizontalOptions = LayoutOptions.Center
+        };
+        var removeContainer = new Border
+        {
+            BackgroundColor = Colors.Transparent,
+            StrokeThickness = 0,
+            MinimumWidthRequest = 44,
+            MinimumHeightRequest = 44,
+            HorizontalOptions = LayoutOptions.Center,
+            VerticalOptions = LayoutOptions.Center,
+            Content = removeLabel
         };
         var removeTap = new TapGestureRecognizer();
         removeTap.Tapped += (s, e) => RemoveToken(token);
-        removeLabel.GestureRecognizers.Add(removeTap);
-        Grid.SetColumn(removeLabel, 1);
-        chipGrid.Add(removeLabel);
+        removeContainer.GestureRecognizers.Add(removeTap);
+        Grid.SetColumn(removeContainer, 1);
+        chipGrid.Add(removeContainer);
 
         chipBorder.Content = chipGrid;
 

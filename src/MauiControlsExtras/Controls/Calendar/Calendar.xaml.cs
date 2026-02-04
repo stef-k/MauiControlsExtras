@@ -1087,9 +1087,11 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         var startDay = GetFirstDayOfWeekValue();
         var culture = CultureInfo.CurrentCulture;
 
+        var effectiveCellSize = Math.Max(CellSize, 48);
+
         if (ShowWeekNumbers)
         {
-            dayOfWeekHeader.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(CellSize)));
+            dayOfWeekHeader.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(effectiveCellSize)));
             dayOfWeekHeader.Children.Add(new Label
             {
                 Text = "Wk",
@@ -1101,7 +1103,7 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         for (int i = 0; i < 7; i++)
         {
-            dayOfWeekHeader.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(CellSize)));
+            dayOfWeekHeader.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(effectiveCellSize)));
             var dayIndex = (startDay + i) % 7;
             var dayName = culture.DateTimeFormat.AbbreviatedDayNames[dayIndex];
 
@@ -1122,19 +1124,19 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
 
         for (int r = 0; r < 6; r++)
         {
-            calendarGrid.RowDefinitions.Add(new RowDefinition(new GridLength(CellSize)));
+            calendarGrid.RowDefinitions.Add(new RowDefinition(new GridLength(effectiveCellSize)));
         }
 
         var colOffset = 0;
         if (ShowWeekNumbers)
         {
-            calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(CellSize)));
+            calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(effectiveCellSize)));
             colOffset = 1;
         }
 
         for (int c = 0; c < 7; c++)
         {
-            calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(CellSize)));
+            calendarGrid.ColumnDefinitions.Add(new ColumnDefinition(new GridLength(effectiveCellSize)));
         }
 
         var firstOfMonth = new DateTime(_displayDate.Year, _displayDate.Month, 1);
@@ -1188,10 +1190,13 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         var isEnabled = IsDateEnabled(date);
         var isFocused = _hasKeyboardFocus && row == _focusedRow && col == _focusedCol;
 
+        var cellDim = CellSize - 4;
         var container = new Border
         {
-            WidthRequest = CellSize - 4,
-            HeightRequest = CellSize - 4,
+            WidthRequest = cellDim,
+            HeightRequest = cellDim,
+            MinimumWidthRequest = 44,
+            MinimumHeightRequest = 44,
             StrokeThickness = isFocused ? 2 : (isToday ? 1 : 0),
             Stroke = isFocused ? new SolidColorBrush(EffectiveAccentColor) :
                      (isToday ? new SolidColorBrush(EffectiveTodayHighlightColor) : null),
