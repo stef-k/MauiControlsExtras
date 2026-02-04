@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <UseMaui>true</UseMaui>
+    <SkipValidateMauiImplicitPackageReferences>true</SkipValidateMauiImplicitPackageReferences>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -19,18 +21,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Include source files without MAUI dependencies for unit testing -->
-    <Compile Include="..\..\src\MauiControlsExtras\Base\Validation\ValidationResult.cs" Link="Base\Validation\ValidationResult.cs" />
+    <!-- Include source files for unit testing without platform-specific handlers -->
+    <Compile Include="..\..\src\MauiControlsExtras\Base\Validation\ValidationResult.cs" Link="Linked\Base\Validation\ValidationResult.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Theming\IThemeAware.cs" Link="Linked\Theming\IThemeAware.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Theming\ControlsTheme.cs" Link="Linked\Theming\ControlsTheme.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Theming\MauiControlsExtrasTheme.cs" Link="Linked\Theming\MauiControlsExtrasTheme.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\StyledControlBase.cs" Link="Linked\Base\StyledControlBase.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\TextStyledControlBase.cs" Link="Linked\Base\TextStyledControlBase.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\HeaderedControlBase.cs" Link="Linked\Base\HeaderedControlBase.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\NavigationControlBase.cs" Link="Linked\Base\NavigationControlBase.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\ListStyledControlBase.cs" Link="Linked\Base\ListStyledControlBase.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\AnimatedControlBase.cs" Link="Linked\Base\AnimatedControlBase.cs" />
   </ItemGroup>
-
-  <!--
-    Note: MAUI controls require the platform runtime for testing.
-    For UI/control testing, use one of these approaches:
-    1. Create a MAUI test application (e.g., using Xunit.Maui or NUnit device runners)
-    2. Use the sample app for manual testing
-    3. Test platform-specific handlers in platform test projects
-
-    This project tests non-UI logic (ValidationResult, etc.) that doesn't require MAUI runtime.
-  -->
 
 </Project>
