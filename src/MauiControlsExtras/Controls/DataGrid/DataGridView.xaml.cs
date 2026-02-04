@@ -5580,10 +5580,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Handle navigation and action keys
         return e.Key switch
         {
-            "Up" => HandleUpKey(e),
-            "Down" => HandleDownKey(e),
-            "Left" => HandleLeftKey(e),
-            "Right" => HandleRightKey(e),
+            "ArrowUp" => HandleUpKey(e),
+            "ArrowDown" => HandleDownKey(e),
+            "ArrowLeft" => HandleLeftKey(e),
+            "ArrowRight" => HandleRightKey(e),
             "Home" => HandleHomeKey(e),
             "End" => HandleEndKey(e),
             "PageUp" => HandlePageUpKey(e),
@@ -5610,10 +5610,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             _keyboardShortcuts.AddRange(new[]
             {
-                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous row", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Down", Description = "Move to next row", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Left", Description = "Move to previous column", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Right", Description = "Move to next column", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowUp", Description = "Move to previous row", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowDown", Description = "Move to next row", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowLeft", Description = "Move to previous column", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowRight", Description = "Move to next column", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Home", Description = "Move to first column", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "End", Description = "Move to last column", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Home", Modifiers = "Ctrl", Description = "Move to first cell", Category = "Navigation" },

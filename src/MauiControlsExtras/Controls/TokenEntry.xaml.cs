@@ -1141,13 +1141,13 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
         }
 
         // Handle left arrow to select tokens
-        if (e.Key == "Left" && string.IsNullOrEmpty(Text))
+        if (e.Key == "ArrowLeft" && string.IsNullOrEmpty(Text))
         {
             return HandleLeftKey();
         }
 
         // Handle right arrow to deselect tokens
-        if (e.Key == "Right" && _selectedTokenIndex >= 0)
+        if (e.Key == "ArrowRight" && _selectedTokenIndex >= 0)
         {
             return HandleRightKey();
         }
@@ -1187,8 +1187,8 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
                 new Base.KeyboardShortcut { Key = "Enter", Description = "Create token from current text", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Backspace", Description = "Delete last token (when input empty)", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Delete", Description = "Delete selected token", Category = "Action" },
-                new Base.KeyboardShortcut { Key = "Left", Description = "Select previous token", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Right", Description = "Deselect token", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowLeft", Description = "Select previous token", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowRight", Description = "Deselect token", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Ctrl+C", Description = "Copy selected token", Category = "Clipboard" },
                 new Base.KeyboardShortcut { Key = "Ctrl+X", Description = "Cut selected token", Category = "Clipboard" },
                 new Base.KeyboardShortcut { Key = "Ctrl+V", Description = "Paste tokens from clipboard", Category = "Clipboard" },

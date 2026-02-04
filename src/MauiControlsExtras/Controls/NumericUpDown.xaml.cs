@@ -1001,8 +1001,8 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.I
 
         return e.Key switch
         {
-            "Up" => HandleIncrementKey(),
-            "Down" => HandleDecrementKey(),
+            "ArrowUp" => HandleIncrementKey(),
+            "ArrowDown" => HandleDecrementKey(),
             "PageUp" => HandleLargeIncrementKey(),
             "PageDown" => HandleLargeDecrementKey(),
             "Home" => HandleHomeKey(),
@@ -1018,8 +1018,8 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.I
         {
             _keyboardShortcuts.AddRange(new[]
             {
-                new Base.KeyboardShortcut { Key = "Up", Description = "Increment value by step", Category = "Value" },
-                new Base.KeyboardShortcut { Key = "Down", Description = "Decrement value by step", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "ArrowUp", Description = "Increment value by step", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "ArrowDown", Description = "Decrement value by step", Category = "Value" },
                 new Base.KeyboardShortcut { Key = "PageUp", Description = "Increment by large step (10x)", Category = "Value" },
                 new Base.KeyboardShortcut { Key = "PageDown", Description = "Decrement by large step (10x)", Category = "Value" },
                 new Base.KeyboardShortcut { Key = "Home", Description = "Set to minimum value", Category = "Value" },

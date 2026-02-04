@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Keyboard**: Arrow key names now use `"Arrow*"` convention consistently across all controls (#174)
+  - Fixes broken arrow key navigation in TreeView, DataGrid, ComboBox, MultiSelectComboBox, NumericUpDown, Rating, and TokenEntry
+  - Aligns `GetMacKeyCommands` in `KeyboardBehavior` with the same naming convention
+
 ### Changed
 
 - **Wizard**: Now inherits from `NavigationControlBase` instead of `HeaderedControlBase` (#103)
