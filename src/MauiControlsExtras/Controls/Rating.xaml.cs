@@ -870,6 +870,59 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
 
     #endregion
 
+    #region Mouse Wheel Support
+
+    /// <inheritdoc/>
+    protected override void OnHandlerChanged()
+    {
+        base.OnHandlerChanged();
+        SetupMouseWheelHandler();
+    }
+
+    private void SetupMouseWheelHandler()
+    {
+#if WINDOWS
+        if (Handler?.PlatformView is Microsoft.UI.Xaml.UIElement element)
+            element.PointerWheelChanged += OnWindowsPointerWheelChanged;
+#elif MACCATALYST
+        if (Handler?.PlatformView is UIKit.UIView view)
+        {
+            var panGesture = new UIKit.UIPanGestureRecognizer(OnMacScrollWheel);
+            panGesture.AllowedScrollTypesMask = UIKit.UIScrollTypeMask.Continuous | UIKit.UIScrollTypeMask.Discrete;
+            panGesture.MaximumNumberOfTouches = 0;
+            view.AddGestureRecognizer(panGesture);
+        }
+#endif
+    }
+
+#if WINDOWS
+    private void OnWindowsPointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (!IsFocused || IsReadOnly) return;
+
+        var step = Precision == RatingPrecision.Half ? 0.5 : 1.0;
+        var delta = e.GetCurrentPoint((Microsoft.UI.Xaml.UIElement)sender).Properties.MouseWheelDelta;
+        if (delta > 0) HandleIncrement(step);
+        else if (delta < 0) HandleDecrement(step);
+        e.Handled = true;
+    }
+#endif
+
+#if MACCATALYST
+    private void OnMacScrollWheel(UIKit.UIPanGestureRecognizer recognizer)
+    {
+        if (!IsFocused || IsReadOnly) return;
+
+        var step = Precision == RatingPrecision.Half ? 0.5 : 1.0;
+        var translation = recognizer.TranslationInView(recognizer.View);
+        if (translation.Y > 2) HandleDecrement(step);
+        else if (translation.Y < -2) HandleIncrement(step);
+        recognizer.SetTranslation(CoreGraphics.CGPoint.Empty, recognizer.View);
+    }
+#endif
+
+    #endregion
+
     #region IKeyboardNavigable Implementation
 
     /// <inheritdoc />
