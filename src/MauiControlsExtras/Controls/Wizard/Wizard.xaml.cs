@@ -12,7 +12,7 @@ namespace MauiControlsExtras.Controls;
 /// Provides step indicators, navigation, validation, and customization options.
 /// </summary>
 [ContentProperty(nameof(Steps))]
-public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
+public partial class Wizard : NavigationControlBase, IKeyboardNavigable
 {
     #region Private Fields
 
@@ -176,15 +176,6 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
         true);
 
     /// <summary>
-    /// Identifies the <see cref="CompletedStepColor"/> bindable property.
-    /// </summary>
-    public static readonly BindableProperty CompletedStepColorProperty = BindableProperty.Create(
-        nameof(CompletedStepColor),
-        typeof(Color),
-        typeof(Wizard),
-        null);
-
-    /// <summary>
     /// Identifies the <see cref="ErrorStepColor"/> bindable property.
     /// </summary>
     public static readonly BindableProperty ErrorStepColorProperty = BindableProperty.Create(
@@ -192,6 +183,42 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
         typeof(Color),
         typeof(Wizard),
         null);
+
+    /// <summary>
+    /// Identifies the <see cref="StepIndicatorBackgroundColor"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepIndicatorBackgroundColorProperty = BindableProperty.Create(
+        nameof(StepIndicatorBackgroundColor),
+        typeof(Color),
+        typeof(Wizard),
+        null);
+
+    /// <summary>
+    /// Identifies the <see cref="StepIndicatorPadding"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepIndicatorPaddingProperty = BindableProperty.Create(
+        nameof(StepIndicatorPadding),
+        typeof(Thickness),
+        typeof(Wizard),
+        new Thickness(12, 8));
+
+    /// <summary>
+    /// Identifies the <see cref="StepTitleFontSize"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepTitleFontSizeProperty = BindableProperty.Create(
+        nameof(StepTitleFontSize),
+        typeof(double),
+        typeof(Wizard),
+        16.0);
+
+    /// <summary>
+    /// Identifies the <see cref="StepTitleFontAttributes"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepTitleFontAttributesProperty = BindableProperty.Create(
+        nameof(StepTitleFontAttributes),
+        typeof(FontAttributes),
+        typeof(Wizard),
+        FontAttributes.Bold);
 
     #endregion
 
@@ -384,21 +411,54 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     }
 
     /// <summary>
-    /// Gets or sets the color for completed steps.
-    /// </summary>
-    public Color? CompletedStepColor
-    {
-        get => (Color?)GetValue(CompletedStepColorProperty);
-        set => SetValue(CompletedStepColorProperty, value);
-    }
-
-    /// <summary>
-    /// Gets or sets the color for steps with errors.
+    /// Gets or sets the color for steps with errors. When null, uses <see cref="StyledControlBase.EffectiveErrorColor"/>.
     /// </summary>
     public Color? ErrorStepColor
     {
         get => (Color?)GetValue(ErrorStepColorProperty);
         set => SetValue(ErrorStepColorProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the step indicator background color. When null, uses the theme surface color.
+    /// </summary>
+    public Color? StepIndicatorBackgroundColor
+    {
+        get => (Color?)GetValue(StepIndicatorBackgroundColorProperty);
+        set => SetValue(StepIndicatorBackgroundColorProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the effective step indicator background color, falling back to surface color.
+    /// </summary>
+    public Color EffectiveStepIndicatorBackgroundColor =>
+        StepIndicatorBackgroundColor ?? MauiControlsExtrasTheme.GetSurfaceColor();
+
+    /// <summary>
+    /// Gets or sets the step indicator internal padding.
+    /// </summary>
+    public Thickness StepIndicatorPadding
+    {
+        get => (Thickness)GetValue(StepIndicatorPaddingProperty);
+        set => SetValue(StepIndicatorPaddingProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the step title font size.
+    /// </summary>
+    public double StepTitleFontSize
+    {
+        get => (double)GetValue(StepTitleFontSizeProperty);
+        set => SetValue(StepTitleFontSizeProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the step title font attributes (bold, italic).
+    /// </summary>
+    public FontAttributes StepTitleFontAttributes
+    {
+        get => (FontAttributes)GetValue(StepTitleFontAttributesProperty);
+        set => SetValue(StepTitleFontAttributesProperty, value);
     }
 
     /// <summary>
@@ -715,9 +775,9 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
             Content = indicatorScrollView
         };
         stepIndicatorTop.SetBinding(Border.BackgroundColorProperty,
-            new Binding(nameof(EffectiveHeaderBackgroundColor), source: this));
+            new Binding(nameof(EffectiveStepIndicatorBackgroundColor), source: this));
         stepIndicatorTop.SetBinding(Border.PaddingProperty,
-            new Binding(nameof(HeaderPadding), source: this));
+            new Binding(nameof(StepIndicatorPadding), source: this));
 
         // Step title label
         stepTitleLabel = new Label
@@ -725,9 +785,9 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
             Margin = new Thickness(0, 0, 0, 4)
         };
         stepTitleLabel.SetBinding(Label.FontSizeProperty,
-            new Binding(nameof(HeaderFontSize), source: this));
+            new Binding(nameof(StepTitleFontSize), source: this));
         stepTitleLabel.SetBinding(Label.FontAttributesProperty,
-            new Binding(nameof(HeaderFontAttributes), source: this));
+            new Binding(nameof(StepTitleFontAttributes), source: this));
         stepTitleLabel.SetBinding(Label.TextColorProperty,
             new Binding(nameof(EffectiveForegroundColor), source: this));
 
@@ -1326,8 +1386,8 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     private View CreateConnector(WizardStep currentStep, WizardStep nextStep)
     {
         var color = currentStep.IsCompleted
-            ? (CompletedStepColor ?? EffectiveAccentColor)
-            : MauiControlsExtrasTheme.GetBorderColor();
+            ? EffectiveVisitedColor
+            : EffectiveInactiveColor;
 
         return new BoxView
         {
@@ -1344,11 +1404,11 @@ public partial class Wizard : HeaderedControlBase, IKeyboardNavigable
     {
         return step.Status switch
         {
-            WizardStepStatus.Completed => CompletedStepColor ?? EffectiveAccentColor,
-            WizardStepStatus.Error => ErrorStepColor ?? Colors.Red,
-            WizardStepStatus.Current => EffectiveAccentColor,
-            WizardStepStatus.Skipped => MauiControlsExtrasTheme.GetBorderColor(),
-            _ => MauiControlsExtrasTheme.GetBorderColor()
+            WizardStepStatus.Completed => EffectiveVisitedColor,
+            WizardStepStatus.Error => ErrorStepColor ?? EffectiveErrorColor,
+            WizardStepStatus.Current => EffectiveActiveColor,
+            WizardStepStatus.Skipped => EffectiveDisabledNavigationColor,
+            _ => EffectiveInactiveColor
         };
     }
 

@@ -12,6 +12,7 @@ A wizard/stepper control for multi-step workflows with step indicators and navig
 - **Animated Transitions** - Smooth step transitions
 - **Customizable Buttons** - Configure button text and visibility
 - **Keyboard Navigation** - Arrow keys and keyboard support
+- **Navigation Colors** - Active, inactive, visited, and disabled state colors (inherited from `NavigationControlBase`)
 
 ## Basic Usage
 
@@ -174,6 +175,8 @@ WizardStep currentStep = wizard.CurrentStep;
 
 ## Properties
 
+### Wizard-Specific Properties
+
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | NavigationMode | WizardNavigationMode | Linear | Linear or Free |
@@ -190,5 +193,26 @@ WizardStep currentStep = wizard.CurrentStep;
 | CancelButtonText | string | "Cancel" | Cancel button text |
 | ShowCancelButton | bool | true | Show cancel button |
 | ShowBackButton | bool | true | Show back button |
-| CompletedStepColor | Color | null | Completed step color |
-| ErrorStepColor | Color | null | Error step color |
+| ErrorStepColor | Color | null | Error step color (falls back to `EffectiveErrorColor`) |
+
+### Step Indicator Styling
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| StepIndicatorBackgroundColor | Color? | null | Step indicator background (falls back to theme surface color) |
+| StepIndicatorPadding | Thickness | (12, 8) | Step indicator internal padding |
+| StepTitleFontSize | double | 16.0 | Step title font size |
+| StepTitleFontAttributes | FontAttributes | Bold | Step title font attributes |
+
+### Inherited from NavigationControlBase
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| ActiveColor | Color? | null | Color for the current step (falls back to accent color) |
+| InactiveColor | Color? | null | Color for not-yet-visited steps (falls back to gray) |
+| VisitedColor | Color? | null | Color for completed steps (falls back to accent at 60% alpha) |
+| DisabledNavigationColor | Color? | null | Color for skipped steps (falls back to light gray) |
+| ActiveBackgroundColor | Color? | null | Background color for active navigation items |
+| ShowNavigationIndicator | bool | true | Whether to show a visual indicator for the active item |
+| NavigationIndicatorColor | Color? | null | Color of the navigation indicator (falls back to accent color) |
+| NavigationIndicatorThickness | double | 3.0 | Thickness of the navigation indicator |
