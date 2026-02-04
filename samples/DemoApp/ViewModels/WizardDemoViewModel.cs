@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MauiControlsExtras.Controls;
 
 namespace DemoApp.ViewModels;
 
@@ -32,6 +33,9 @@ public partial class WizardDemoViewModel : BaseViewModel
     [ObservableProperty]
     private bool _isComplete;
 
+    [ObservableProperty]
+    private string? _termsWarning;
+
     public WizardDemoViewModel()
     {
         Title = "Wizard Demo";
@@ -42,10 +46,24 @@ public partial class WizardDemoViewModel : BaseViewModel
         UpdateStatus($"Step {value + 1} of 4");
     }
 
+    partial void OnAcceptTermsChanged(bool value)
+    {
+        if (value)
+            TermsWarning = null;
+    }
+
     [RelayCommand]
     private void StepChanged(int step)
     {
         CurrentStep = step;
+    }
+
+    [RelayCommand]
+    private void ValidateConfirm(WizardStep step)
+    {
+        step.IsValid = AcceptTerms;
+        step.ValidationMessage = AcceptTerms ? null : "You must accept the terms and conditions.";
+        TermsWarning = AcceptTerms ? null : "Please accept the terms and conditions to continue.";
     }
 
     [RelayCommand]
@@ -67,6 +85,7 @@ public partial class WizardDemoViewModel : BaseViewModel
         City = string.Empty;
         AcceptTerms = false;
         IsComplete = false;
+        TermsWarning = null;
         UpdateStatus("Wizard reset");
     }
 }

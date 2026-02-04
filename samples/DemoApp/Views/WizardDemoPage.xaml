@@ -54,7 +54,8 @@
                 </extras:WizardStep>
 
                 <!-- Step 4: Confirmation -->
-                <extras:WizardStep Title="Confirm" Description="Review and submit">
+                <extras:WizardStep Title="Confirm" Description="Review and submit"
+                                   ValidationCommand="{Binding ValidateConfirmCommand}">
                     <VerticalStackLayout Padding="20" Spacing="15">
                         <Label Text="Step 4: Confirmation" FontSize="18" FontAttributes="Bold" />
                         <Label Text="Please review your information:" />
@@ -83,6 +84,11 @@
                             <CheckBox IsChecked="{Binding AcceptTerms}" />
                             <Label Text="I accept the terms and conditions" VerticalOptions="Center" />
                         </HorizontalStackLayout>
+
+                        <Label Text="{Binding TermsWarning}"
+                               TextColor="Red"
+                               FontSize="13"
+                               Margin="0,4,0,0" />
                     </VerticalStackLayout>
                 </extras:WizardStep>
             </extras:Wizard>

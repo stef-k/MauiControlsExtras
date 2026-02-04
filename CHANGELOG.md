@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Breaking**: `CompletedStepColor` removed, use `VisitedColor` instead
   - **Breaking**: `ErrorStepColor` default fallback changed from `Colors.Red` to theme `ErrorColor`
   - **Breaking**: Header properties (`HeaderBackgroundColor`, `HeaderPadding`, `HeaderFontSize`, etc.) no longer inherited; use new `StepIndicator*` / `StepTitle*` properties
+- **DemoApp**: Wizard demo now validates terms acceptance before finishing, showing a warning if unchecked
 
 ### Added
 
