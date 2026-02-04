@@ -499,6 +499,12 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     public bool IsFirstStep => _currentIndex == 0;
 
     /// <summary>
+    /// Gets the current border color based on focus state.
+    /// </summary>
+    public Color CurrentBorderColor =>
+        _hasKeyboardFocus ? EffectiveFocusBorderColor : EffectiveBorderColor;
+
+    /// <summary>
     /// Gets the step count.
     /// </summary>
     public int StepCount => _steps.Count;
@@ -616,9 +622,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusGained;
 
     /// <inheritdoc/>
-#pragma warning disable CS0067
     public event EventHandler<KeyboardFocusEventArgs>? KeyboardFocusLost;
-#pragma warning restore CS0067
 
     /// <inheritdoc/>
     public event EventHandler<KeyEventArgs>? KeyPressed;
@@ -748,6 +752,8 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         InitializeComponent();
         BuildVisualTree();
         _steps.CollectionChanged += OnStepsCollectionChanged;
+        Focused += OnControlFocused;
+        Unfocused += OnControlUnfocused;
     }
 
     /// <summary>
@@ -948,7 +954,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         outerBorder.SetBinding(Border.StrokeThicknessProperty,
             new Binding(nameof(EffectiveBorderThickness), source: this));
         outerBorder.SetBinding(Border.StrokeProperty,
-            new Binding(nameof(EffectiveBorderColor), source: this));
+            new Binding(nameof(CurrentBorderColor), source: this));
         outerBorder.SetAppThemeColor(Border.BackgroundColorProperty,
             Color.FromArgb("#FFFFFF"),
             Color.FromArgb("#1E1E1E"));
@@ -1441,6 +1447,24 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     #endregion
 
     #region Event Handlers
+
+    private void OnControlFocused(object? sender, FocusEventArgs e)
+    {
+        _hasKeyboardFocus = true;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusGained?.Invoke(this, new KeyboardFocusEventArgs(true));
+        GotFocusCommand?.Execute(this);
+    }
+
+    private void OnControlUnfocused(object? sender, FocusEventArgs e)
+    {
+        _hasKeyboardFocus = false;
+        OnPropertyChanged(nameof(HasKeyboardFocus));
+        OnPropertyChanged(nameof(CurrentBorderColor));
+        KeyboardFocusLost?.Invoke(this, new KeyboardFocusEventArgs(false));
+        LostFocusCommand?.Execute(this);
+    }
 
     private void OnStepsCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {

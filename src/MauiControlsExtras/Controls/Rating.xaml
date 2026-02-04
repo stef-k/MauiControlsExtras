@@ -5,10 +5,18 @@
                         x:Class="MauiControlsExtras.Controls.Rating"
                         x:Name="thisControl">
 
-    <HorizontalStackLayout x:Name="iconsContainer"
-                           Spacing="{Binding Spacing, Source={x:Reference thisControl}}"
-                           HorizontalOptions="Start"
-                           VerticalOptions="Center">
-        <!-- Rating icons are added dynamically -->
-    </HorizontalStackLayout>
+    <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
+            Stroke="{Binding CurrentBorderColor, Source={x:Reference thisControl}}"
+            Padding="4">
+        <Border.StrokeShape>
+            <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
+        </Border.StrokeShape>
+
+        <HorizontalStackLayout x:Name="iconsContainer"
+                               Spacing="{Binding Spacing, Source={x:Reference thisControl}}"
+                               HorizontalOptions="Start"
+                               VerticalOptions="Center">
+            <!-- Rating icons are added dynamically -->
+        </HorizontalStackLayout>
+    </Border>
 </base:StyledControlBase>
