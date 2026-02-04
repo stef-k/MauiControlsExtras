@@ -222,6 +222,22 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
         typeof(ICommand),
         typeof(Breadcrumb));
 
+    /// <summary>
+    /// Identifies the <see cref="NavigatingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty NavigatingCommandProperty = BindableProperty.Create(
+        nameof(NavigatingCommand),
+        typeof(ICommand),
+        typeof(Breadcrumb));
+
+    /// <summary>
+    /// Identifies the <see cref="NavigatingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty NavigatingCommandParameterProperty = BindableProperty.Create(
+        nameof(NavigatingCommandParameter),
+        typeof(object),
+        typeof(Breadcrumb));
+
     #endregion
 
     #region Properties
@@ -429,6 +445,27 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
     {
         get => (ICommand?)GetValue(SelectionChangedCommandProperty);
         set => SetValue(SelectionChangedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed before navigating to an item.
+    /// The command parameter defaults to <see cref="BreadcrumbNavigatingEventArgs"/> unless
+    /// <see cref="NavigatingCommandParameter"/> is set.
+    /// </summary>
+    public ICommand? NavigatingCommand
+    {
+        get => (ICommand?)GetValue(NavigatingCommandProperty);
+        set => SetValue(NavigatingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an optional parameter for <see cref="NavigatingCommand"/>.
+    /// When null, the <see cref="BreadcrumbNavigatingEventArgs"/> is used as the parameter.
+    /// </summary>
+    public object? NavigatingCommandParameter
+    {
+        get => GetValue(NavigatingCommandParameterProperty);
+        set => SetValue(NavigatingCommandParameterProperty, value);
     }
 
     #endregion
@@ -763,9 +800,14 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
 
         var item = _items[index];
 
-        // Raise navigating event
+        // Raise navigating event and command
         var navArgs = new BreadcrumbNavigatingEventArgs(item, index);
         Navigating?.Invoke(this, navArgs);
+
+        var parameter = NavigatingCommandParameter ?? navArgs;
+        if (NavigatingCommand?.CanExecute(parameter) == true)
+            NavigatingCommand.Execute(parameter);
+
         if (navArgs.Cancel) return;
 
         // Remove items after clicked index
