@@ -196,6 +196,20 @@ public abstract class ListStyledControlBase : StyledControlBase
 
     #endregion
 
+    #region Theme Change
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+        OnPropertyChanged(nameof(EffectiveSelectedItemBackgroundColor));
+        OnPropertyChanged(nameof(EffectiveSelectedItemTextColor));
+        OnPropertyChanged(nameof(EffectiveHoverColor));
+        OnPropertyChanged(nameof(EffectiveSeparatorColor));
+    }
+
+    #endregion
+
     #region Property Changed Handlers
 
     private static void OnAlternatingRowColorChanged(BindableObject bindable, object oldValue, object newValue)

@@ -202,6 +202,22 @@ public abstract class NavigationControlBase : StyledControlBase
 
     #endregion
 
+    #region Theme Change
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+        OnPropertyChanged(nameof(EffectiveActiveColor));
+        OnPropertyChanged(nameof(EffectiveInactiveColor));
+        OnPropertyChanged(nameof(EffectiveVisitedColor));
+        OnPropertyChanged(nameof(EffectiveDisabledNavigationColor));
+        OnPropertyChanged(nameof(EffectiveActiveBackgroundColor));
+        OnPropertyChanged(nameof(EffectiveNavigationIndicatorColor));
+    }
+
+    #endregion
+
     #region Property Changed Handlers
 
     private static void OnActiveColorChanged(BindableObject bindable, object oldValue, object newValue)

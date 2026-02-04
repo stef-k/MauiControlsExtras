@@ -192,6 +192,20 @@ public abstract class TextStyledControlBase : StyledControlBase
 
     #endregion
 
+    #region Theme Change
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+        OnPropertyChanged(nameof(EffectiveFontFamily));
+        OnPropertyChanged(nameof(EffectiveFontSize));
+        OnPropertyChanged(nameof(EffectiveTextColor));
+        OnPropertyChanged(nameof(EffectivePlaceholderColor));
+    }
+
+    #endregion
+
     #region Property Changed Handlers
 
     private static void OnFontFamilyChanged(BindableObject bindable, object oldValue, object newValue)
