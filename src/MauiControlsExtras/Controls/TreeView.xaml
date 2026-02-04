@@ -43,8 +43,8 @@
 
                             <!-- Expand/Collapse Button -->
                             <Border Grid.Column="1"
-                                    WidthRequest="24"
-                                    HeightRequest="24"
+                                    MinimumWidthRequest="44"
+                                    MinimumHeightRequest="44"
                                     BackgroundColor="Transparent"
                                     StrokeThickness="0"
                                     IsVisible="{Binding HasChildren}">
@@ -60,15 +60,15 @@
 
                             <!-- Placeholder for items without children (alignment) -->
                             <BoxView Grid.Column="1"
-                                     WidthRequest="24"
-                                     HeightRequest="24"
+                                     MinimumWidthRequest="44"
+                                     MinimumHeightRequest="44"
                                      Color="Transparent"
                                      IsVisible="{Binding HasNoChildren}" />
 
                             <!-- Checkbox (optional) -->
                             <Border Grid.Column="2"
-                                    WidthRequest="24"
-                                    HeightRequest="24"
+                                    MinimumWidthRequest="44"
+                                    MinimumHeightRequest="44"
                                     BackgroundColor="Transparent"
                                     StrokeThickness="0"
                                     IsVisible="{Binding ShowCheckBoxes, Source={x:Reference thisControl}}"
