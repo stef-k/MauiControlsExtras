@@ -2282,10 +2282,10 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         // Handle navigation and action keys
         return e.Key switch
         {
-            "Up" => HandleUpKey(e),
-            "Down" => HandleDownKey(e),
-            "Left" => HandleLeftKey(e),
-            "Right" => HandleRightKey(e),
+            "ArrowUp" => HandleUpKey(e),
+            "ArrowDown" => HandleDownKey(e),
+            "ArrowLeft" => HandleLeftKey(e),
+            "ArrowRight" => HandleRightKey(e),
             "Home" => HandleHomeKey(e),
             "End" => HandleEndKey(e),
             "PageUp" => HandlePageUpKey(),
@@ -2306,10 +2306,10 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         {
             _keyboardShortcuts.AddRange(new[]
             {
-                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous item", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Down", Description = "Move to next item", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Left", Description = "Collapse node or move to parent", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Right", Description = "Expand node or move to first child", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowUp", Description = "Move to previous item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowDown", Description = "Move to next item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowLeft", Description = "Collapse node or move to parent", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowRight", Description = "Expand node or move to first child", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Home", Description = "Move to first item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "End", Description = "Move to last item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "PageUp", Description = "Move up one page", Category = "Navigation" },

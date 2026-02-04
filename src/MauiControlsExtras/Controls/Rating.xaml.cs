@@ -946,8 +946,8 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
 
         return e.Key switch
         {
-            "Left" or "Down" => HandleDecrement(step),
-            "Right" or "Up" => HandleIncrement(step),
+            "ArrowLeft" or "ArrowDown" => HandleDecrement(step),
+            "ArrowRight" or "ArrowUp" => HandleIncrement(step),
             "Home" or "Delete" => HandleClear(),
             "End" => HandleSetMax(),
             "1" => HandleSetValue(1),
@@ -966,8 +966,8 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
         {
             _keyboardShortcuts.AddRange(new[]
             {
-                new Base.KeyboardShortcut { Key = "Left/Down", Description = "Decrease rating", Category = "Value" },
-                new Base.KeyboardShortcut { Key = "Right/Up", Description = "Increase rating", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "ArrowLeft/ArrowDown", Description = "Decrease rating", Category = "Value" },
+                new Base.KeyboardShortcut { Key = "ArrowRight/ArrowUp", Description = "Increase rating", Category = "Value" },
                 new Base.KeyboardShortcut { Key = "Home/Delete", Description = "Clear rating", Category = "Value" },
                 new Base.KeyboardShortcut { Key = "End", Description = "Set to maximum", Category = "Value" },
                 new Base.KeyboardShortcut { Key = "1-5", Description = "Set specific rating", Category = "Value" },

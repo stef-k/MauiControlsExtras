@@ -1676,8 +1676,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
         return e.Key switch
         {
-            "Down" => HandleDownKey(),
-            "Up" => HandleUpKey(),
+            "ArrowDown" => HandleDownKey(),
+            "ArrowUp" => HandleUpKey(),
             "Enter" or "Space" => HandleEnterKey(),
             "Escape" => HandleEscapeKey(),
             "Home" => HandleHomeKey(),
@@ -1693,10 +1693,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             _keyboardShortcuts.AddRange(new[]
             {
-                new Base.KeyboardShortcut { Key = "Alt+Down", Description = "Open dropdown", Category = "Action" },
-                new Base.KeyboardShortcut { Key = "Alt+Up", Description = "Close dropdown", Category = "Action" },
-                new Base.KeyboardShortcut { Key = "Down", Description = "Open dropdown / Move to next item", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "Alt+ArrowDown", Description = "Open dropdown", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "Alt+ArrowUp", Description = "Close dropdown", Category = "Action" },
+                new Base.KeyboardShortcut { Key = "ArrowDown", Description = "Open dropdown / Move to next item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowUp", Description = "Move to previous item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Enter", Description = "Select highlighted item / Open dropdown", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Space", Description = "Open dropdown", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Escape", Description = "Close dropdown", Category = "Action" },

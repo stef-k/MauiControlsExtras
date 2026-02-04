@@ -1403,8 +1403,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
         return e.Key switch
         {
-            "Down" => HandleDownKey(),
-            "Up" => HandleUpKey(),
+            "ArrowDown" => HandleDownKey(),
+            "ArrowUp" => HandleUpKey(),
             "Enter" => HandleEnterKey(),
             "Space" => HandleSpaceKey(),
             "Escape" => HandleEscapeKey(),
@@ -1422,8 +1422,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         {
             _keyboardShortcuts.AddRange(new[]
             {
-                new Base.KeyboardShortcut { Key = "Down", Description = "Open dropdown / Move to next item", Category = "Navigation" },
-                new Base.KeyboardShortcut { Key = "Up", Description = "Move to previous item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowDown", Description = "Open dropdown / Move to next item", Category = "Navigation" },
+                new Base.KeyboardShortcut { Key = "ArrowUp", Description = "Move to previous item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Enter", Description = "Open dropdown", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Space", Description = "Toggle selection on highlighted item", Category = "Action" },
                 new Base.KeyboardShortcut { Key = "Escape", Description = "Close dropdown", Category = "Action" },

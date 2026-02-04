@@ -329,10 +329,10 @@ public class KeyboardBehavior : Behavior<View>
         var commands = new List<UIKit.UIKeyCommand>();
 
         // Arrow keys
-        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.UpArrow, 0, "Up"));
-        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.DownArrow, 0, "Down"));
-        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.LeftArrow, 0, "Left"));
-        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.RightArrow, 0, "Right"));
+        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.UpArrow, 0, "ArrowUp"));
+        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.DownArrow, 0, "ArrowDown"));
+        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.LeftArrow, 0, "ArrowLeft"));
+        commands.Add(CreateMacKeyCommand(UIKit.UIKeyCommand.RightArrow, 0, "ArrowRight"));
 
         // Common shortcuts with Command key
         commands.Add(CreateMacKeyCommand("a", UIKit.UIKeyModifierFlags.Command, "A"));
