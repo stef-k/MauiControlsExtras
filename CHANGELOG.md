@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Breadcrumb**: `NavigatingCommand` and `NavigatingCommandParameter` bindable properties for MVVM support on the `Navigating` event (#160)
 - **TokenEntry**: Clipboard support with `IClipboardSupport` and `IContextMenuSupport` interface implementations (#109)
   - Copy/Cut/Paste operations for selected tokens
   - Keyboard shortcuts (Ctrl+C/X/V on Windows, ⌘C/X/V on Mac)
