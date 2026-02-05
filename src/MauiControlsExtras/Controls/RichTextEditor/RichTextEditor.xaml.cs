@@ -958,7 +958,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <inheritdoc/>
     public bool HandleKeyPress(KeyEventArgs e)
     {
-        if (!IsKeyboardNavigationEnabled || IsReadOnly) return false;
+        if (!IsKeyboardNavigationEnabled) return false;
 
         // Fire the KeyPressed event
         KeyPressed?.Invoke(this, e);
@@ -974,38 +974,47 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         // Handle Ctrl+key shortcuts
         if (e.Modifiers.HasFlag(KeyModifiers.Control))
         {
+            // Non-destructive shortcuts (work in read-only mode)
             switch (e.Key)
             {
-                case "B":
-                    _ = FormatAsync(FormatType.Bold);
-                    return true;
-                case "I":
-                    _ = FormatAsync(FormatType.Italic);
-                    return true;
-                case "U":
-                    _ = FormatAsync(FormatType.Underline);
-                    return true;
                 case "C":
                     Copy();
-                    return true;
-                case "X":
-                    Cut();
-                    return true;
-                case "V":
-                    Paste();
-                    return true;
-                case "Z":
-                    if (e.Modifiers.HasFlag(KeyModifiers.Shift))
-                        Redo();
-                    else
-                        Undo();
-                    return true;
-                case "Y":
-                    Redo();
                     return true;
                 case "A":
                     SelectAll();
                     return true;
+            }
+
+            // Destructive shortcuts (blocked in read-only mode)
+            if (!IsReadOnly)
+            {
+                switch (e.Key)
+                {
+                    case "B":
+                        _ = FormatAsync(FormatType.Bold);
+                        return true;
+                    case "I":
+                        _ = FormatAsync(FormatType.Italic);
+                        return true;
+                    case "U":
+                        _ = FormatAsync(FormatType.Underline);
+                        return true;
+                    case "X":
+                        Cut();
+                        return true;
+                    case "V":
+                        Paste();
+                        return true;
+                    case "Z":
+                        if (e.Modifiers.HasFlag(KeyModifiers.Shift))
+                            Redo();
+                        else
+                            Undo();
+                        return true;
+                    case "Y":
+                        Redo();
+                        return true;
+                }
             }
         }
 
