@@ -35,7 +35,8 @@
     <Compile Include="..\..\src\MauiControlsExtras\Base\ListStyledControlBase.cs" Link="Linked\Base\ListStyledControlBase.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Base\AnimatedControlBase.cs" Link="Linked\Base\AnimatedControlBase.cs" />
 
-    <!-- Base interfaces (excluding IContextMenuSupport which depends on ContextMenuOpeningEventArgs) -->
+    <!-- Base interfaces -->
+    <Compile Include="..\..\src\MauiControlsExtras\Base\IContextMenuSupport.cs" Link="Linked\Base\IContextMenuSupport.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Base\IKeyboardNavigable.cs" Link="Linked\Base\IKeyboardNavigable.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Base\IClipboardSupport.cs" Link="Linked\Base\IClipboardSupport.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Base\ISelectable.cs" Link="Linked\Base\ISelectable.cs" />
@@ -49,6 +50,7 @@
     <!-- ContextMenu (core types only) -->
     <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\ContextMenuItem.cs" Link="Linked\ContextMenu\ContextMenuItem.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\ContextMenuItemCollection.cs" Link="Linked\ContextMenu\ContextMenuItemCollection.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\ContextMenuEventArgs.cs" Link="Linked\ContextMenu\ContextMenuEventArgs.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\IContextMenuService.cs" Link="Linked\ContextMenu\IContextMenuService.cs" />
 
     <!-- Accordion -->

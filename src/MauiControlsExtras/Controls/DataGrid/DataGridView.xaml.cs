@@ -97,7 +97,7 @@ public class DataGridSortingEventArgs : EventArgs
 /// A data grid control with column sorting, selection, editing, filtering, and data binding.
 /// </summary>
 [ContentProperty(nameof(Columns))]
-public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable, Base.ISelectable
+public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable, Base.ISelectable, Base.IContextMenuSupport
 {
     #region Private Fields
 
@@ -3005,6 +3005,41 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     #region Context Menu
 
+    // Backing field for the explicit IContextMenuSupport.ContextMenuOpening event
+    private EventHandler<ContextMenuOpeningEventArgs>? _contextMenuOpeningHandler;
+
+    /// <summary>
+    /// Explicit implementation of IContextMenuSupport.ContextMenuOpening.
+    /// The legacy ContextMenuOpening event uses DataGridContextMenuEventArgs, so this
+    /// uses explicit interface implementation to avoid a naming conflict.
+    /// </summary>
+    event EventHandler<ContextMenuOpeningEventArgs>? IContextMenuSupport.ContextMenuOpening
+    {
+        add => _contextMenuOpeningHandler += value;
+        remove => _contextMenuOpeningHandler -= value;
+    }
+
+    /// <inheritdoc />
+    public void ShowContextMenu(Point? position = null)
+    {
+        object? item = null;
+        DataGridColumn? column = null;
+        var rowIndex = _focusedRowIndex;
+        var columnIndex = _focusedColumnIndex;
+
+        if (rowIndex >= 0 && rowIndex < _sortedItems.Count)
+            item = _sortedItems[rowIndex];
+
+        if (columnIndex >= 0)
+        {
+            var visibleCols = _columns.Where(c => c.IsVisible).ToList();
+            if (columnIndex < visibleCols.Count)
+                column = visibleCols[columnIndex];
+        }
+
+        ShowContextMenuAsync(item, column, rowIndex, columnIndex, position).ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Shows the context menu at the specified cell.
     /// </summary>
@@ -3075,6 +3110,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             this);
 
         ContextMenuItemsOpening?.Invoke(this, newArgs);
+
+        // Fire IContextMenuSupport.ContextMenuOpening event (explicit interface event)
+        _contextMenuOpeningHandler?.Invoke(this, newArgs);
 
         if (newArgs.Cancel)
             return;

@@ -1,3 +1,4 @@
+using MauiControlsExtras.ContextMenu;
 using MauiControlsExtras.Controls;
 
 namespace MauiControlsExtras.Tests.Controls;
@@ -221,6 +222,64 @@ public class EventArgsTests
 
         Assert.Same(column, args.Column);
         Assert.Equal(1, args.ColumnIndex);
+    }
+
+    [Fact]
+    public void DataGridContextMenuEventArgs_StoresProperties()
+    {
+        var item = new { Name = "Test" };
+        var column = new DataGridTextColumn { Header = "Name" };
+        var args = new DataGridContextMenuEventArgs(item, column, 2, 1);
+
+        Assert.Same(item, args.Item);
+        Assert.Same(column, args.Column);
+        Assert.Equal(2, args.RowIndex);
+        Assert.Equal(1, args.ColumnIndex);
+        Assert.False(args.Cancel);
+        Assert.Null(args.CustomMenuItems);
+    }
+
+    [Fact]
+    public void DataGridContextMenuOpeningEventArgs_StoresProperties()
+    {
+        var items = new ContextMenuItemCollection();
+        var position = new Point(100, 200);
+        var item = new { Name = "Test" };
+        var column = new DataGridTextColumn { Header = "Name" };
+
+        var args = new DataGridContextMenuOpeningEventArgs(
+            items, position, item, column, 3, 2, "TestValue");
+
+        Assert.Same(items, args.Items);
+        Assert.Equal(position, args.Position);
+        Assert.Same(item, args.Item);
+        Assert.Same(column, args.Column);
+        Assert.Equal(3, args.RowIndex);
+        Assert.Equal(2, args.ColumnIndex);
+        Assert.Equal("TestValue", args.CellValue);
+        Assert.False(args.IsHeader);
+        Assert.True(args.IsDataCell);
+    }
+
+    [Fact]
+    public void DataGridContextMenuOpeningEventArgs_IsHeader_WhenRowIndexMinusOne()
+    {
+        var args = new DataGridContextMenuOpeningEventArgs(
+            Point.Zero, null, new DataGridTextColumn(), -1, 0);
+
+        Assert.True(args.IsHeader);
+        Assert.False(args.IsDataCell);
+    }
+
+    [Fact]
+    public void DataGridContextMenuOpeningEventArgs_Cancel()
+    {
+        var args = new DataGridContextMenuOpeningEventArgs(
+            Point.Zero, null, null, -1, -1);
+
+        Assert.False(args.Cancel);
+        args.Cancel = true;
+        Assert.True(args.Cancel);
     }
 
     #endregion
