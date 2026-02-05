@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Clipboard**: `IClipboardSupport` implemented on ComboBox, MultiSelectComboBox, MaskedEntry, and NumericUpDown (#163)
+  - `CanCopy`, `CanCut`, `CanPaste` state properties reflect current control state
+  - `Copy()`, `Cut()`, `Paste()` programmatic methods delegate to underlying text input
+  - `CopyCommand`, `CutCommand`, `PasteCommand` bindable properties for MVVM
+  - Keyboard shortcuts Ctrl+C, Ctrl+X, Ctrl+V registered on all four controls
+  - NumericUpDown respects `IsReadOnly` for `CanCut`/`CanPaste`
 - **Tests**: Base class and theme system test coverage for `StyledControlBase`, `TextStyledControlBase`, `HeaderedControlBase`, `NavigationControlBase`, `ListStyledControlBase`, `AnimatedControlBase`, `ControlsTheme`, and `MauiControlsExtrasTheme` (#165)
 - **NumericUpDown**: Mouse wheel support to increment/decrement value when focused (#168)
 - **Rating**: Mouse wheel support to adjust rating when focused (#168)

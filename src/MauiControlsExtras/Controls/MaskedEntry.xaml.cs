@@ -8,7 +8,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A text entry control with input masking for formatted data.
 /// </summary>
-public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
+public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable, Base.IClipboardSupport
 {
     #region Predefined Masks
 
@@ -132,6 +132,24 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
 
     public static readonly BindableProperty ValidateCommandProperty = BindableProperty.Create(
         nameof(ValidateCommand),
+        typeof(ICommand),
+        typeof(MaskedEntry),
+        default(ICommand));
+
+    public static readonly BindableProperty CopyCommandProperty = BindableProperty.Create(
+        nameof(CopyCommand),
+        typeof(ICommand),
+        typeof(MaskedEntry),
+        default(ICommand));
+
+    public static readonly BindableProperty CutCommandProperty = BindableProperty.Create(
+        nameof(CutCommand),
+        typeof(ICommand),
+        typeof(MaskedEntry),
+        default(ICommand));
+
+    public static readonly BindableProperty PasteCommandProperty = BindableProperty.Create(
+        nameof(PasteCommand),
         typeof(ICommand),
         typeof(MaskedEntry),
         default(ICommand));
@@ -296,6 +314,77 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         get => (ICommand?)GetValue(ValidateCommandProperty);
         set => SetValue(ValidateCommandProperty, value);
     }
+
+    /// <inheritdoc />
+    public ICommand? CopyCommand
+    {
+        get => (ICommand?)GetValue(CopyCommandProperty);
+        set => SetValue(CopyCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? CutCommand
+    {
+        get => (ICommand?)GetValue(CutCommandProperty);
+        set => SetValue(CutCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? PasteCommand
+    {
+        get => (ICommand?)GetValue(PasteCommandProperty);
+        set => SetValue(PasteCommandProperty, value);
+    }
+
+    #endregion
+
+    #region IClipboardSupport
+
+    /// <inheritdoc />
+    public bool CanCopy => IsEnabled && entry?.Text?.Length > 0;
+
+    /// <inheritdoc />
+    public bool CanCut => CanCopy;
+
+    /// <inheritdoc />
+    public bool CanPaste => IsEnabled;
+
+    /// <inheritdoc />
+    public void Copy()
+    {
+        if (!CanCopy) return;
+        var content = GetClipboardContent();
+        if (content is string text)
+            Clipboard.Default.SetTextAsync(text).ConfigureAwait(false);
+        CopyCommand?.Execute(content);
+    }
+
+    /// <inheritdoc />
+    public void Cut()
+    {
+        if (!CanCut) return;
+        var content = GetClipboardContent();
+        if (content is string text)
+            Clipboard.Default.SetTextAsync(text).ConfigureAwait(false);
+        entry.Text = string.Empty;
+        CutCommand?.Execute(content);
+    }
+
+    /// <inheritdoc />
+    public void Paste()
+    {
+        if (!CanPaste) return;
+        var task = Clipboard.Default.GetTextAsync();
+        task.ContinueWith(t =>
+        {
+            if (t.Result is string text)
+                MainThread.BeginInvokeOnMainThread(() => entry.Text = text);
+        }, TaskScheduler.Default);
+        PasteCommand?.Execute(null);
+    }
+
+    /// <inheritdoc />
+    public object? GetClipboardContent() => entry?.Text;
 
     #endregion
 
@@ -936,9 +1025,19 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         }
 
         // MaskedEntry primarily delegates to the underlying Entry
-        // but we can handle special cases here
-        return false;
+        // but we can handle clipboard shortcuts here
+        return e.Key switch
+        {
+            "C" when e.IsPlatformCommandPressed => HandleCopyKey(),
+            "X" when e.IsPlatformCommandPressed => HandleCutKey(),
+            "V" when e.IsPlatformCommandPressed => HandlePasteKey(),
+            _ => false
+        };
     }
+
+    private bool HandleCopyKey() { Copy(); return CanCopy; }
+    private bool HandleCutKey() { Cut(); return CanCut; }
+    private bool HandlePasteKey() { Paste(); return CanPaste; }
 
     /// <inheritdoc />
     public IReadOnlyList<Base.KeyboardShortcut> GetKeyboardShortcuts()
@@ -950,6 +1049,9 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
                 new Base.KeyboardShortcut { Key = "Tab", Description = "Move to next field", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "Backspace", Description = "Delete previous character", Category = "Editing" },
                 new Base.KeyboardShortcut { Key = "Delete", Description = "Delete next character", Category = "Editing" },
+                new Base.KeyboardShortcut { Key = "Ctrl+C", Description = "Copy", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Ctrl+X", Description = "Cut", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Ctrl+V", Description = "Paste", Category = "Clipboard" },
             });
         }
         return _keyboardShortcuts;
