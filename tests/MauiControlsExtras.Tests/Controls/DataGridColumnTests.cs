@@ -136,4 +136,35 @@ public class DataGridColumnTests
 
         Assert.NotNull(col.ValidationFunc);
     }
+
+    [Fact]
+    public void Validate_WithNoValidationFunc_ReturnsSuccess()
+    {
+        var col = new DataGridTextColumn();
+        var item = new { Name = "Test" };
+
+        var result = col.Validate(item, "some value");
+
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact]
+    public void Validate_WithValidationFunc_DelegatesToFunc()
+    {
+        var col = new DataGridTextColumn();
+        col.ValidationFunc = (item, value) =>
+            string.IsNullOrEmpty(value?.ToString())
+                ? MauiControlsExtras.Base.Validation.ValidationResult.Failure("Required")
+                : MauiControlsExtras.Base.Validation.ValidationResult.Success;
+
+        var item = new { Name = "Test" };
+
+        var successResult = col.Validate(item, "valid");
+        Assert.True(successResult.IsValid);
+
+        var failResult = col.Validate(item, "");
+        Assert.False(failResult.IsValid);
+        Assert.Equal("Required", failResult.FirstError);
+    }
 }

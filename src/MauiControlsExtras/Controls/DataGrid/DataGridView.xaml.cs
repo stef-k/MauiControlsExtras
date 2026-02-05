@@ -97,7 +97,7 @@ public class DataGridSortingEventArgs : EventArgs
 /// A data grid control with column sorting, selection, editing, filtering, and data binding.
 /// </summary>
 [ContentProperty(nameof(Columns))]
-public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable, Base.ISelectable, Base.IContextMenuSupport
+public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, Base.IClipboardSupport, Base.IKeyboardNavigable, Base.ISelectable, Base.IContextMenuSupport, Base.Validation.IValidatable
 {
     #region Private Fields
 
@@ -108,7 +108,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private readonly Dictionary<DataGridColumn, DataGridColumnFilter> _activeFilters = new();
     private readonly List<DataGridSortDescription> _sortDescriptions = new();
     private readonly List<DataGridColumn> _editedColumnsInRow = new();
-    private readonly Dictionary<(int, int), ValidationResult> _validationErrors = new();
+    private readonly Dictionary<(int, int), ValidationResult> _cellValidationErrors = new();
+    private readonly List<string> _gridValidationErrors = new();
 
     // Undo/Redo state
     private readonly Stack<IUndoableOperation> _undoStack = new();
@@ -419,6 +420,42 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(bool),
         typeof(DataGridView),
         true);
+
+    /// <summary>
+    /// Identifies the <see cref="IsRequired"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsRequiredProperty = BindableProperty.Create(
+        nameof(IsRequired),
+        typeof(bool),
+        typeof(DataGridView),
+        false);
+
+    /// <summary>
+    /// Identifies the <see cref="RequiredErrorMessage"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty RequiredErrorMessageProperty = BindableProperty.Create(
+        nameof(RequiredErrorMessage),
+        typeof(string),
+        typeof(DataGridView),
+        "At least one row is required.");
+
+    /// <summary>
+    /// Identifies the <see cref="IsValid"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsValidProperty = BindableProperty.Create(
+        nameof(IsValid),
+        typeof(bool),
+        typeof(DataGridView),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="ValidateCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ValidateCommandProperty = BindableProperty.Create(
+        nameof(ValidateCommand),
+        typeof(ICommand),
+        typeof(DataGridView),
+        default(ICommand));
 
     /// <summary>
     /// Identifies the <see cref="EditTrigger"/> bindable property.
@@ -1198,6 +1235,53 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         get => (bool)GetValue(ValidateOnRowEditProperty);
         set => SetValue(ValidateOnRowEditProperty, value);
     }
+
+    /// <summary>
+    /// Gets or sets whether the grid requires at least one data row to be valid.
+    /// </summary>
+    public bool IsRequired
+    {
+        get => (bool)GetValue(IsRequiredProperty);
+        set => SetValue(IsRequiredProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the error message displayed when <see cref="IsRequired"/> is true and the grid has no rows.
+    /// </summary>
+    public string RequiredErrorMessage
+    {
+        get => (string)GetValue(RequiredErrorMessageProperty);
+        set => SetValue(RequiredErrorMessageProperty, value);
+    }
+
+    /// <summary>
+    /// Gets whether the grid is currently valid (no cell errors and required-row check passes).
+    /// </summary>
+    public bool IsValid
+    {
+        get => (bool)GetValue(IsValidProperty);
+        private set => SetValue(IsValidProperty, value);
+    }
+
+    /// <summary>
+    /// Gets the current list of grid-level validation errors.
+    /// </summary>
+    public IReadOnlyList<string> ValidationErrors => _gridValidationErrors.AsReadOnly();
+
+    /// <summary>
+    /// Gets or sets the command to execute when validation is triggered.
+    /// The command parameter will be the <see cref="ValidationResult"/>.
+    /// </summary>
+    public ICommand? ValidateCommand
+    {
+        get => (ICommand?)GetValue(ValidateCommandProperty);
+        set => SetValue(ValidateCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Occurs when the <see cref="IsValid"/> state changes.
+    /// </summary>
+    public event EventHandler<bool>? ValidationChanged;
 
     /// <summary>
     /// Gets or sets the edit trigger.
@@ -2143,6 +2227,37 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             return;
 
         CancelEditInternal();
+    }
+
+    /// <summary>
+    /// Performs validation and returns the result.
+    /// Checks the required-row constraint and aggregates all per-cell validation errors.
+    /// Fires <see cref="ValidateCommand"/> with the result.
+    /// </summary>
+    public ValidationResult Validate()
+    {
+        var previousIsValid = IsValid;
+
+        ComputeGridValidationErrors();
+
+        var result = _gridValidationErrors.Count == 0
+            ? ValidationResult.Success
+            : ValidationResult.Failure(_gridValidationErrors.ToList());
+
+        IsValid = result.IsValid;
+        OnPropertyChanged(nameof(ValidationErrors));
+
+        if (previousIsValid != IsValid)
+        {
+            ValidationChanged?.Invoke(this, IsValid);
+        }
+
+        if (ValidateCommand?.CanExecute(result) == true)
+        {
+            ValidateCommand.Execute(result);
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -3855,11 +3970,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         container.Children.Add(content);
 
         // Validation error indicator
-        if (_validationErrors.TryGetValue((rowIndex, colIndex), out var validationResult) && !validationResult.IsValid)
+        if (_cellValidationErrors.TryGetValue((rowIndex, colIndex), out var validationResult) && !validationResult.IsValid)
         {
             var errorIndicator = new BoxView
             {
-                Color = Colors.Red,
+                Color = EffectiveErrorBorderColor,
                 HeightRequest = 2,
                 VerticalOptions = LayoutOptions.End
             };
@@ -4560,6 +4675,40 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
+    private void ComputeGridValidationErrors()
+    {
+        _gridValidationErrors.Clear();
+
+        if (IsRequired && _sortedItems.Count == 0)
+        {
+            _gridValidationErrors.Add(RequiredErrorMessage);
+        }
+
+        foreach (var ((rowIndex, colIndex), cellResult) in _cellValidationErrors)
+        {
+            var colHeader = colIndex < _columns.Count ? _columns[colIndex].Header : $"Column {colIndex}";
+            foreach (var error in cellResult.Errors)
+            {
+                _gridValidationErrors.Add($"Row {rowIndex + 1}, {colHeader}: {error}");
+            }
+        }
+    }
+
+    private void UpdateGridValidationState()
+    {
+        var previousIsValid = IsValid;
+
+        ComputeGridValidationErrors();
+
+        IsValid = _gridValidationErrors.Count == 0;
+        OnPropertyChanged(nameof(ValidationErrors));
+
+        if (previousIsValid != IsValid)
+        {
+            ValidationChanged?.Invoke(this, IsValid);
+        }
+    }
+
     private void CommitEditInternal()
     {
         if (_editingItem == null || _editingColumn == null || _currentEditControl == null)
@@ -4583,13 +4732,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             if (!validationArgs.IsValid)
             {
-                _validationErrors[(_editingRowIndex, _editingColumnIndex)] = ValidationResult.Failure(validationArgs.ErrorMessage ?? "Validation failed");
+                _cellValidationErrors[(_editingRowIndex, _editingColumnIndex)] = ValidationResult.Failure(validationArgs.ErrorMessage ?? "Validation failed");
+                UpdateGridValidationState();
                 BuildDataRows();
                 return;
             }
             else
             {
-                _validationErrors.Remove((_editingRowIndex, _editingColumnIndex));
+                _cellValidationErrors.Remove((_editingRowIndex, _editingColumnIndex));
+                UpdateGridValidationState();
             }
         }
 
@@ -5791,12 +5942,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             grid.ClearUndoHistory();
 
             grid.BuildGrid();
+            grid._cellValidationErrors.Clear();
+            grid.UpdateGridValidationState();
         }
     }
 
     private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         BuildGrid();
+        UpdateGridValidationState();
     }
 
     private static void OnSelectedItemChanged(BindableObject bindable, object oldValue, object newValue)
