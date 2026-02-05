@@ -603,6 +603,7 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
             var tapGesture = new TapGestureRecognizer();
             tapGesture.Tapped += (s, e) => OnIconTapped(index, e);
             grid.GestureRecognizers.Add(tapGesture);
+            MauiControlsExtras.Behaviors.HoverBehavior.Apply(grid);
         }
 
         return grid;

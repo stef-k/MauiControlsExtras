@@ -869,6 +869,7 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.I
         button.Clicked += clicked;
         button.Pressed += pressed;
         button.Released += released;
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(button);
         return button;
     }
 

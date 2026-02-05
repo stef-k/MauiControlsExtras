@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Hover**: Reusable `HoverBehavior` for desktop hover feedback via `PointerGestureRecognizer` (#171)
+  - Applied to NumericUpDown buttons, BindingNavigator buttons, Calendar navigation and day cells, Rating icons
+  - Theme-aware: defaults to `ControlsTheme.HoverColor`, overridable per-instance
+  - No-op on touch-only platforms (Android/iOS)
 - **ComboBox**: `IContextMenuSupport` interface with long-press and right-click context menus (#176)
 - **MultiSelectComboBox**: `IContextMenuSupport` interface with long-press and right-click context menus (#176)
 - **DataGrid**: `IContextMenuSupport` interface implementation on DataGridView (#162)

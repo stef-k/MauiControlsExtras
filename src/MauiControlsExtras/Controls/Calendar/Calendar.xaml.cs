@@ -822,6 +822,8 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
     public Calendar()
     {
         InitializeComponent();
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(previousButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(nextButton);
         _displayDate = DateTime.Today;
         _currentDisplayMode = CalendarDisplayMode.Month;
         BlackoutDates.CollectionChanged += (s, e) => RebuildCalendar();
@@ -1228,6 +1230,11 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
                 SelectDate(capturedDate);
             };
             container.GestureRecognizers.Add(tapGesture);
+        }
+
+        if (isEnabled)
+        {
+            MauiControlsExtras.Behaviors.HoverBehavior.Apply(container);
         }
 
         return container;
