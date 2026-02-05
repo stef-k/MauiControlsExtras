@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -741,6 +742,7 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.I
         _entry.TextChanged += OnEntryTextChanged;
         _entry.Unfocused += OnEntryUnfocused;
         _entry.Focused += OnEntryFocused;
+        _entry.HandlerChanged += OnEntryHandlerChanged;
 
         // Create buttons
         _incrementButton = CreateButton("▲", OnIncrementClicked, OnIncrementPressed, OnButtonReleased);
@@ -970,6 +972,16 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.I
         {
             // Expected when button released
         }
+    }
+
+    #endregion
+
+    #region Entry Handler Changed
+
+    private void OnEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (_entry?.Handler?.PlatformView == null) return;
+        MobileClipboardBridge.Setup(_entry, this);
     }
 
     #endregion

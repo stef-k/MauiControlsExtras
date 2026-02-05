@@ -5,6 +5,7 @@ using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
 using MauiControlsExtras.Converters;
+using MauiControlsExtras.Helpers;
 using Microsoft.Maui.Controls.Shapes;
 
 namespace MauiControlsExtras.Controls;
@@ -562,6 +563,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             textBox.KeyDown += OnWindowsTextBoxKeyDown;
         }
 #endif
+
+        MobileClipboardBridge.Setup(searchEntry, this);
     }
 
 #if WINDOWS

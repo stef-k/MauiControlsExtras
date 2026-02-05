@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Clipboard**: Mobile clipboard bridge to fire `IClipboardSupport` commands when users perform Copy/Cut/Paste via native context menus on Android and iOS (#189)
+  - Android: Intercepts `ActionMode` callbacks on `AppCompatEditText` to detect clipboard actions
+  - iOS/Mac Catalyst: Observes `UIPasteboard.ChangedNotification` and text changes to detect operations
+  - Affected controls: ComboBox, MultiSelectComboBox, MaskedEntry, NumericUpDown
+
 ### Added
 
 - **DataGrid**: `IContextMenuSupport` interface implementation on DataGridView (#162)
