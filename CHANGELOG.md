@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **ComboBox**: `IContextMenuSupport` interface with long-press and right-click context menus (#176)
+- **MultiSelectComboBox**: `IContextMenuSupport` interface with long-press and right-click context menus (#176)
 - **DataGrid**: `IContextMenuSupport` interface implementation on DataGridView (#162)
   - Explicit `IContextMenuSupport.ContextMenuOpening` event (avoids naming conflict with legacy event)
   - `ShowContextMenu(Point?)` overload resolves focused cell context
