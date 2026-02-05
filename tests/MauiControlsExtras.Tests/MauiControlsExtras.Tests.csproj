@@ -22,6 +22,8 @@
 
   <ItemGroup>
     <!-- Include source files for unit testing without platform-specific handlers -->
+
+    <!-- Base classes (existing) -->
     <Compile Include="..\..\src\MauiControlsExtras\Base\Validation\ValidationResult.cs" Link="Linked\Base\Validation\ValidationResult.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Theming\IThemeAware.cs" Link="Linked\Theming\IThemeAware.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Theming\ControlsTheme.cs" Link="Linked\Theming\ControlsTheme.cs" />
@@ -32,6 +34,72 @@
     <Compile Include="..\..\src\MauiControlsExtras\Base\NavigationControlBase.cs" Link="Linked\Base\NavigationControlBase.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Base\ListStyledControlBase.cs" Link="Linked\Base\ListStyledControlBase.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Base\AnimatedControlBase.cs" Link="Linked\Base\AnimatedControlBase.cs" />
+
+    <!-- Base interfaces (excluding IContextMenuSupport which depends on ContextMenuOpeningEventArgs) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Base\IKeyboardNavigable.cs" Link="Linked\Base\IKeyboardNavigable.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\IClipboardSupport.cs" Link="Linked\Base\IClipboardSupport.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\ISelectable.cs" Link="Linked\Base\ISelectable.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\IUndoRedo.cs" Link="Linked\Base\IUndoRedo.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Base\Validation\IValidatable.cs" Link="Linked\Base\Validation\IValidatable.cs" />
+
+    <!-- Converters -->
+    <Compile Include="..\..\src\MauiControlsExtras\Converters\InvertedBoolConverter.cs" Link="Linked\Converters\InvertedBoolConverter.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Converters\MauiAssetImageConverter.cs" Link="Linked\Converters\MauiAssetImageConverter.cs" />
+
+    <!-- ContextMenu (core types only) -->
+    <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\ContextMenuItem.cs" Link="Linked\ContextMenu\ContextMenuItem.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\ContextMenuItemCollection.cs" Link="Linked\ContextMenu\ContextMenuItemCollection.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\ContextMenu\IContextMenuService.cs" Link="Linked\ContextMenu\IContextMenuService.cs" />
+
+    <!-- Accordion -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Accordion\AccordionItem.cs" Link="Linked\Controls\Accordion\AccordionItem.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Accordion\AccordionEnums.cs" Link="Linked\Controls\Accordion\AccordionEnums.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Accordion\AccordionEventArgs.cs" Link="Linked\Controls\Accordion\AccordionEventArgs.cs" />
+
+    <!-- Wizard -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Wizard\WizardStep.cs" Link="Linked\Controls\Wizard\WizardStep.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Wizard\WizardEnums.cs" Link="Linked\Controls\Wizard\WizardEnums.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Wizard\WizardEventArgs.cs" Link="Linked\Controls\Wizard\WizardEventArgs.cs" />
+
+    <!-- Breadcrumb -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Breadcrumb\BreadcrumbItem.cs" Link="Linked\Controls\Breadcrumb\BreadcrumbItem.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Breadcrumb\BreadcrumbEventArgs.cs" Link="Linked\Controls\Breadcrumb\BreadcrumbEventArgs.cs" />
+
+    <!-- Calendar -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Calendar\CalendarEnums.cs" Link="Linked\Controls\Calendar\CalendarEnums.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\Calendar\CalendarEventArgs.cs" Link="Linked\Controls\Calendar\CalendarEventArgs.cs" />
+
+    <!-- DataGrid (columns, enums, events - no ComboBoxColumn/UndoOps/Exporter which depend on full controls) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridColumn.cs" Link="Linked\Controls\DataGrid\DataGridColumn.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridEnums.cs" Link="Linked\Controls\DataGrid\DataGridEnums.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridEventArgs.cs" Link="Linked\Controls\DataGrid\DataGridEventArgs.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridDatePickerColumn.cs" Link="Linked\Controls\DataGrid\DataGridDatePickerColumn.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridTimePickerColumn.cs" Link="Linked\Controls\DataGrid\DataGridTimePickerColumn.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridPrintOptions.cs" Link="Linked\Controls\DataGrid\DataGridPrintOptions.cs" />
+
+    <!-- PropertyGrid -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\PropertyGrid\PropertyItem.cs" Link="Linked\Controls\PropertyGrid\PropertyItem.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\PropertyGrid\PropertyCategory.cs" Link="Linked\Controls\PropertyGrid\PropertyCategory.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\PropertyGrid\PropertyGridEnums.cs" Link="Linked\Controls\PropertyGrid\PropertyGridEnums.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\PropertyGrid\PropertyGridEventArgs.cs" Link="Linked\Controls\PropertyGrid\PropertyGridEventArgs.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\PropertyGrid\IPropertyEditor.cs" Link="Linked\Controls\PropertyGrid\IPropertyEditor.cs" />
+
+    <!-- RichTextEditor (event args and enums only) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\RichTextEditor\RichTextEditorEventArgs.cs" Link="Linked\Controls\RichTextEditor\RichTextEditorEventArgs.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\RichTextEditor\FormatType.cs" Link="Linked\Controls\RichTextEditor\FormatType.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\RichTextEditor\ToolbarConfig.cs" Link="Linked\Controls\RichTextEditor\ToolbarConfig.cs" />
+
+    <!-- BindingNavigator -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\BindingNavigator\BindingNavigatorEventArgs.cs" Link="Linked\Controls\BindingNavigator\BindingNavigatorEventArgs.cs" />
+
+    <!-- TokenEntry -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\TokenEntryEventArgs.cs" Link="Linked\Controls\TokenEntryEventArgs.cs" />
+
+    <!-- Services (needed by DataGrid) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Services\IPrintService.cs" Link="Linked\Services\IPrintService.cs" />
+
+    <!-- Behaviors (needed by IKeyboardNavigable) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Behaviors\KeyboardBehavior.cs" Link="Linked\Behaviors\KeyboardBehavior.cs" />
   </ItemGroup>
 
 </Project>
