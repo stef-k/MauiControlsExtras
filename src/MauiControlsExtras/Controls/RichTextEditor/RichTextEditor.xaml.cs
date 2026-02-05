@@ -9,7 +9,7 @@ namespace MauiControlsExtras.Controls;
 /// A rich text editor control that supports HTML and Markdown content with a customizable toolbar.
 /// Uses WebView with Quill.js for cross-platform rich text editing.
 /// </summary>
-public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable, IClipboardSupport, IUndoRedo
+public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable, IClipboardSupport, IUndoRedo, ISelectable
 {
     #region Constants
 
@@ -31,6 +31,15 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     // Undo/Redo tracking (delegated to Quill's history module)
     private bool _canUndo;
     private bool _canRedo;
+
+    // ISelectable: cached selection state from JS bridge
+    private int _selectionStart;
+    private int _selectionLength;
+    private string? _selectedText;
+    private int _contentLength;
+
+    // Explicit ISelectable.SelectionChanged event backing field
+    private EventHandler<Base.SelectionChangedEventArgs>? _selectableSelectionChanged;
 
     #endregion
 
@@ -241,6 +250,38 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// </summary>
     public static readonly BindableProperty SelectionChangedCommandParameterProperty = BindableProperty.Create(
         nameof(SelectionChangedCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandProperty = BindableProperty.Create(
+        nameof(SelectAllCommand),
+        typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="SelectAllCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectAllCommandParameterProperty = BindableProperty.Create(
+        nameof(SelectAllCommandParameter),
+        typeof(object),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommand),
+        typeof(ICommand),
+        typeof(RichTextEditor));
+
+    /// <summary>
+    /// Identifies the <see cref="ClearSelectionCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ClearSelectionCommandParameterProperty = BindableProperty.Create(
+        nameof(ClearSelectionCommandParameter),
         typeof(object),
         typeof(RichTextEditor));
 
@@ -626,6 +667,40 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         set => SetValue(SelectionChangedCommandParameterProperty, value);
     }
 
+    /// <inheritdoc/>
+    public ICommand? SelectAllCommand
+    {
+        get => (ICommand?)GetValue(SelectAllCommandProperty);
+        set => SetValue(SelectAllCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="SelectAllCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? SelectAllCommandParameter
+    {
+        get => GetValue(SelectAllCommandParameterProperty);
+        set => SetValue(SelectAllCommandParameterProperty, value);
+    }
+
+    /// <inheritdoc/>
+    public ICommand? ClearSelectionCommand
+    {
+        get => (ICommand?)GetValue(ClearSelectionCommandProperty);
+        set => SetValue(ClearSelectionCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ClearSelectionCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ClearSelectionCommandParameter
+    {
+        get => GetValue(ClearSelectionCommandParameterProperty);
+        set => SetValue(ClearSelectionCommandParameterProperty, value);
+    }
+
     /// <summary>
     /// Gets or sets the command executed when a link is tapped.
     /// </summary>
@@ -853,6 +928,16 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     public event EventHandler<KeyEventArgs>? KeyReleased;
 #pragma warning restore CS0067
 
+    /// <summary>
+    /// Explicit implementation of <see cref="ISelectable.SelectionChanged"/> to avoid conflict
+    /// with the existing <see cref="SelectionChanged"/> event that uses <see cref="RichTextSelectionChangedEventArgs"/>.
+    /// </summary>
+    event EventHandler<Base.SelectionChangedEventArgs>? ISelectable.SelectionChanged
+    {
+        add => _selectableSelectionChanged += value;
+        remove => _selectableSelectionChanged -= value;
+    }
+
     #endregion
 
     #region IKeyboardNavigable Implementation
@@ -873,7 +958,7 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <inheritdoc/>
     public bool HandleKeyPress(KeyEventArgs e)
     {
-        if (!IsKeyboardNavigationEnabled || IsReadOnly) return false;
+        if (!IsKeyboardNavigationEnabled) return false;
 
         // Fire the KeyPressed event
         KeyPressed?.Invoke(this, e);
@@ -889,35 +974,47 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         // Handle Ctrl+key shortcuts
         if (e.Modifiers.HasFlag(KeyModifiers.Control))
         {
+            // Non-destructive shortcuts (work in read-only mode)
             switch (e.Key)
             {
-                case "B":
-                    _ = FormatAsync(FormatType.Bold);
-                    return true;
-                case "I":
-                    _ = FormatAsync(FormatType.Italic);
-                    return true;
-                case "U":
-                    _ = FormatAsync(FormatType.Underline);
-                    return true;
                 case "C":
                     Copy();
                     return true;
-                case "X":
-                    Cut();
+                case "A":
+                    SelectAll();
                     return true;
-                case "V":
-                    Paste();
-                    return true;
-                case "Z":
-                    if (e.Modifiers.HasFlag(KeyModifiers.Shift))
+            }
+
+            // Destructive shortcuts (blocked in read-only mode)
+            if (!IsReadOnly)
+            {
+                switch (e.Key)
+                {
+                    case "B":
+                        _ = FormatAsync(FormatType.Bold);
+                        return true;
+                    case "I":
+                        _ = FormatAsync(FormatType.Italic);
+                        return true;
+                    case "U":
+                        _ = FormatAsync(FormatType.Underline);
+                        return true;
+                    case "X":
+                        Cut();
+                        return true;
+                    case "V":
+                        Paste();
+                        return true;
+                    case "Z":
+                        if (e.Modifiers.HasFlag(KeyModifiers.Shift))
+                            Redo();
+                        else
+                            Undo();
+                        return true;
+                    case "Y":
                         Redo();
-                    else
-                        Undo();
-                    return true;
-                case "Y":
-                    Redo();
-                    return true;
+                        return true;
+                }
             }
         }
 
@@ -937,7 +1034,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
             new() { Key = "V", Modifiers = "Ctrl", Description = "Paste", Category = "Clipboard" },
             new() { Key = "Z", Modifiers = "Ctrl", Description = "Undo", Category = "Editing" },
             new() { Key = "Y", Modifiers = "Ctrl", Description = "Redo", Category = "Editing" },
-            new() { Key = "Z", Modifiers = "Ctrl+Shift", Description = "Redo", Category = "Editing" }
+            new() { Key = "Z", Modifiers = "Ctrl+Shift", Description = "Redo", Category = "Editing" },
+            new() { Key = "A", Modifiers = "Ctrl", Description = "Select All", Category = "Selection" }
         };
     }
 
@@ -1053,6 +1151,66 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     public void CancelBatchOperation()
     {
         // Not applicable for WebView-based editor
+    }
+
+    #endregion
+
+    #region ISelectable Implementation
+
+    /// <inheritdoc/>
+    public bool HasSelection => _selectionLength > 0;
+
+    /// <inheritdoc/>
+    public bool IsAllSelected => _contentLength > 0 && _selectionLength >= _contentLength;
+
+    /// <inheritdoc/>
+    public bool SupportsMultipleSelection => false;
+
+    /// <inheritdoc/>
+    public void SelectAll()
+    {
+        _ = ExecuteJavaScriptAsync("quill.setSelection(0, quill.getLength())");
+        SelectAllCommand?.Execute(SelectAllCommandParameter);
+    }
+
+    /// <inheritdoc/>
+    public void ClearSelection()
+    {
+        _ = ExecuteJavaScriptAsync("quill.setSelection(quill.getLength(), 0)");
+        ClearSelectionCommand?.Execute(ClearSelectionCommandParameter);
+    }
+
+    /// <inheritdoc/>
+    public object? GetSelection()
+    {
+        if (_selectionLength <= 0) return null;
+        return _selectedText;
+    }
+
+    /// <inheritdoc/>
+    public void SetSelection(object? selection)
+    {
+        if (selection is null)
+        {
+            ClearSelection();
+            return;
+        }
+
+        if (selection is (int start, int length))
+        {
+            _ = ExecuteJavaScriptAsync($"quill.setSelection({start}, {length})");
+        }
+        else if (selection is ValueTuple<int, int> tuple)
+        {
+            _ = ExecuteJavaScriptAsync($"quill.setSelection({tuple.Item1}, {tuple.Item2})");
+        }
+        else
+        {
+            throw new ArgumentException(
+                $"Selection type {selection.GetType().Name} is not supported. " +
+                "Use a (int start, int length) tuple or null to clear selection.",
+                nameof(selection));
+        }
     }
 
     #endregion
@@ -1402,7 +1560,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         quill.on('selection-change', function(range, oldRange, source) {{
             if (range) {{
                 var text = quill.getText(range.index, range.length);
-                window.location.href = 'rte://selection-changed?start=' + range.index + '&length=' + range.length + '&text=' + encodeURIComponent(text);
+                var contentLength = Math.max(0, quill.getLength() - 1);
+                window.location.href = 'rte://selection-changed?start=' + range.index + '&length=' + range.length + '&text=' + encodeURIComponent(text) + '&contentLength=' + contentLength;
             }}
             // Focus change
             var focused = range !== null;
@@ -1555,6 +1714,9 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 
                     // Update undo/redo state
                     _ = UpdateUndoRedoStateAsync();
+
+                    // Update content length for ISelectable.IsAllSelected
+                    _ = UpdateContentLengthAsync();
                 }
                 break;
 
@@ -1562,9 +1724,31 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
                 var start = int.Parse(query["start"] ?? "0");
                 var length = int.Parse(query["length"] ?? "0");
                 var text = Uri.UnescapeDataString(query["text"] ?? "");
+
+                // Cache previous selection for ISelectable event
+                var oldSelText = _selectedText;
+                var oldHadSelection = _selectionLength > 0;
+
+                // Update cached selection state
+                _selectionStart = start;
+                _selectionLength = length;
+                _selectedText = length > 0 ? text : null;
+                if (int.TryParse(query["contentLength"], out var cl))
+                    _contentLength = cl;
+
+                // Fire existing RichTextEditor event (backward compatible)
                 var selArgs = new RichTextSelectionChangedEventArgs(start, length, text);
                 SelectionChanged?.Invoke(this, selArgs);
                 SelectionChangedCommand?.Execute(SelectionChangedCommandParameter ?? selArgs);
+
+                // Fire ISelectable event
+                _selectableSelectionChanged?.Invoke(this,
+                    new Base.SelectionChangedEventArgs(oldSelText, _selectedText));
+
+                // Notify property changes for ISelectable state
+                if (oldHadSelection != (length > 0))
+                    OnPropertyChanged(nameof(HasSelection));
+                OnPropertyChanged(nameof(IsAllSelected));
                 break;
 
             case "focus-changed":
@@ -1609,6 +1793,23 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 
             OnPropertyChanged(nameof(CanUndo));
             OnPropertyChanged(nameof(CanRedo));
+        }
+        catch
+        {
+            // Ignore JS errors
+        }
+    }
+
+    private async Task UpdateContentLengthAsync()
+    {
+        try
+        {
+            var result = await editorWebView.EvaluateJavaScriptAsync("Math.max(0, quill.getLength() - 1)");
+            if (int.TryParse(result, out var len))
+            {
+                _contentLength = len;
+                OnPropertyChanged(nameof(IsAllSelected));
+            }
         }
         catch
         {
