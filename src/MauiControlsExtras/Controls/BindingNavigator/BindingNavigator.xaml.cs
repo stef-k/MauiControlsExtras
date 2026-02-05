@@ -847,7 +847,21 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     public BindingNavigator()
     {
         InitializeComponent();
+        ApplyHoverBehaviors();
         UpdateButtonStates();
+    }
+
+    private void ApplyHoverBehaviors()
+    {
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(firstButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(previousButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(nextButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(lastButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(addButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(deleteButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(saveButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(cancelButton);
+        MauiControlsExtras.Behaviors.HoverBehavior.Apply(refreshButton);
     }
 
     #endregion

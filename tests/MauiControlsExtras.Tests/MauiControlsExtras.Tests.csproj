@@ -102,6 +102,7 @@
 
     <!-- Behaviors (needed by IKeyboardNavigable) -->
     <Compile Include="..\..\src\MauiControlsExtras\Behaviors\KeyboardBehavior.cs" Link="Linked\Behaviors\KeyboardBehavior.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Behaviors\HoverBehavior.cs" Link="Linked\Behaviors\HoverBehavior.cs" />
   </ItemGroup>
 
 </Project>
