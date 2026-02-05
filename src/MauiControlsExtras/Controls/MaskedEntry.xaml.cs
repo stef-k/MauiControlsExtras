@@ -2,6 +2,7 @@ using System.Text;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -461,6 +462,17 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     {
         InitializeComponent();
         ParseMask();
+        entry.HandlerChanged += OnEntryHandlerChanged;
+    }
+
+    #endregion
+
+    #region Handler Changed
+
+    private void OnEntryHandlerChanged(object? sender, EventArgs e)
+    {
+        if (entry.Handler?.PlatformView == null) return;
+        MobileClipboardBridge.Setup(entry, this);
     }
 
     #endregion

@@ -35,7 +35,8 @@ internal static class MobileClipboardBridge
 
         var callback = new ClipboardActionModeCallback(owner);
         editText.CustomSelectionActionModeCallback = callback;
-        editText.CustomInsertionActionModeCallback = callback;
+        if (OperatingSystem.IsAndroidVersionAtLeast(23))
+            editText.CustomInsertionActionModeCallback = callback;
     }
 
     private sealed class ClipboardActionModeCallback : Java.Lang.Object, Android.Views.ActionMode.ICallback
