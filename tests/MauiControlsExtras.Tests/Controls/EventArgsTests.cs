@@ -272,6 +272,42 @@ public class EventArgsTests
     }
 
     [Fact]
+    public void DataGridCellValidationEventArgs_StoresProperties()
+    {
+        var column = new DataGridTextColumn { Header = "Name" };
+        var item = new { Name = "Test" };
+        var args = new DataGridCellValidationEventArgs(item, column, "old", "new");
+
+        Assert.Same(item, args.Item);
+        Assert.Same(column, args.Column);
+        Assert.Equal("old", args.OldValue);
+        Assert.Equal("new", args.NewValue);
+    }
+
+    [Fact]
+    public void DataGridCellValidationEventArgs_IsValid_DefaultTrue()
+    {
+        var column = new DataGridTextColumn();
+        var args = new DataGridCellValidationEventArgs(new object(), column, null, null);
+
+        Assert.True(args.IsValid);
+        Assert.Null(args.ErrorMessage);
+    }
+
+    [Fact]
+    public void DataGridCellValidationEventArgs_CanSetInvalid()
+    {
+        var column = new DataGridTextColumn();
+        var args = new DataGridCellValidationEventArgs(new object(), column, null, null);
+
+        args.IsValid = false;
+        args.ErrorMessage = "Value is required";
+
+        Assert.False(args.IsValid);
+        Assert.Equal("Value is required", args.ErrorMessage);
+    }
+
+    [Fact]
     public void DataGridContextMenuOpeningEventArgs_Cancel()
     {
         var args = new DataGridContextMenuOpeningEventArgs(
