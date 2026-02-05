@@ -5,6 +5,7 @@ using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
 using MauiControlsExtras.Converters;
+using MauiControlsExtras.ContextMenu;
 using MauiControlsExtras.Helpers;
 using Microsoft.Maui.Controls.Shapes;
 
@@ -13,7 +14,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A dropdown control that allows selecting multiple items, displaying selections as removable chips.
 /// </summary>
-public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable, Base.IClipboardSupport
+public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable, Base.IClipboardSupport, Base.IContextMenuSupport
 {
     #region Fields
 
@@ -25,6 +26,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     private int _highlightedIndex = -1;
     private bool _isKeyboardNavigationEnabled = true;
     private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
+    private readonly ContextMenuItemCollection _contextMenuItems = new();
+    private CancellationTokenSource? _longPressCts;
 
     #endregion
 
@@ -190,6 +193,23 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         typeof(ICommand),
         typeof(MultiSelectComboBox),
         default(ICommand));
+
+    /// <summary>
+    /// Identifies the <see cref="ShowDefaultContextMenu"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ShowDefaultContextMenuProperty = BindableProperty.Create(
+        nameof(ShowDefaultContextMenu),
+        typeof(bool),
+        typeof(MultiSelectComboBox),
+        true);
+
+    /// <summary>
+    /// Identifies the <see cref="ContextMenuOpeningCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ContextMenuOpeningCommandProperty = BindableProperty.Create(
+        nameof(ContextMenuOpeningCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox));
 
     #endregion
 
@@ -468,6 +488,145 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
     #endregion
 
+    #region IContextMenuSupport
+
+    /// <inheritdoc />
+    public ContextMenuItemCollection ContextMenuItems => _contextMenuItems;
+
+    /// <summary>
+    /// Gets or sets whether to show default context menu items (Copy, Cut, Paste, Select All, Clear).
+    /// </summary>
+    public bool ShowDefaultContextMenu
+    {
+        get => (bool)GetValue(ShowDefaultContextMenuProperty);
+        set => SetValue(ShowDefaultContextMenuProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when the context menu is opening.
+    /// </summary>
+    public ICommand? ContextMenuOpeningCommand
+    {
+        get => (ICommand?)GetValue(ContextMenuOpeningCommandProperty);
+        set => SetValue(ContextMenuOpeningCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public event EventHandler<ContextMenuOpeningEventArgs>? ContextMenuOpening;
+
+    /// <inheritdoc />
+    public void ShowContextMenu(Point? position = null)
+    {
+        _ = ShowContextMenuAsync(position);
+    }
+
+    /// <summary>
+    /// Asynchronously shows the context menu.
+    /// </summary>
+    /// <param name="position">The position to show the menu at.</param>
+    public async Task ShowContextMenuAsync(Point? position = null)
+    {
+        var menuItems = new ContextMenuItemCollection();
+
+        // Add custom items first
+        foreach (var item in _contextMenuItems)
+        {
+            menuItems.Add(item);
+        }
+
+        // Add separator if we have custom items and will add default items
+        if (_contextMenuItems.Count > 0 && ShowDefaultContextMenu)
+        {
+            menuItems.AddSeparator();
+        }
+
+        // Add default clipboard and editing items
+        if (ShowDefaultContextMenu)
+        {
+            var copyItem = ContextMenuItem.Create(
+                "Copy",
+                Copy,
+                "\uE8C8",
+                GetPlatformShortcutText("C"));
+            copyItem.IsEnabled = CanCopy;
+            menuItems.Add(copyItem);
+
+            var cutItem = ContextMenuItem.Create(
+                "Cut",
+                Cut,
+                "\uE8C6",
+                GetPlatformShortcutText("X"));
+            cutItem.IsEnabled = CanCut;
+            menuItems.Add(cutItem);
+
+            var pasteItem = ContextMenuItem.Create(
+                "Paste",
+                Paste,
+                "\uE77F",
+                GetPlatformShortcutText("V"));
+            pasteItem.IsEnabled = CanPaste;
+            menuItems.Add(pasteItem);
+
+            menuItems.AddSeparator();
+
+            var selectAllItem = ContextMenuItem.Create(
+                "Select All",
+                SelectAllText,
+                "\uE8B3",
+                GetPlatformShortcutText("A"));
+            selectAllItem.IsEnabled = searchEntry?.Text?.Length > 0;
+            menuItems.Add(selectAllItem);
+
+            menuItems.AddSeparator();
+
+            var clearItem = ContextMenuItem.Create(
+                "Clear",
+                ClearSelection,
+                "\uE74D");
+            clearItem.IsEnabled = SelectedCount > 0;
+            menuItems.Add(clearItem);
+        }
+
+        if (menuItems.Count == 0) return;
+
+        // Raise opening event
+        var eventArgs = new ContextMenuOpeningEventArgs(
+            menuItems,
+            position ?? Point.Zero,
+            this);
+
+        ContextMenuOpening?.Invoke(this, eventArgs);
+
+        if (ContextMenuOpeningCommand?.CanExecute(eventArgs) == true)
+        {
+            ContextMenuOpeningCommand.Execute(eventArgs);
+        }
+
+        if (eventArgs.Cancel || eventArgs.Handled) return;
+
+        await ContextMenuService.Current.ShowAsync(this, menuItems.ToList(), position);
+    }
+
+    private void SelectAllText()
+    {
+        if (searchEntry?.Text?.Length > 0)
+        {
+            searchEntry.CursorPosition = 0;
+            searchEntry.SelectionLength = searchEntry.Text.Length;
+        }
+    }
+
+    private static string GetPlatformShortcutText(string key)
+    {
+#if MACCATALYST || IOS
+        return $"⌘{key}";
+#else
+        return $"Ctrl+{key}";
+#endif
+    }
+
+    #endregion
+
     #region IValidatable
 
     public bool IsValid => _validationErrors.Count == 0;
@@ -551,6 +710,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         SetupItemTemplate();
         UpdateChipsDisplay();
         searchEntry.HandlerChanged += OnSearchEntryHandlerChanged;
+
+        SetupContextMenuGestures();
     }
 
     private void OnSearchEntryHandlerChanged(object? sender, EventArgs e)
@@ -1667,6 +1828,125 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     }
 
     #endregion
+
+    #endregion
+
+    #region Context Menu Gestures
+
+    private void SetupContextMenuGestures()
+    {
+        // Platform-specific context menu setup happens in HandlerChanged
+        this.HandlerChanged += OnHandlerChangedForContextMenu;
+
+        // Add long-press gesture to the collapsed border (mobile)
+        AddLongPressGesture(collapsedBorder);
+    }
+
+    private void OnHandlerChangedForContextMenu(object? sender, EventArgs e)
+    {
+#if WINDOWS
+        SetupWindowsContextMenu();
+#elif MACCATALYST
+        SetupMacContextMenu();
+#endif
+    }
+
+#if WINDOWS
+    private void SetupWindowsContextMenu()
+    {
+        if (Handler?.PlatformView is Microsoft.UI.Xaml.UIElement element)
+        {
+            element.RightTapped += OnWindowsRightTapped;
+        }
+    }
+
+    private void OnWindowsRightTapped(object sender, Microsoft.UI.Xaml.Input.RightTappedRoutedEventArgs e)
+    {
+        var position = e.GetPosition(sender as Microsoft.UI.Xaml.UIElement);
+        var mauiPosition = new Point(position.X, position.Y);
+        e.Handled = true;
+        _longPressCts?.Cancel();
+        _ = ShowContextMenuAsync(mauiPosition);
+    }
+#endif
+
+#if MACCATALYST
+    private void SetupMacContextMenu()
+    {
+        if (Handler?.PlatformView is UIKit.UIView view)
+        {
+            var tapRecognizer = new UIKit.UITapGestureRecognizer(OnMacSecondaryClick);
+            tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
+            view.AddGestureRecognizer(tapRecognizer);
+        }
+    }
+
+    private void OnMacSecondaryClick(UIKit.UITapGestureRecognizer recognizer)
+    {
+        var location = recognizer.LocationInView(recognizer.View);
+        var mauiPosition = new Point(location.X, location.Y);
+        _longPressCts?.Cancel();
+        _ = ShowContextMenuAsync(mauiPosition);
+    }
+#endif
+
+    private void AddLongPressGesture(View target)
+    {
+        Point? pressPosition = null;
+
+        var pointerGesture = new PointerGestureRecognizer();
+
+        pointerGesture.PointerPressed += (s, e) =>
+        {
+            pressPosition = e.GetPosition(target);
+            _longPressCts?.Cancel();
+            _longPressCts = new CancellationTokenSource();
+            _ = DetectLongPressAsync(_longPressCts.Token, pressPosition);
+        };
+
+        pointerGesture.PointerMoved += (s, e) =>
+        {
+            if (pressPosition == null || _longPressCts == null) return;
+            var currentPosition = e.GetPosition(target);
+            if (currentPosition == null) return;
+
+            var dx = currentPosition.Value.X - pressPosition.Value.X;
+            var dy = currentPosition.Value.Y - pressPosition.Value.Y;
+            if (Math.Sqrt(dx * dx + dy * dy) > 10)
+            {
+                _longPressCts?.Cancel();
+                _longPressCts = null;
+            }
+        };
+
+        pointerGesture.PointerReleased += (s, e) =>
+        {
+            _longPressCts?.Cancel();
+            _longPressCts = null;
+        };
+
+        target.GestureRecognizers.Add(pointerGesture);
+    }
+
+    private async Task DetectLongPressAsync(CancellationToken cancellationToken, Point? position)
+    {
+        try
+        {
+            await Task.Delay(500, cancellationToken);
+
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await ShowContextMenuAsync(position);
+                });
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Long press was cancelled (pointer released or moved)
+        }
+    }
 
     #endregion
 }

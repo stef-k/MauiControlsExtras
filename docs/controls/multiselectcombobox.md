@@ -78,6 +78,37 @@ For complete control over item appearance, use `ItemTemplate` with a `DataTempla
     SearchPlaceholder="Type to search..." />
 ```
 
+## Context Menu
+
+MultiSelectComboBox implements `IContextMenuSupport` for right-click (desktop) and long-press (mobile) context menus.
+
+### Default Context Menu
+
+By default, a context menu with Copy, Cut, Paste, Select All, and Clear options is shown. Disable with:
+
+```xml
+<extras:MultiSelectComboBox
+    ItemsSource="{Binding Items}"
+    ShowDefaultContextMenu="False" />
+```
+
+### Custom Context Menu Items
+
+```csharp
+multiSelectComboBox.ContextMenuItems.Add("Custom Action", () => DoSomething());
+```
+
+### Context Menu Event
+
+```csharp
+multiSelectComboBox.ContextMenuOpening += (sender, e) =>
+{
+    // e.Items - the menu items collection (add/remove items)
+    // e.Cancel = true to prevent showing the menu
+    e.Items.Add("Custom Action", () => DoSomething());
+};
+```
+
 ## Keyboard Shortcuts
 
 | Key | Action |

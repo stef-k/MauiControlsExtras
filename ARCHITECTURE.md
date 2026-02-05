@@ -559,6 +559,8 @@ Controls with actions MUST support right-click context menus:
 - DataGridView - Copy, Paste, Delete, Undo/Redo
 - TreeView - Expand All, Collapse All, actions
 - TokenEntry - Copy, Delete token
+- ComboBox - Cut, Copy, Paste, Select All, Clear
+- MultiSelectComboBox - Cut, Copy, Paste, Select All, Clear
 - Text controls - Cut, Copy, Paste, Select All
 
 #### Mouse Wheel
