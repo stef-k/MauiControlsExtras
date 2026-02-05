@@ -9,13 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **DataGrid**: `IContextMenuSupport` interface implementation on DataGridView (#162)
+  - Explicit `IContextMenuSupport.ContextMenuOpening` event (avoids naming conflict with legacy event)
+  - `ShowContextMenu(Point?)` overload resolves focused cell context
 - **Clipboard**: `IClipboardSupport` implemented on ComboBox, MultiSelectComboBox, MaskedEntry, and NumericUpDown (#163)
   - `CanCopy`, `CanCut`, `CanPaste` state properties reflect current control state
   - `Copy()`, `Cut()`, `Paste()` programmatic methods delegate to underlying text input
   - `CopyCommand`, `CutCommand`, `PasteCommand` bindable properties for MVVM
   - Keyboard shortcuts Ctrl+C, Ctrl+X, Ctrl+V registered on all four controls
   - NumericUpDown respects `IsReadOnly` for `CanCut`/`CanPaste`
+- **Tests**: Per-control command execution and event raising tests covering AccordionItem, WizardStep, BreadcrumbItem, ContextMenuItem, DataGridColumn, PropertyItem, ToolbarConfig, and all EventArgs (#187)
 - **Tests**: Base class and theme system test coverage for `StyledControlBase`, `TextStyledControlBase`, `HeaderedControlBase`, `NavigationControlBase`, `ListStyledControlBase`, `AnimatedControlBase`, `ControlsTheme`, and `MauiControlsExtrasTheme` (#165)
+- **Focus**: Focus border visuals for keyboard navigation on Rating, Accordion, Breadcrumb, and Wizard (#169)
+  - `CurrentBorderColor` property switches between `EffectiveFocusBorderColor` (focused) and `EffectiveBorderColor` (unfocused)
+  - Rating: tapping a star also shows the focus ring
 - **NumericUpDown**: Mouse wheel support to increment/decrement value when focused (#168)
 - **Rating**: Mouse wheel support to adjust rating when focused (#168)
 - **RangeSlider**: Mouse wheel support to adjust active thumb when focused (#168)
@@ -25,12 +32,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `SelectAllCommand`, `ClearSelectionCommand` bindable properties for MVVM
   - Explicit `ISelectable.SelectionChanged` event (avoids conflict with existing `RichTextSelectionChangedEventArgs` event)
   - Ctrl+A keyboard shortcut for Select All
+- **CommandParameters**: 89 missing `{Action}CommandParameter` bindable properties added across 8 controls (#161)
+  - DataGridView (26), Accordion (8), AccordionItem (2), Calendar (8), Breadcrumb (8), Wizard (7), WizardStep (3), BindingNavigator (9), PropertyGrid (6), RichTextEditor (12)
 
 ### Fixed
 
 - **Keyboard**: Arrow key names now use `"Arrow*"` convention consistently across all controls (#174)
   - Fixes broken arrow key navigation in TreeView, DataGrid, ComboBox, MultiSelectComboBox, NumericUpDown, Rating, and TokenEntry
   - Aligns `GetMacKeyCommands` in `KeyboardBehavior` with the same naming convention
+- **Touch Targets**: Increased touch targets to meet 44dp minimum on TokenEntry, TreeView, and Calendar (#172)
+- **Theme**: Derived base classes now notify Effective properties on theme change (#158)
+  - `TextStyledControlBase`, `HeaderedControlBase`, `NavigationControlBase`, `ListStyledControlBase` override `OnThemeChanged`
+- **Wizard**: Resolved `ContentProperty` conflict preventing render by building visual tree in code (#150)
+- **ItemTemplate**: Added missing `ItemTemplate` BindableProperty to ComboBox and MultiSelectComboBox; fixed demo page crashes from invalid properties
 
 ### Changed
 
