@@ -369,6 +369,46 @@ public class EventArgsTests
 
     #endregion
 
+    #region SelectionChangedEventArgs (ISelectable)
+
+    [Fact]
+    public void SelectionChangedEventArgs_StoresProperties()
+    {
+        var args = new MauiControlsExtras.Base.SelectionChangedEventArgs("old", "new");
+
+        Assert.Equal("old", args.OldSelection);
+        Assert.Equal("new", args.NewSelection);
+    }
+
+    [Fact]
+    public void SelectionChangedEventArgs_SelectionCleared_WhenNewIsNull()
+    {
+        var args = new MauiControlsExtras.Base.SelectionChangedEventArgs("old", null);
+
+        Assert.True(args.SelectionCleared);
+        Assert.False(args.IsFirstSelection);
+    }
+
+    [Fact]
+    public void SelectionChangedEventArgs_IsFirstSelection_WhenOldIsNull()
+    {
+        var args = new MauiControlsExtras.Base.SelectionChangedEventArgs(null, "new");
+
+        Assert.True(args.IsFirstSelection);
+        Assert.False(args.SelectionCleared);
+    }
+
+    [Fact]
+    public void SelectionChangedEventArgs_BothNull_NeitherClearedNorFirst()
+    {
+        var args = new MauiControlsExtras.Base.SelectionChangedEventArgs(null, null);
+
+        Assert.False(args.SelectionCleared);
+        Assert.False(args.IsFirstSelection);
+    }
+
+    #endregion
+
     #region RichTextEditor Event Args
 
     [Fact]

@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **NumericUpDown**: Mouse wheel support to increment/decrement value when focused (#168)
 - **Rating**: Mouse wheel support to adjust rating when focused (#168)
 - **RangeSlider**: Mouse wheel support to adjust active thumb when focused (#168)
+- **RichTextEditor**: `ISelectable` interface implementation (#164)
+  - `HasSelection`, `IsAllSelected`, `SupportsMultipleSelection` state properties from cached JS bridge state
+  - `SelectAll()`, `ClearSelection()`, `GetSelection()`, `SetSelection()` programmatic methods
+  - `SelectAllCommand`, `ClearSelectionCommand` bindable properties for MVVM
+  - Explicit `ISelectable.SelectionChanged` event (avoids conflict with existing `RichTextSelectionChangedEventArgs` event)
+  - Ctrl+A keyboard shortcut for Select All
 
 ### Fixed
 
