@@ -12,7 +12,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// A dropdown control that allows selecting multiple items, displaying selections as removable chips.
 /// </summary>
-public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable
+public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, Base.IKeyboardNavigable, Base.IClipboardSupport
 {
     #region Fields
 
@@ -168,6 +168,24 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
     public static readonly BindableProperty ValidateCommandProperty = BindableProperty.Create(
         nameof(ValidateCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty CopyCommandProperty = BindableProperty.Create(
+        nameof(CopyCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty CutCommandProperty = BindableProperty.Create(
+        nameof(CutCommand),
+        typeof(ICommand),
+        typeof(MultiSelectComboBox),
+        default(ICommand));
+
+    public static readonly BindableProperty PasteCommandProperty = BindableProperty.Create(
+        nameof(PasteCommand),
         typeof(ICommand),
         typeof(MultiSelectComboBox),
         default(ICommand));
@@ -375,6 +393,77 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         get => (ICommand?)GetValue(ValidateCommandProperty);
         set => SetValue(ValidateCommandProperty, value);
     }
+
+    /// <inheritdoc />
+    public ICommand? CopyCommand
+    {
+        get => (ICommand?)GetValue(CopyCommandProperty);
+        set => SetValue(CopyCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? CutCommand
+    {
+        get => (ICommand?)GetValue(CutCommandProperty);
+        set => SetValue(CutCommandProperty, value);
+    }
+
+    /// <inheritdoc />
+    public ICommand? PasteCommand
+    {
+        get => (ICommand?)GetValue(PasteCommandProperty);
+        set => SetValue(PasteCommandProperty, value);
+    }
+
+    #endregion
+
+    #region IClipboardSupport
+
+    /// <inheritdoc />
+    public bool CanCopy => IsEnabled && searchEntry?.Text?.Length > 0;
+
+    /// <inheritdoc />
+    public bool CanCut => CanCopy;
+
+    /// <inheritdoc />
+    public bool CanPaste => IsEnabled;
+
+    /// <inheritdoc />
+    public void Copy()
+    {
+        if (!CanCopy) return;
+        var content = GetClipboardContent();
+        if (content is string text)
+            Clipboard.Default.SetTextAsync(text).ConfigureAwait(false);
+        CopyCommand?.Execute(content);
+    }
+
+    /// <inheritdoc />
+    public void Cut()
+    {
+        if (!CanCut) return;
+        var content = GetClipboardContent();
+        if (content is string text)
+            Clipboard.Default.SetTextAsync(text).ConfigureAwait(false);
+        searchEntry.Text = string.Empty;
+        CutCommand?.Execute(content);
+    }
+
+    /// <inheritdoc />
+    public void Paste()
+    {
+        if (!CanPaste) return;
+        var task = Clipboard.Default.GetTextAsync();
+        task.ContinueWith(t =>
+        {
+            if (t.Result is string text)
+                MainThread.BeginInvokeOnMainThread(() => searchEntry.Text = text);
+        }, TaskScheduler.Default);
+        PasteCommand?.Execute(null);
+    }
+
+    /// <inheritdoc />
+    public object? GetClipboardContent() => searchEntry?.Text;
 
     #endregion
 
@@ -1411,6 +1500,9 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             "Home" => HandleHomeKey(),
             "End" => HandleEndKey(),
             "A" when e.IsPlatformCommandPressed => HandleSelectAllKey(),
+            "C" when e.IsPlatformCommandPressed => HandleCopyKey(),
+            "X" when e.IsPlatformCommandPressed => HandleCutKey(),
+            "V" when e.IsPlatformCommandPressed => HandlePasteKey(),
             _ => false
         };
     }
@@ -1430,6 +1522,9 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
                 new Base.KeyboardShortcut { Key = "Home", Description = "Move to first item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "End", Description = "Move to last item", Category = "Navigation" },
                 new Base.KeyboardShortcut { Key = "A", Modifiers = "Ctrl", Description = "Select all", Category = "Selection" },
+                new Base.KeyboardShortcut { Key = "Ctrl+C", Description = "Copy", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Ctrl+X", Description = "Cut", Category = "Clipboard" },
+                new Base.KeyboardShortcut { Key = "Ctrl+V", Description = "Paste", Category = "Clipboard" },
             });
         }
         return _keyboardShortcuts;
@@ -1554,6 +1649,10 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         }
         return false;
     }
+
+    private bool HandleCopyKey() { Copy(); return CanCopy; }
+    private bool HandleCutKey() { Cut(); return CanCut; }
+    private bool HandlePasteKey() { Paste(); return CanPaste; }
 
     private void UpdateHighlightVisual()
     {
