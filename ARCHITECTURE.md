@@ -89,9 +89,9 @@ SuccessColor        // Success indication (#388E3C)
 WarningColor        // Warning indication (#F57C00)
 
 // Borders
-CornerRadius        // Rounded corners (default: 8)
+CornerRadius        // Rounded corners (default: 4)
 BorderColor         // Normal border (theme-aware)
-BorderThickness     // Border width (default: 1.5)
+BorderThickness     // Border width (default: 1)
 FocusBorderColor    // Focused state (defaults to AccentColor)
 ErrorBorderColor    // Error state (defaults to ErrorColor)
 DisabledBorderColor // Disabled state
@@ -159,7 +159,6 @@ public class ControlsTheme
     public Color ErrorColor { get; set; }
     public Color SuccessColor { get; set; }
     public Color WarningColor { get; set; }
-    public Color InfoColor { get; set; }
 
     // Surface colors (separate for light/dark)
     public Color SurfaceColor { get; set; }
@@ -581,7 +580,6 @@ All focusable controls MUST define these visual states:
 ```csharp
 // Required focus-related properties (inherited from StyledControlBase)
 FocusBorderColor      // Border color when focused
-FocusBackgroundColor  // Background when focused (optional)
 ```
 
 #### Tab Order

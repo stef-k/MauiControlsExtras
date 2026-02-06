@@ -172,6 +172,22 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         typeof(Calendar));
 
     /// <summary>
+    /// Identifies the <see cref="DateSelectingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DateSelectingCommandProperty = BindableProperty.Create(
+        nameof(DateSelectingCommand),
+        typeof(ICommand),
+        typeof(Calendar));
+
+    /// <summary>
+    /// Identifies the <see cref="DateSelectingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DateSelectingCommandParameterProperty = BindableProperty.Create(
+        nameof(DateSelectingCommandParameter),
+        typeof(object),
+        typeof(Calendar));
+
+    /// <summary>
     /// Identifies the <see cref="GotFocusCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty GotFocusCommandProperty = BindableProperty.Create(
@@ -423,6 +439,25 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
     {
         get => GetValue(DisplayDateChangedCommandParameterProperty);
         set => SetValue(DisplayDateChangedCommandParameterProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed before a date is selected.
+    /// </summary>
+    public ICommand? DateSelectingCommand
+    {
+        get => (ICommand?)GetValue(DateSelectingCommandProperty);
+        set => SetValue(DateSelectingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="DateSelectingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? DateSelectingCommandParameter
+    {
+        get => GetValue(DateSelectingCommandParameterProperty);
+        set => SetValue(DateSelectingCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -961,6 +996,10 @@ public partial class Calendar : HeaderedControlBase, IKeyboardNavigable, ISelect
         // Raise selecting event
         var selectingArgs = new CalendarDateSelectingEventArgs(date, true);
         DateSelecting?.Invoke(this, selectingArgs);
+        if (DateSelectingCommand?.CanExecute(selectingArgs) == true)
+        {
+            DateSelectingCommand.Execute(DateSelectingCommandParameter ?? selectingArgs);
+        }
         if (selectingArgs.Cancel) return;
 
         var oldSelection = _selectedDates.ToList();

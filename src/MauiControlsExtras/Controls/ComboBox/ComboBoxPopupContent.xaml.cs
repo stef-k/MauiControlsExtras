@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using MauiControlsExtras.Base;
 
 namespace MauiControlsExtras.Controls;
 
@@ -7,7 +8,7 @@ namespace MauiControlsExtras.Controls;
 /// Standalone popup content for ComboBox dropdown with search and list.
 /// Used by DataGridView for ComboBox editing in cells.
 /// </summary>
-public partial class ComboBoxPopupContent : ContentView
+public partial class ComboBoxPopupContent : StyledControlBase
 {
     private readonly ObservableCollection<object> _filteredItems = new();
     private List<object>? _allItems;
@@ -422,7 +423,7 @@ public partial class ComboBoxPopupContent : ContentView
         }
     }
 
-    private void OnItemsListSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OnItemsListSelectionChanged(object? sender, Microsoft.Maui.Controls.SelectionChangedEventArgs e)
     {
         // Ignore programmatic selection changes for highlighting
         if (_isUpdatingHighlight) return;

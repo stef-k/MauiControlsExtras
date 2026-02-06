@@ -7,7 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **MVVM Command Parity**: Added missing command/command-parameter pairs for user actions that previously had event-only coverage
+  - `Wizard`: `StepChangingCommand`, `FinishingCommand`, `CancellingCommand`
+  - `ComboBox`: `PopupRequestedCommand`
+  - `Calendar`: `DateSelectingCommand`
+  - `PropertyGrid`: `PropertyChangingCommand`
+  - `DataGridView`: `ColumnResizingCommand`, `ExportingCommand`, `ContextMenuItemsOpeningCommand`
+
 ### Fixed
+
+- **Architecture Conformance**: `StyledControlBase` now auto-attaches `KeyboardBehavior` for controls implementing `IKeyboardNavigable`
+  - Ensures keyboard input is wired consistently across interactive controls inheriting styled bases
+  - `DataGridView` now configures the shared behavior (`HandleTabKey = true`) instead of adding a duplicate behavior
+- **Theming Lifecycle**: `StyledControlBase` now safely manages theme event subscription across handler detach/reattach
+- **Theme Notifications**: `AnimatedControlBase` now raises `PropertyChanged` for effective animation properties on theme changes
+- **Base Class Alignment**: `AccordionItem`, `WizardStep`, `ComboBoxPopupContent`, and `DataGridFilterPopup` now inherit from `StyledControlBase`
+- **XAML Convention**: Added `x:Name=\"thisControl\"` to `Accordion` and `Wizard` root elements
+- **PropertyGrid**: Added cancelable pre-change pipeline (`PropertyItem.ValueChanging`) used by `PropertyGrid.PropertyValueChanging`/`PropertyChangingCommand`
+- **Documentation**: Reconciled architecture doc drift (default corner radius/border thickness, removed undocumented `InfoColor`/`FocusBackgroundColor` references)
+- **Demo Docs**: Added Android demo run steps in `README.md` and `docs/quickstart.md`
 
 - **Clipboard**: Mobile clipboard bridge to fire `IClipboardSupport` commands when users perform Copy/Cut/Paste via native context menus on Android and iOS (#189)
   - Android: Intercepts `ActionMode` callbacks on `AppCompatEditText` to detect clipboard actions

@@ -101,6 +101,20 @@ public abstract class AnimatedControlBase : StyledControlBase
 
     #endregion
 
+    #region Theme Change
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+        OnPropertyChanged(nameof(EffectiveAnimationDuration));
+        OnPropertyChanged(nameof(EffectiveAnimationTimeSpan));
+        OnPropertyChanged(nameof(EffectiveAnimationEasing));
+        OnPropertyChanged(nameof(EffectiveEnableAnimations));
+    }
+
+    #endregion
+
     #region Property Changed Handlers
 
     private static void OnAnimationDurationChanged(BindableObject bindable, object oldValue, object newValue)

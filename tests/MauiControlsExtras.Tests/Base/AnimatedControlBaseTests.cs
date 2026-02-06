@@ -171,5 +171,25 @@ public class AnimatedControlBaseTests : ThemeTestBase
         Assert.Equal(500, control.EffectiveAnimationDuration);
     }
 
+    [Fact]
+    public void ThemeChanged_NotifiesAllEffectiveAnimationProperties()
+    {
+        var control = new TestableAnimatedControl();
+        var changed = new List<string>();
+        control.PropertyChanged += (_, e) => changed.Add(e.PropertyName!);
+
+        MauiControlsExtrasTheme.ModifyCurrentTheme(t =>
+        {
+            t.AnimationDuration = 175;
+            t.EnableAnimations = false;
+            t.AnimationEasing = Easing.Linear;
+        });
+
+        Assert.Contains(nameof(AnimatedControlBase.EffectiveAnimationDuration), changed);
+        Assert.Contains(nameof(AnimatedControlBase.EffectiveAnimationTimeSpan), changed);
+        Assert.Contains(nameof(AnimatedControlBase.EffectiveAnimationEasing), changed);
+        Assert.Contains(nameof(AnimatedControlBase.EffectiveEnableAnimations), changed);
+    }
+
     #endregion
 }

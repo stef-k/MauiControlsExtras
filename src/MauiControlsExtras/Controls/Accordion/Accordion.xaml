@@ -2,6 +2,7 @@
 <base:HeaderedControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                           xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                           xmlns:base="clr-namespace:MauiControlsExtras.Base"
-                          x:Class="MauiControlsExtras.Controls.Accordion">
+                          x:Class="MauiControlsExtras.Controls.Accordion"
+                          x:Name="thisControl">
     <!-- Visual tree is built in code to avoid conflict with [ContentProperty(nameof(Items))] -->
 </base:HeaderedControlBase>

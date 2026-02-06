@@ -39,5 +39,6 @@ MAUI Controls Extras follows a layered architecture:
 2. **Events have corresponding commands** for MVVM support
 3. **Keyboard/mouse support is mandatory** for desktop platforms
 4. **Theme-aware styling** through `Effective*` properties
+5. **Interactive controls implementing `IKeyboardNavigable` must be wired to keyboard input**
 
 For detailed implementation guidance, see the [Control Development Guide](ControlDevelopmentGuide.md).

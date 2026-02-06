@@ -1,4 +1,5 @@
 using MauiControlsExtras.Base;
+using MauiControlsExtras.Behaviors;
 using MauiControlsExtras.Tests.Helpers;
 using MauiControlsExtras.Theming;
 
@@ -368,6 +369,24 @@ public class StyledControlBaseTests : ThemeTestBase
         MauiControlsExtrasTheme.ApplyModernTheme();
 
         Assert.Equal(Colors.Red, control.EffectiveAccentColor);
+    }
+
+    #endregion
+
+    #region Keyboard Behavior Attachment
+
+    [Fact]
+    public void StyledControl_WithoutIKeyboardNavigable_DoesNotAttachKeyboardBehavior()
+    {
+        var control = new TestableStyledControl();
+        Assert.DoesNotContain(control.Behaviors, b => b is KeyboardBehavior);
+    }
+
+    [Fact]
+    public void StyledControl_WithIKeyboardNavigable_AttachesKeyboardBehavior()
+    {
+        var control = new TestableKeyboardNavigableStyledControl();
+        Assert.Single(control.Behaviors.OfType<KeyboardBehavior>());
     }
 
     #endregion

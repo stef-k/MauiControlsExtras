@@ -752,6 +752,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="ExportingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ExportingCommandProperty = BindableProperty.Create(
+        nameof(ExportingCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="ExportingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ExportingCommandParameterProperty = BindableProperty.Create(
+        nameof(ExportingCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="UndoCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty UndoCommandProperty = BindableProperty.Create(
@@ -848,6 +864,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         typeof(DataGridView));
 
     /// <summary>
+    /// Identifies the <see cref="ColumnResizingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ColumnResizingCommandProperty = BindableProperty.Create(
+        nameof(ColumnResizingCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="ColumnResizingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ColumnResizingCommandParameterProperty = BindableProperty.Create(
+        nameof(ColumnResizingCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
     /// Identifies the <see cref="RowSelectedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty RowSelectedCommandProperty = BindableProperty.Create(
@@ -908,6 +940,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public static readonly BindableProperty ClearSelectionCommandParameterProperty = BindableProperty.Create(
         nameof(ClearSelectionCommandParameter),
+        typeof(object),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="ContextMenuItemsOpeningCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ContextMenuItemsOpeningCommandProperty = BindableProperty.Create(
+        nameof(ContextMenuItemsOpeningCommand),
+        typeof(ICommand),
+        typeof(DataGridView));
+
+    /// <summary>
+    /// Identifies the <see cref="ContextMenuItemsOpeningCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ContextMenuItemsOpeningCommandParameterProperty = BindableProperty.Create(
+        nameof(ContextMenuItemsOpeningCommandParameter),
         typeof(object),
         typeof(DataGridView));
 
@@ -1649,6 +1697,26 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         set => SetValue(ExportCommandParameterProperty, value);
     }
 
+    /// <summary>
+    /// Gets or sets the command executed before exporting.
+    /// The command parameter is <see cref="DataGridExportEventArgs"/>.
+    /// </summary>
+    public ICommand? ExportingCommand
+    {
+        get => (ICommand?)GetValue(ExportingCommandProperty);
+        set => SetValue(ExportingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ExportingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ExportingCommandParameter
+    {
+        get => GetValue(ExportingCommandParameterProperty);
+        set => SetValue(ExportingCommandParameterProperty, value);
+    }
+
     /// <inheritdoc />
     public ICommand? UndoCommand
     {
@@ -1755,6 +1823,26 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
+    /// Gets or sets the command executed when a column resize starts.
+    /// The command parameter is <see cref="DataGridColumnEventArgs"/>.
+    /// </summary>
+    public ICommand? ColumnResizingCommand
+    {
+        get => (ICommand?)GetValue(ColumnResizingCommandProperty);
+        set => SetValue(ColumnResizingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ColumnResizingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ColumnResizingCommandParameter
+    {
+        get => GetValue(ColumnResizingCommandParameterProperty);
+        set => SetValue(ColumnResizingCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when a row is selected.
     /// The command parameter is <see cref="DataGridRowSelectionEventArgs"/>.
     /// </summary>
@@ -1830,6 +1918,26 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         get => GetValue(ClearSelectionCommandParameterProperty);
         set => SetValue(ClearSelectionCommandParameterProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command executed before context menu items are shown.
+    /// The command parameter is <see cref="DataGridContextMenuOpeningEventArgs"/>.
+    /// </summary>
+    public ICommand? ContextMenuItemsOpeningCommand
+    {
+        get => (ICommand?)GetValue(ContextMenuItemsOpeningCommandProperty);
+        set => SetValue(ContextMenuItemsOpeningCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="ContextMenuItemsOpeningCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? ContextMenuItemsOpeningCommandParameter
+    {
+        get => GetValue(ContextMenuItemsOpeningCommandParameterProperty);
+        set => SetValue(ContextMenuItemsOpeningCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -2179,8 +2287,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Set initial page size picker
         pageSizePicker.SelectedIndex = 2; // 50
 
-        // Attach keyboard behavior for desktop keyboard handling (F2, arrow keys, etc.)
-        Behaviors.Add(new KeyboardBehavior { HandleTabKey = true });
+        // DataGrid handles Tab internally for cell navigation.
+        var keyboardBehavior = Behaviors.OfType<KeyboardBehavior>().FirstOrDefault();
+        if (keyboardBehavior != null)
+        {
+            keyboardBehavior.HandleTabKey = true;
+        }
+
     }
 
     #endregion
@@ -2338,6 +2451,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         var args = new DataGridExportEventArgs("CSV", options);
         Exporting?.Invoke(this, args);
+        if (ExportingCommand?.CanExecute(args) == true)
+        {
+            ExportingCommand.Execute(ExportingCommandParameter ?? args);
+        }
 
         if (args.Cancel)
             return string.Empty;
@@ -2376,6 +2493,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         var args = new DataGridExportEventArgs("JSON", options);
         Exporting?.Invoke(this, args);
+        if (ExportingCommand?.CanExecute(args) == true)
+        {
+            ExportingCommand.Execute(ExportingCommandParameter ?? args);
+        }
 
         if (args.Cancel)
             return string.Empty;
@@ -3225,6 +3346,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             this);
 
         ContextMenuItemsOpening?.Invoke(this, newArgs);
+        if (ContextMenuItemsOpeningCommand?.CanExecute(newArgs) == true)
+        {
+            ContextMenuItemsOpeningCommand.Execute(ContextMenuItemsOpeningCommandParameter ?? newArgs);
+        }
 
         // Fire IContextMenuSupport.ContextMenuOpening event (explicit interface event)
         _contextMenuOpeningHandler?.Invoke(this, newArgs);
@@ -5398,6 +5523,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
                 var args = new DataGridColumnEventArgs(column, columnIndex, _resizeStartWidth, _resizeStartWidth);
                 ColumnResizing?.Invoke(this, args);
+                if (ColumnResizingCommand?.CanExecute(args) == true)
+                {
+                    ColumnResizingCommand.Execute(ColumnResizingCommandParameter ?? args);
+                }
                 break;
 
             case GestureStatus.Running:

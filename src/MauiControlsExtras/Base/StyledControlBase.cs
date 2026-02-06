@@ -1,3 +1,4 @@
+using MauiControlsExtras.Behaviors;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Base;
@@ -8,6 +9,8 @@ namespace MauiControlsExtras.Base;
 /// </summary>
 public abstract class StyledControlBase : ContentView, IThemeAware
 {
+    private bool _isThemeSubscribed;
+
     #region Color Bindable Properties
 
     /// <summary>
@@ -471,7 +474,8 @@ public abstract class StyledControlBase : ContentView, IThemeAware
     /// </summary>
     protected StyledControlBase()
     {
-        MauiControlsExtrasTheme.ThemeChanged += OnGlobalThemeChanged;
+        EnsureThemeSubscription();
+        AttachKeyboardBehaviorIfNeeded();
     }
 
     #endregion
@@ -739,7 +743,12 @@ public abstract class StyledControlBase : ContentView, IThemeAware
 
         if (Handler == null)
         {
-            MauiControlsExtrasTheme.ThemeChanged -= OnGlobalThemeChanged;
+            RemoveThemeSubscription();
+        }
+        else
+        {
+            EnsureThemeSubscription();
+            AttachKeyboardBehaviorIfNeeded();
         }
     }
 
@@ -786,6 +795,47 @@ public abstract class StyledControlBase : ContentView, IThemeAware
             Radius = (float)radius,
             Opacity = (float)opacity
         };
+    }
+
+    #endregion
+
+    #region Private Helpers
+
+    private void EnsureThemeSubscription()
+    {
+        if (_isThemeSubscribed)
+        {
+            return;
+        }
+
+        MauiControlsExtrasTheme.ThemeChanged += OnGlobalThemeChanged;
+        _isThemeSubscribed = true;
+    }
+
+    private void RemoveThemeSubscription()
+    {
+        if (!_isThemeSubscribed)
+        {
+            return;
+        }
+
+        MauiControlsExtrasTheme.ThemeChanged -= OnGlobalThemeChanged;
+        _isThemeSubscribed = false;
+    }
+
+    private void AttachKeyboardBehaviorIfNeeded()
+    {
+        if (this is not IKeyboardNavigable)
+        {
+            return;
+        }
+
+        if (Behaviors.OfType<KeyboardBehavior>().Any())
+        {
+            return;
+        }
+
+        Behaviors.Add(new KeyboardBehavior());
     }
 
     #endregion

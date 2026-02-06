@@ -94,6 +94,13 @@ public class PropertyItem : INotifyPropertyChanged
             if (!Equals(_value, value))
             {
                 var oldValue = _value;
+                var changingArgs = new PropertyValueChangingEventArgs(this, oldValue, value);
+                ValueChanging?.Invoke(this, changingArgs);
+                if (changingArgs.Cancel)
+                {
+                    return;
+                }
+
                 _value = value;
 
                 // Update the actual property
@@ -163,6 +170,11 @@ public class PropertyItem : INotifyPropertyChanged
             }
         }
     }
+
+    /// <summary>
+    /// Occurs before the property value changes (cancelable).
+    /// </summary>
+    public event EventHandler<PropertyValueChangingEventArgs>? ValueChanging;
 
     /// <summary>
     /// Occurs when the property value changes.
