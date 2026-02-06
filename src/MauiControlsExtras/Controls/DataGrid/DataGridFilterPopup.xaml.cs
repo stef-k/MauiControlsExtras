@@ -1,9 +1,11 @@
+using MauiControlsExtras.Base;
+
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
 /// A popup for filtering data grid columns.
 /// </summary>
-public partial class DataGridFilterPopup : ContentView
+public partial class DataGridFilterPopup : StyledControlBase
 {
     private readonly HashSet<object> _selectedValues = new();
     private readonly Dictionary<object, CheckBox> _checkboxMap = new();

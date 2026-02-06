@@ -1,3 +1,4 @@
+using MauiControlsExtras.Base;
 using System.Windows.Input;
 
 namespace MauiControlsExtras.Controls;
@@ -5,7 +6,7 @@ namespace MauiControlsExtras.Controls;
 /// <summary>
 /// Represents a single expandable/collapsible item in an Accordion.
 /// </summary>
-public class AccordionItem : ContentView
+public class AccordionItem : StyledControlBase
 {
     #region Bindable Properties
 

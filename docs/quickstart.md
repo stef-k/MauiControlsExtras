@@ -117,3 +117,12 @@ private void OnCountrySelectionChanged(object sender, object? selectedItem)
 
 - Explore the [ComboBox documentation](controls/combobox.md) for advanced features
 - Check the [API Reference](api/combobox.md) for all available properties and methods
+
+## Run The Demo App (Android)
+
+The sample app in `samples/DemoApp` showcases all controls and runs on Android:
+
+```bash
+dotnet build samples/DemoApp/DemoApp.csproj -f net10.0-android
+dotnet build samples/DemoApp/DemoApp.csproj -t:Run -f net10.0-android
+```

@@ -106,6 +106,34 @@ public class PropertyItemTests
     }
 
     [Fact]
+    public void Value_Set_RaisesValueChangingEvent()
+    {
+        var target = new SampleObject { Name = "Old" };
+        var item = CreatePropertyItem(target, nameof(SampleObject.Name));
+        PropertyValueChangingEventArgs? args = null;
+        item.ValueChanging += (_, e) => args = e;
+
+        item.Value = "New";
+
+        Assert.NotNull(args);
+        Assert.Equal("Old", args.CurrentValue);
+        Assert.Equal("New", args.NewValue);
+    }
+
+    [Fact]
+    public void Value_Set_WhenValueChangingCancelled_DoesNotUpdateValue()
+    {
+        var target = new SampleObject { Name = "Old" };
+        var item = CreatePropertyItem(target, nameof(SampleObject.Name));
+        item.ValueChanging += (_, e) => e.Cancel = true;
+
+        item.Value = "New";
+
+        Assert.Equal("Old", item.Value);
+        Assert.Equal("Old", target.Name);
+    }
+
+    [Fact]
     public void Value_Set_RaisesPropertyChanged()
     {
         var target = new SampleObject { Name = "Old" };

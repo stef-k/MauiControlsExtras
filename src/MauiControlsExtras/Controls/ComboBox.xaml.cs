@@ -295,6 +295,24 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         default(ICommand));
 
     /// <summary>
+    /// Identifies the <see cref="PopupRequestedCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PopupRequestedCommandProperty = BindableProperty.Create(
+        nameof(PopupRequestedCommand),
+        typeof(ICommand),
+        typeof(ComboBox),
+        default(ICommand));
+
+    /// <summary>
+    /// Identifies the <see cref="PopupRequestedCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PopupRequestedCommandParameterProperty = BindableProperty.Create(
+        nameof(PopupRequestedCommandParameter),
+        typeof(object),
+        typeof(ComboBox),
+        default(object));
+
+    /// <summary>
     /// Identifies the <see cref="ClearCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty ClearCommandProperty = BindableProperty.Create(
@@ -638,6 +656,25 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         get => (ICommand?)GetValue(ClosedCommandProperty);
         set => SetValue(ClosedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the command to execute when popup mode requests an external popup.
+    /// </summary>
+    public ICommand? PopupRequestedCommand
+    {
+        get => (ICommand?)GetValue(PopupRequestedCommandProperty);
+        set => SetValue(PopupRequestedCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PopupRequestedCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PopupRequestedCommandParameter
+    {
+        get => GetValue(PopupRequestedCommandParameterProperty);
+        set => SetValue(PopupRequestedCommandParameterProperty, value);
     }
 
     /// <summary>
@@ -1590,6 +1627,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 Placeholder,
                 IsSearchVisible);
             PopupRequested?.Invoke(this, args);
+            if (PopupRequestedCommand?.CanExecute(args) == true)
+            {
+                PopupRequestedCommand.Execute(PopupRequestedCommandParameter ?? args);
+            }
             return;
         }
 

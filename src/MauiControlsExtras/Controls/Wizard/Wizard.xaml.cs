@@ -241,6 +241,22 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="StepChangingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepChangingCommandProperty = BindableProperty.Create(
+        nameof(StepChangingCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="StepChangingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty StepChangingCommandParameterProperty = BindableProperty.Create(
+        nameof(StepChangingCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="StepValidatingCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty StepValidatingCommandProperty = BindableProperty.Create(
@@ -273,6 +289,22 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         typeof(Wizard));
 
     /// <summary>
+    /// Identifies the <see cref="FinishingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FinishingCommandProperty = BindableProperty.Create(
+        nameof(FinishingCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="FinishingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty FinishingCommandParameterProperty = BindableProperty.Create(
+        nameof(FinishingCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
     /// Identifies the <see cref="CancelledCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty CancelledCommandProperty = BindableProperty.Create(
@@ -285,6 +317,22 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     /// </summary>
     public static readonly BindableProperty CancelledCommandParameterProperty = BindableProperty.Create(
         nameof(CancelledCommandParameter),
+        typeof(object),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="CancellingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CancellingCommandProperty = BindableProperty.Create(
+        nameof(CancellingCommand),
+        typeof(ICommand),
+        typeof(Wizard));
+
+    /// <summary>
+    /// Identifies the <see cref="CancellingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty CancellingCommandParameterProperty = BindableProperty.Create(
+        nameof(CancellingCommandParameter),
         typeof(object),
         typeof(Wizard));
 
@@ -596,6 +644,27 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the cancelable command executed before the step changes.
+    /// The command parameter is <see cref="WizardStepChangingEventArgs"/>.
+    /// Set Cancel = true to prevent navigation.
+    /// </summary>
+    public ICommand? StepChangingCommand
+    {
+        get => (ICommand?)GetValue(StepChangingCommandProperty);
+        set => SetValue(StepChangingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="StepChangingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? StepChangingCommandParameter
+    {
+        get => GetValue(StepChangingCommandParameterProperty);
+        set => SetValue(StepChangingCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the cancelable command executed before step validation.
     /// The command parameter is <see cref="WizardStepValidatingEventArgs"/>.
     /// Set Cancel = true to prevent navigation.
@@ -636,6 +705,27 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the cancelable command executed before the wizard finishes.
+    /// The command parameter is <see cref="WizardFinishingEventArgs"/>.
+    /// Set Cancel = true to prevent finish.
+    /// </summary>
+    public ICommand? FinishingCommand
+    {
+        get => (ICommand?)GetValue(FinishingCommandProperty);
+        set => SetValue(FinishingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="FinishingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? FinishingCommandParameter
+    {
+        get => GetValue(FinishingCommandParameterProperty);
+        set => SetValue(FinishingCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when the wizard is cancelled.
     /// </summary>
     public ICommand? CancelledCommand
@@ -652,6 +742,27 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     {
         get => GetValue(CancelledCommandParameterProperty);
         set => SetValue(CancelledCommandParameterProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the cancelable command executed before the wizard is cancelled.
+    /// The command parameter is <see cref="WizardCancellingEventArgs"/>.
+    /// Set Cancel = true to prevent cancellation.
+    /// </summary>
+    public ICommand? CancellingCommand
+    {
+        get => (ICommand?)GetValue(CancellingCommandProperty);
+        set => SetValue(CancellingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="CancellingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? CancellingCommandParameter
+    {
+        get => GetValue(CancellingCommandParameterProperty);
+        set => SetValue(CancellingCommandParameterProperty, value);
     }
 
     /// <inheritdoc/>
@@ -1162,6 +1273,10 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Raise changing event
         var changingArgs = new WizardStepChangingEventArgs(oldStep, newStep, oldIndex, index);
         StepChanging?.Invoke(this, changingArgs);
+        if (StepChangingCommand?.CanExecute(changingArgs) == true)
+        {
+            StepChangingCommand.Execute(StepChangingCommandParameter ?? changingArgs);
+        }
         if (changingArgs.Cancel)
             return false;
 
@@ -1219,6 +1334,10 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Raise finishing event
         var finishingArgs = new WizardFinishingEventArgs(_steps.ToList());
         Finishing?.Invoke(this, finishingArgs);
+        if (FinishingCommand?.CanExecute(finishingArgs) == true)
+        {
+            FinishingCommand.Execute(FinishingCommandParameter ?? finishingArgs);
+        }
         if (finishingArgs.Cancel)
             return false;
 
@@ -1245,6 +1364,10 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Raise cancelling event
         var cancellingArgs = new WizardCancellingEventArgs(_currentIndex);
         Cancelling?.Invoke(this, cancellingArgs);
+        if (CancellingCommand?.CanExecute(cancellingArgs) == true)
+        {
+            CancellingCommand.Execute(CancellingCommandParameter ?? cancellingArgs);
+        }
         if (cancellingArgs.Cancel)
             return false;
 

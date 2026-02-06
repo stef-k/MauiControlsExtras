@@ -9,7 +9,14 @@ A comprehensive collection of 16 enterprise-grade UI controls for .NET MAUI appl
 
 ## Demo Application
 
-A complete demo app showcasing all controls is available in [`samples/DemoApp/`](./samples/DemoApp/).
+A complete cross-platform demo app showcasing all controls is available in [`samples/DemoApp/`](./samples/DemoApp/).
+
+Run the demo on Android:
+
+```bash
+dotnet build samples/DemoApp/DemoApp.csproj -f net10.0-android
+dotnet build samples/DemoApp/DemoApp.csproj -t:Run -f net10.0-android
+```
 
 > **Note**: The demo uses direct event handlers for simplicity. For production apps, we recommend proper MVVM patterns with commands and view models.
 

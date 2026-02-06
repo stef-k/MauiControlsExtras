@@ -1,12 +1,13 @@
 using System.ComponentModel;
 using System.Windows.Input;
+using MauiControlsExtras.Base;
 
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
 /// Represents a single step in a Wizard control.
 /// </summary>
-public class WizardStep : ContentView, INotifyPropertyChanged
+public class WizardStep : StyledControlBase, INotifyPropertyChanged
 {
     #region Private Fields
 

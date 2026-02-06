@@ -131,6 +131,22 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         typeof(PropertyGrid));
 
     /// <summary>
+    /// Identifies the <see cref="PropertyChangingCommand"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PropertyChangingCommandProperty = BindableProperty.Create(
+        nameof(PropertyChangingCommand),
+        typeof(ICommand),
+        typeof(PropertyGrid));
+
+    /// <summary>
+    /// Identifies the <see cref="PropertyChangingCommandParameter"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PropertyChangingCommandParameterProperty = BindableProperty.Create(
+        nameof(PropertyChangingCommandParameter),
+        typeof(object),
+        typeof(PropertyGrid));
+
+    /// <summary>
     /// Identifies the <see cref="SelectedObjectChangedCommand"/> bindable property.
     /// </summary>
     public static readonly BindableProperty SelectedObjectChangedCommandProperty = BindableProperty.Create(
@@ -325,6 +341,25 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     }
 
     /// <summary>
+    /// Gets or sets the command executed before a property value changes.
+    /// </summary>
+    public ICommand? PropertyChangingCommand
+    {
+        get => (ICommand?)GetValue(PropertyChangingCommandProperty);
+        set => SetValue(PropertyChangingCommandProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the parameter to pass to <see cref="PropertyChangingCommand"/>.
+    /// If not set, the default event argument is used as the parameter.
+    /// </summary>
+    public object? PropertyChangingCommandParameter
+    {
+        get => GetValue(PropertyChangingCommandParameterProperty);
+        set => SetValue(PropertyChangingCommandParameterProperty, value);
+    }
+
+    /// <summary>
     /// Gets or sets the command executed when the selected object changes.
     /// </summary>
     public ICommand? SelectedObjectChangedCommand
@@ -425,9 +460,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     /// <summary>
     /// Occurs before a property value changes (cancelable).
     /// </summary>
-#pragma warning disable CS0067
     public event EventHandler<PropertyValueChangingEventArgs>? PropertyValueChanging;
-#pragma warning restore CS0067
 
     /// <summary>
     /// Occurs when the selected object changes.
@@ -634,6 +667,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         // Subscribe to property changes
         foreach (var prop in _flatProperties)
         {
+            prop.ValueChanging += OnPropertyValueChanging;
             prop.ValueChanged += OnPropertyValueChanged;
         }
 
@@ -1105,6 +1139,15 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     #endregion
 
     #region Event Handlers
+
+    private void OnPropertyValueChanging(object? sender, PropertyValueChangingEventArgs e)
+    {
+        PropertyValueChanging?.Invoke(this, e);
+        if (PropertyChangingCommand?.CanExecute(e) == true)
+        {
+            PropertyChangingCommand.Execute(PropertyChangingCommandParameter ?? e);
+        }
+    }
 
     private void OnPropertyValueChanged(object? sender, PropertyValueChangedEventArgs e)
     {
