@@ -15,12 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Calendar`: `DateSelectingCommand`
   - `PropertyGrid`: `PropertyChangingCommand`
   - `DataGridView`: `ColumnResizingCommand`, `ExportingCommand`, `ContextMenuItemsOpeningCommand`
+- **Documentation**: Added desktop+mobile screenshot pairs to all control docs, `README.md`, and docs home
+  - Mobile image coverage is complete for 15/16 controls
+  - `MaskedEntry` is marked as pending until its mobile screenshot is added
 
 ### Fixed
 
 - **Architecture Conformance**: `StyledControlBase` now auto-attaches `KeyboardBehavior` for controls implementing `IKeyboardNavigable`
   - Ensures keyboard input is wired consistently across interactive controls inheriting styled bases
   - `DataGridView` now configures the shared behavior (`HandleTabKey = true`) instead of adding a duplicate behavior
+- **MaskedEntry (Mobile)**: Fixed Android/iOS input path where typing could collapse to a single character
+  - Added deterministic merge logic for replacement-style mobile text-change events
+  - Cursor positioning now runs after text assignment to prevent slot-0 overwrite on subsequent key presses
 - **Theming Lifecycle**: `StyledControlBase` now safely manages theme event subscription across handler detach/reattach
 - **Theme Notifications**: `AnimatedControlBase` now raises `PropertyChanged` for effective animation properties on theme changes
 - **Base Class Alignment**: `AccordionItem`, `WizardStep`, `ComboBoxPopupContent`, and `DataGridFilterPopup` now inherit from `StyledControlBase`
@@ -28,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PropertyGrid**: Added cancelable pre-change pipeline (`PropertyItem.ValueChanging`) used by `PropertyGrid.PropertyValueChanging`/`PropertyChangingCommand`
 - **Documentation**: Reconciled architecture doc drift (default corner radius/border thickness, removed undocumented `InfoColor`/`FocusBackgroundColor` references)
 - **Demo Docs**: Added Android demo run steps in `README.md` and `docs/quickstart.md`
+
+### Known Issues
+
+- **MaskedEntry (Android mobile typing)**: Input composition is unstable for certain masks (`(000) 000-0000`, IP-style masks), causing cursor jumps and digit reordering in some scenarios. Tracking: #208
 
 - **Clipboard**: Mobile clipboard bridge to fire `IClipboardSupport` commands when users perform Copy/Cut/Paste via native context menus on Android and iOS (#189)
   - Android: Intercepts `ActionMode` callbacks on `AppCompatEditText` to detect clipboard actions

@@ -2,7 +2,9 @@
 
 A dual-thumb slider for selecting a range of values.
 
-![RangeSlider](../images/range-slider.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![RangeSlider - Desktop](../images/range-slider.JPG) | ![RangeSlider - Mobile](../images/mobile/range-slider.png) |
 
 ## Features
 
@@ -153,3 +155,4 @@ var result = rangeSlider.Validate();
 | TrackColor | Color | Track background color |
 | RangeColor | Color | Selected range color |
 | ThumbColor | Color | Thumb button color |
+

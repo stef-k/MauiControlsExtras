@@ -14,7 +14,11 @@ A complete demo app showcasing all controls is available in the [`samples/DemoAp
 
 > **Note**: The demo uses direct event handlers for simplicity. For production apps, we recommend proper MVVM patterns with commands and view models.
 
-![MAUI Controls Extras Demo](images/main-page.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![MAUI Controls Extras Demo - Desktop](images/main-page.JPG) | ![MAUI Controls Extras Demo - Mobile](images/mobile/main-page.png) |
+
+> Mobile screenshot coverage: 15/16 controls (`MaskedEntry` mobile screenshot pending).
 
 ## Available Controls
 
@@ -92,3 +96,4 @@ All controls include comprehensive desktop platform support:
 2. [Follow the Quick Start guide](quickstart.md)
 3. [Explore the Control Documentation](controls/combobox.md)
 4. [Read the API Reference](api/combobox.md)
+

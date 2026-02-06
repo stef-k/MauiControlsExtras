@@ -2,7 +2,9 @@
 
 A rich text editor control with HTML and Markdown support, powered by Quill.js.
 
-![RichTextEditor](../images/rich-text-editor.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![RichTextEditor - Desktop](../images/rich-text-editor.JPG) | ![RichTextEditor - Mobile](../images/mobile/rich-text-editor.png) |
 
 ## Features
 
@@ -179,3 +181,4 @@ string text = await editor.GetPlainTextAsync();
 | UndoLimit | int | 100 | Maximum undo history size |
 | IsLoading | bool | true | Whether editor is loading |
 | IsDarkTheme | bool | (computed) | Current effective theme |
+

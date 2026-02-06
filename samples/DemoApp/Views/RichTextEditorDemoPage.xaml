@@ -17,8 +17,8 @@
 
         <!-- Options Toolbar -->
         <Frame Grid.Row="1" Style="{StaticResource DemoCardStyle}" Padding="15">
-            <Grid ColumnDefinitions="*,Auto">
-                <FlexLayout Grid.Column="0" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
+            <Grid RowDefinitions="Auto,Auto">
+                <FlexLayout Grid.Row="0" Wrap="Wrap" JustifyContent="Start" AlignItems="Center">
                     <HorizontalStackLayout Spacing="5" Margin="0,0,20,5">
                         <CheckBox IsChecked="{Binding ShowToolbar}" />
                         <Label Text="Show Toolbar" VerticalOptions="Center" />
@@ -33,10 +33,25 @@
                     </HorizontalStackLayout>
                 </FlexLayout>
 
-                <HorizontalStackLayout Grid.Column="1" Spacing="10">
-                    <Button Text="Sample" Command="{Binding LoadSampleContentCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                    <Button Text="Clear" Command="{Binding ClearContentCommand}" Style="{StaticResource SecondaryButtonStyle}" />
-                </HorizontalStackLayout>
+                <FlexLayout Grid.Row="1"
+                            Direction="Row"
+                            Wrap="Wrap"
+                            JustifyContent="Start"
+                            AlignItems="Center"
+                            Margin="0,10,0,0">
+                    <Button Text="Sample"
+                            Command="{Binding LoadSampleContentCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,10,10"
+                            Padding="{OnIdiom Phone='14,8', Tablet='20,12', Desktop='20,12'}"
+                            HeightRequest="{OnIdiom Phone=40, Tablet=44, Desktop=-1}" />
+                    <Button Text="Clear"
+                            Command="{Binding ClearContentCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}"
+                            Margin="0,0,0,10"
+                            Padding="{OnIdiom Phone='14,8', Tablet='20,12', Desktop='20,12'}"
+                            HeightRequest="{OnIdiom Phone=40, Tablet=44, Desktop=-1}" />
+                </FlexLayout>
             </Grid>
         </Frame>
 

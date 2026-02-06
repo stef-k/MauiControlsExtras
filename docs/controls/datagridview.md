@@ -2,7 +2,9 @@
 
 A feature-rich data grid control for displaying and editing tabular data.
 
-![DataGridView](../images/datagridview.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![DataGridView - Desktop](../images/datagridview.JPG) | ![DataGridView - Mobile](../images/mobile/datagridview.png) |
 
 ## Features
 
@@ -332,3 +334,4 @@ await myDataGrid.PrintAsync(new DataGridPrintOptions
 ## Properties Reference
 
 See [DataGridView API Reference](../api/datagridview.md) for complete property list.
+

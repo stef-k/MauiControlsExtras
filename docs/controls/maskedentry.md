@@ -2,7 +2,11 @@
 
 A text input control with format masking for structured data entry.
 
-![MaskedEntry](../images/masked-entry.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![MaskedEntry - Desktop](../images/masked-entry.JPG) | _Pending mobile screenshot_ |
+
+> Known issue: Android mobile typing instability for some masks is being tracked in [#208](https://github.com/stef-k/MauiControlsExtras/issues/208).
 
 ## Features
 
@@ -231,3 +235,4 @@ if (maskedEntry.IsMaskComplete)
 | FontAttributes | FontAttributes | Bold, Italic, etc. |
 | TextColor | Color | Text color |
 | PlaceholderColor | Color | Placeholder text color |
+

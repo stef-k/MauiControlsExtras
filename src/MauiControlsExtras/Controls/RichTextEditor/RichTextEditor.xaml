@@ -15,13 +15,15 @@
 
         <Grid RowDefinitions="Auto,*,Auto">
             <!-- Top Toolbar -->
-            <ScrollView x:Name="topToolbar"
-                        Grid.Row="0"
-                        Orientation="Horizontal"
-                        HorizontalScrollBarVisibility="Never"
-                        IsVisible="{Binding ShowTopToolbar, Source={x:Reference thisControl}}"
-                        BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
-                <HorizontalStackLayout Padding="4" Spacing="2">
+            <Border x:Name="topToolbar"
+                    Grid.Row="0"
+                    IsVisible="{Binding ShowTopToolbar, Source={x:Reference thisControl}}"
+                    BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#2D2D2D}">
+                <FlexLayout Padding="4"
+                            Direction="Row"
+                            Wrap="Wrap"
+                            JustifyContent="Start"
+                            AlignItems="Center">
                     <!-- Bold -->
                     <Button x:Name="boldButton"
                             Text="B"
@@ -73,6 +75,7 @@
                              HeightRequest="24"
                              VerticalOptions="Center"
                              Color="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                             Margin="4,0"
                              IsVisible="{Binding ToolbarItems.BulletList, Source={x:Reference thisControl}}" />
 
                     <!-- Bullet List -->
@@ -102,6 +105,7 @@
                              HeightRequest="24"
                              VerticalOptions="Center"
                              Color="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                             Margin="4,0"
                              IsVisible="{Binding ToolbarItems.Heading, Source={x:Reference thisControl}}" />
 
                     <!-- Headings -->
@@ -152,6 +156,7 @@
                              HeightRequest="24"
                              VerticalOptions="Center"
                              Color="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                             Margin="4,0"
                              IsVisible="{Binding ToolbarItems.Link, Source={x:Reference thisControl}}" />
 
                     <!-- Link -->
@@ -181,6 +186,7 @@
                              HeightRequest="24"
                              VerticalOptions="Center"
                              Color="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
+                             Margin="4,0"
                              IsVisible="{Binding ToolbarItems.Undo, Source={x:Reference thisControl}}" />
 
                     <!-- Undo -->
@@ -215,8 +221,8 @@
                             Clicked="OnClearFormattingClicked"
                             BackgroundColor="Transparent"
                             TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
-                </HorizontalStackLayout>
-            </ScrollView>
+                </FlexLayout>
+            </Border>
 
             <!-- WebView Editor -->
             <WebView x:Name="editorWebView"

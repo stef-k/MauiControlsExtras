@@ -2,7 +2,9 @@
 
 A numeric input control with increment/decrement buttons.
 
-![NumericUpDown](../images/numeric-up-down.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![NumericUpDown - Desktop](../images/numeric-up-down.JPG) | ![NumericUpDown - Mobile](../images/mobile/numeric-up-down.png) |
 
 ## Features
 
@@ -167,3 +169,4 @@ var result = numericUpDown.Validate();
 | IsReadOnly | bool | false | Prevent direct text editing |
 | IsRequired | bool | false | Whether a value is required |
 | RequiredErrorMessage | string | "This field is required." | Error message for required validation |
+

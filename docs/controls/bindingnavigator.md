@@ -2,7 +2,9 @@
 
 A navigation toolbar for browsing data collections, similar to WinForms BindingNavigator.
 
-![BindingNavigator](../images/binding-navigator.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![BindingNavigator - Desktop](../images/binding-navigator.JPG) | ![BindingNavigator - Mobile](../images/mobile/binding-navigator.png) |
 
 ## Features
 
@@ -152,3 +154,4 @@ int totalCount = navigator.Count;
 | LastButtonContent | string | "⏭" | Last button content |
 | AddButtonContent | string | "+" | Add button content |
 | DeleteButtonContent | string | "−" | Delete button content |
+

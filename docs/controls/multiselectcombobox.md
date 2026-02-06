@@ -2,7 +2,9 @@
 
 A dropdown control that allows selecting multiple items with checkboxes.
 
-![MultiSelectComboBox](../images/multi-select-combo-box.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![MultiSelectComboBox - Desktop](../images/multi-select-combo-box.JPG) | ![MultiSelectComboBox - Mobile](../images/mobile/multi-select-combo-box.png) |
 
 ## Features
 
@@ -179,3 +181,4 @@ var result = multiSelectComboBox.Validate();
 | DisplayMode | DisplayMode | How to show selections |
 | IsSearchable | bool | Enable filtering |
 | MaxDropdownHeight | double | Max dropdown height |
+

@@ -525,18 +525,42 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         _isUpdatingText = true;
         try
         {
+            var previousRawText = Text ?? string.Empty;
             var newRawText = ExtractRawText(e.NewTextValue);
-            Text = newRawText;
+
+            // Some mobile keyboards emit replacement-style updates that only contain
+            // the latest typed character instead of the full masked display text.
+            if ((e.NewTextValue?.Length ?? 0) == 1 &&
+                (e.OldTextValue?.Length ?? 0) > 1 &&
+                newRawText.Length <= 1 &&
+                previousRawText.Length < GetMaxRawInputLength() &&
+                TryNormalizeInputForRawIndex(e.NewTextValue![0], previousRawText.Length, out var normalizedDeltaChar))
+            {
+                newRawText = previousRawText + normalizedDeltaChar;
+            }
+
+            Text = TrimToMaskCapacity(newRawText);
 
             // Immediately update entry to show masked text (filtered)
             // This must be done here because OnTextChanged won't run while _isUpdatingText is true
             if (entry != null)
             {
                 var maskedText = DisplayText;
-                entry.Text = maskedText;
-
-                // Position cursor at end of valid input
-                entry.CursorPosition = maskedText.Length;
+                var textWasRewritten = !string.Equals(entry.Text, maskedText, StringComparison.Ordinal);
+                if (textWasRewritten)
+                {
+                    entry.Text = maskedText;
+                    if (IsMobilePlatform())
+                    {
+                        var desiredCursor = GetDisplayCursorPositionForRawLength((Text ?? string.Empty).Length, maskedText);
+                        MainThread.BeginInvokeOnMainThread(() =>
+                        {
+                            if (entry == null) return;
+                            entry.CursorPosition = Math.Clamp(desiredCursor, 0, entry.Text?.Length ?? 0);
+                            entry.SelectionLength = 0;
+                        });
+                    }
+                }
             }
         }
         finally
@@ -548,12 +572,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     private void OnEntryFocused(object? sender, FocusEventArgs e)
     {
         OnPropertyChanged(nameof(CurrentBorderColor));
-
-        // Show mask template when focused and empty
-        if (string.IsNullOrEmpty(Text))
-        {
-            UpdateEntryText();
-        }
+        UpdateEntryText();
     }
 
     private void OnEntryUnfocused(object? sender, FocusEventArgs e)
@@ -567,7 +586,10 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
             _isUpdatingText = true;
             entry.Text = string.Empty;
             _isUpdatingText = false;
+            return;
         }
+
+        UpdateEntryText();
     }
 
     private void OnEntryCompleted(object? sender, EventArgs e)
@@ -683,6 +705,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         if (_maskTokens.Count == 0 || string.IsNullOrEmpty(Text))
             return Text ?? string.Empty;
 
+        var showOptionalPrompts = entry?.IsFocused == true;
         var result = new StringBuilder();
         var textIndex = 0;
         var text = Text ?? string.Empty;
@@ -711,7 +734,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
                     textIndex++;
                 }
             }
-            else if (!token.IsOptional)
+            else if (!token.IsOptional || showOptionalPrompts)
             {
                 result.Append(PromptChar);
             }
@@ -737,58 +760,43 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
             return maskedInput ?? string.Empty;
 
         var result = new StringBuilder();
-        var inputIndex = 0;
+        var tokenIndex = 0;
 
-        foreach (var token in _maskTokens)
+        foreach (var c in maskedInput)
         {
-            if (inputIndex >= maskedInput.Length)
-                break;
+            if (c == PromptChar)
+                continue;
 
-            var inputChar = maskedInput[inputIndex];
-
-            if (token.Type == MaskTokenType.Literal)
+            while (tokenIndex < _maskTokens.Count && _maskTokens[tokenIndex].Type == MaskTokenType.Literal)
             {
-                // Skip literals in input
-                if (inputChar == token.Character)
+                var literal = _maskTokens[tokenIndex].Character;
+                if (c == literal)
                 {
                     if (IncludeLiterals)
-                        result.Append(inputChar);
-                    inputIndex++;
+                        result.Append(c);
+                    tokenIndex++;
+                    goto NextInputCharacter;
                 }
-                continue;
+
+                tokenIndex++;
             }
 
-            // Skip prompt char
-            if (inputChar == PromptChar)
-            {
-                inputIndex++;
-                continue;
-            }
+            if (tokenIndex >= _maskTokens.Count)
+                break;
 
-            if (ValidateChar(inputChar, token.Type, out var outputChar))
+            var token = _maskTokens[tokenIndex];
+            if (ValidateChar(c, token.Type, out var outputChar))
             {
                 result.Append(outputChar);
-                inputIndex++;
+                tokenIndex++;
             }
-            else
-            {
-                // Invalid char, skip it
-                inputIndex++;
-            }
+
+        NextInputCharacter:
+            if (result.Length >= GetMaxRawInputLength())
+                break;
         }
 
-        // Append any remaining valid characters
-        while (inputIndex < maskedInput.Length)
-        {
-            var c = maskedInput[inputIndex];
-            if (c != PromptChar && !IsLiteralAtPosition(inputIndex))
-            {
-                result.Append(c);
-            }
-            inputIndex++;
-        }
-
-        return result.ToString();
+        return TrimToMaskCapacity(result.ToString());
     }
 
     private bool IsLiteralAtPosition(int position)
@@ -865,6 +873,84 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         _isUpdatingText = true;
         entry.Text = DisplayText;
         _isUpdatingText = false;
+    }
+
+    private bool TryNormalizeInputForRawIndex(char value, int rawIndex, out char normalized)
+    {
+        normalized = value;
+        if (_maskTokens.Count == 0)
+            return true;
+
+        var token = GetInputMaskTokenAtRawIndex(rawIndex);
+        if (!token.HasValue)
+            return false;
+
+        return ValidateChar(value, token.Value.Type, out normalized);
+    }
+
+    private MaskToken? GetInputMaskTokenAtRawIndex(int rawIndex)
+    {
+        if (rawIndex < 0)
+            return null;
+
+        var inputIndex = 0;
+        foreach (var token in _maskTokens)
+        {
+            if (token.Type == MaskTokenType.Literal)
+                continue;
+
+            if (inputIndex == rawIndex)
+                return token;
+
+            inputIndex++;
+        }
+
+        return null;
+    }
+
+    private int GetMaxRawInputLength()
+    {
+        if (_maskTokens.Count == 0)
+            return int.MaxValue;
+
+        return _maskTokens.Count(t => t.Type != MaskTokenType.Literal);
+    }
+
+    private string TrimToMaskCapacity(string rawText)
+    {
+        if (string.IsNullOrEmpty(rawText))
+            return rawText;
+
+        var max = GetMaxRawInputLength();
+        return rawText.Length <= max ? rawText : rawText[..max];
+    }
+
+    private int GetDisplayCursorPositionForRawLength(int rawLength, string maskedText)
+    {
+        if (_maskTokens.Count == 0)
+            return Math.Clamp(rawLength, 0, maskedText.Length);
+
+        var targetRawLength = Math.Max(0, rawLength);
+        var rawIndex = 0;
+
+        for (var displayIndex = 0; displayIndex < _maskTokens.Count && displayIndex < maskedText.Length; displayIndex++)
+        {
+            if (_maskTokens[displayIndex].Type == MaskTokenType.Literal)
+                continue;
+
+            if (rawIndex == targetRawLength)
+                return displayIndex;
+
+            rawIndex++;
+        }
+
+        return maskedText.Length;
+    }
+
+    private static bool IsMobilePlatform()
+    {
+        var platform = DeviceInfo.Current.Platform;
+        return platform == DevicePlatform.Android || platform == DevicePlatform.iOS;
     }
 
     private Keyboard GetKeyboardType()

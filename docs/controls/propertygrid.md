@@ -2,7 +2,9 @@
 
 A property grid control that generates an editable UI from an object's properties, similar to Visual Studio's Properties panel.
 
-![PropertyGrid](../images/property-grid.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![PropertyGrid - Desktop](../images/property-grid.JPG) | ![PropertyGrid - Mobile](../images/mobile/property-grid.png) |
 
 ## Features
 
@@ -224,3 +226,4 @@ var changes = propertyGrid.GetModifiedProperties();
 | None | No sorting (declaration order) |
 | Alphabetical | Sort properties A-Z |
 | Categorized | Group by category |
+

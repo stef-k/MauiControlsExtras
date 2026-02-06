@@ -2,7 +2,9 @@
 
 A star/icon-based rating control.
 
-![Rating](../images/rating.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![Rating - Desktop](../images/rating.JPG) | ![Rating - Mobile](../images/mobile/rating.png) |
 
 ## Features
 
@@ -203,3 +205,4 @@ var result = rating.Validate();
 | IsValid | bool | (read-only) | Whether current value passes validation |
 | ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of current validation errors |
 | ValidateCommand | ICommand | null | Command executed when validation is triggered |
+

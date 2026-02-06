@@ -2,7 +2,9 @@
 
 An accordion control with expandable/collapsible sections.
 
-![Accordion](../images/accordion.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![Accordion - Desktop](../images/accordion.JPG) | ![Accordion - Mobile](../images/mobile/accordion.png) |
 
 ## Features
 
@@ -242,3 +244,4 @@ bool isExpanded = accordion.IsItemExpanded(0);
 |-------|-------------|
 | Left | Icon on left side |
 | Right | Icon on right side |
+
