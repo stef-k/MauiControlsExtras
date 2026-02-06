@@ -1609,6 +1609,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             _highlightedIndex = FilteredItems.Count > 0 ? 0 : -1;
             UpdateHighlightVisual();
             RaiseOpened();
+#if ANDROID
+            AndroidBackButtonHandler.Register(this, Close);
+#endif
 
             // Focus the appropriate element when dropdown opens
             if (IsSearchVisible)
@@ -1629,6 +1632,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             collapsedBorder.Stroke = defaultStroke;
             searchEntry.Text = string.Empty;
             searchEntry.Unfocus();
+#if ANDROID
+            AndroidBackButtonHandler.Unregister(this);
+#endif
             RaiseClosed();
         }
     }

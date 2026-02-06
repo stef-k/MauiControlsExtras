@@ -1154,6 +1154,9 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             UpdateCheckboxStates();
             UpdateSelectAllState();
             RaiseOpened();
+#if ANDROID
+            AndroidBackButtonHandler.Register(this, Close);
+#endif
 
             // Focus the search entry when dropdown opens
             if (IsSearchable)
@@ -1169,6 +1172,9 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             collapsedBorder.Stroke = EffectiveBorderColor;
             searchEntry.Text = string.Empty;
             searchEntry.Unfocus();
+#if ANDROID
+            AndroidBackButtonHandler.Unregister(this);
+#endif
             RaiseClosed();
             Validate();
         }

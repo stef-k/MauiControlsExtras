@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Android Back Button**: Back button now closes open ComboBox/MultiSelectComboBox dropdowns and context menus (#175)
+  - Stack-based (LIFO) handling supports nested popups — most recently opened closes first
+  - No impact on other platforms; Escape key behavior unchanged
 - **Hover**: Reusable `HoverBehavior` for desktop hover feedback via `PointerGestureRecognizer` (#171)
   - Applied to NumericUpDown buttons, BindingNavigator buttons, Calendar navigation and day cells, Rating icons
   - Theme-aware: defaults to `ControlsTheme.HoverColor`, overridable per-instance

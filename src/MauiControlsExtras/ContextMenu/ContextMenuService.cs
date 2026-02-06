@@ -1,3 +1,5 @@
+using MauiControlsExtras.Helpers;
+
 namespace MauiControlsExtras.ContextMenu;
 
 /// <summary>
@@ -434,11 +436,13 @@ public class ContextMenuService : IContextMenuService
 
             _activePopupMenu = popupMenu;
             popupMenu.Show();
+            AndroidBackButtonHandler.Register(this, DismissAndroidMenu);
         });
     }
 
     private void DismissAndroidMenu()
     {
+        AndroidBackButtonHandler.Unregister(this);
         _activePopupMenu?.Dismiss();
         _activePopupMenu = null;
     }
