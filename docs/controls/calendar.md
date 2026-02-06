@@ -2,7 +2,9 @@
 
 A calendar control for date selection with month, year, and decade views.
 
-![Calendar](../images/calendar.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![Calendar - Desktop](../images/calendar.JPG) | ![Calendar - Mobile](../images/mobile/calendar.png) |
 
 ## Features
 
@@ -224,3 +226,4 @@ calendar.SelectDate(new DateTime(2024, 7, 4));
 | Sunday | Start on Sunday |
 | Monday | Start on Monday |
 | Saturday | Start on Saturday |
+

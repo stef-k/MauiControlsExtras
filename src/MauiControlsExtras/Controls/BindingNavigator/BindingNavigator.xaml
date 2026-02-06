@@ -13,13 +13,14 @@
             <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
         </Border.StrokeShape>
 
-        <Grid ColumnDefinitions="Auto,Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
-              Padding="4"
-              ColumnSpacing="2">
+        <FlexLayout Padding="4"
+                    Direction="Row"
+                    Wrap="Wrap"
+                    JustifyContent="Start"
+                    AlignItems="Center">
 
             <!-- Add Button -->
             <Button x:Name="addButton"
-                    Grid.Column="0"
                     Text="{Binding AddButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -31,7 +32,6 @@
 
             <!-- Delete Button -->
             <Button x:Name="deleteButton"
-                    Grid.Column="1"
                     Text="{Binding DeleteButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -42,16 +42,17 @@
                     TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
 
             <!-- Separator -->
-            <BoxView Grid.Column="2"
+            <BoxView
                      WidthRequest="1"
+                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                     VerticalOptions="Center"
                      BackgroundColor="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
                      Opacity="0.5"
-                     Margin="4,6"
+                     Margin="4,0"
                      IsVisible="{Binding ShowSeparators, Source={x:Reference thisControl}}" />
 
             <!-- First Button -->
             <Button x:Name="firstButton"
-                    Grid.Column="3"
                     Text="{Binding FirstButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -62,7 +63,6 @@
 
             <!-- Previous Button -->
             <Button x:Name="previousButton"
-                    Grid.Column="4"
                     Text="{Binding PreviousButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -73,9 +73,10 @@
                     TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
 
             <!-- Position Display -->
-            <HorizontalStackLayout Grid.Column="5"
+            <HorizontalStackLayout
                                    Spacing="4"
-                                   VerticalOptions="Center">
+                                   VerticalOptions="Center"
+                                   Margin="4,0">
                 <Entry x:Name="positionEntry"
                        Text="{Binding DisplayPosition, Source={x:Reference thisControl}}"
                        WidthRequest="50"
@@ -95,7 +96,6 @@
 
             <!-- Next Button -->
             <Button x:Name="nextButton"
-                    Grid.Column="6"
                     Text="{Binding NextButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -106,7 +106,6 @@
 
             <!-- Last Button -->
             <Button x:Name="lastButton"
-                    Grid.Column="7"
                     Text="{Binding LastButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -116,16 +115,17 @@
                     TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
 
             <!-- Separator -->
-            <BoxView Grid.Column="8"
+            <BoxView
                      WidthRequest="1"
+                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
+                     VerticalOptions="Center"
                      BackgroundColor="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
                      Opacity="0.5"
-                     Margin="4,6"
+                     Margin="4,0"
                      IsVisible="{Binding ShowSaveButtons, Source={x:Reference thisControl}}" />
 
             <!-- Save Button -->
             <Button x:Name="saveButton"
-                    Grid.Column="9"
                     Text="{Binding SaveButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -137,7 +137,6 @@
 
             <!-- Cancel Button -->
             <Button x:Name="cancelButton"
-                    Grid.Column="10"
                     Text="{Binding CancelButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -149,7 +148,6 @@
 
             <!-- Refresh Button -->
             <Button x:Name="refreshButton"
-                    Grid.Column="11"
                     Text="{Binding RefreshButtonContent, Source={x:Reference thisControl}}"
                     WidthRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
                     HeightRequest="{Binding ButtonSize, Source={x:Reference thisControl}}"
@@ -158,6 +156,6 @@
                     Clicked="OnRefreshClicked"
                     BackgroundColor="Transparent"
                     TextColor="{Binding EffectiveForegroundColor, Source={x:Reference thisControl}}" />
-        </Grid>
+        </FlexLayout>
     </Border>
 </base:StyledControlBase>

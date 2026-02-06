@@ -2,7 +2,9 @@
 
 A wizard/stepper control for multi-step workflows with step indicators and navigation.
 
-![Wizard](../images/wizard.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![Wizard - Desktop](../images/wizard.JPG) | ![Wizard - Mobile](../images/mobile/wizard.png) |
 
 ## Features
 
@@ -216,3 +218,4 @@ WizardStep currentStep = wizard.CurrentStep;
 | ShowNavigationIndicator | bool | true | Whether to show a visual indicator for the active item |
 | NavigationIndicatorColor | Color? | null | Color of the navigation indicator (falls back to accent color) |
 | NavigationIndicatorThickness | double | 3.0 | Thickness of the navigation indicator |
+

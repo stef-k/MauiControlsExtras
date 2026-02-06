@@ -2,7 +2,9 @@
 
 The ComboBox control provides a dropdown selection experience similar to WinForms ComboBox, with additional features for mobile and cross-platform scenarios.
 
-![ComboBox](../images/combobox.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![ComboBox - Desktop](../images/combobox.JPG) | ![ComboBox - Mobile](../images/mobile/combo-box.png) |
 
 ## Features
 
@@ -361,3 +363,4 @@ var result = comboBox.Validate();
 5. **Handle null selection** gracefully in your ViewModel
 6. **Hide search for small lists** - Use `IsSearchVisible="False"` for dropdowns with fewer than 10 items to reduce UI clutter
 7. **Consider dynamic search visibility** - Bind `IsSearchVisible` to automatically toggle based on item count
+

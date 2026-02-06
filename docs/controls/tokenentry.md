@@ -2,7 +2,9 @@
 
 A tag/token input control with autocomplete support.
 
-![TokenEntry](../images/token-entry.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![TokenEntry - Desktop](../images/token-entry.JPG) | ![TokenEntry - Mobile](../images/mobile/token-entry.png) |
 
 ## Features
 
@@ -278,3 +280,4 @@ var result = tokenEntry.Validate();
 | CanCut | bool | (read-only) Whether cut is available |
 | CanPaste | bool | (read-only) Whether paste is available |
 | ContextMenuItems | ContextMenuItemCollection | Custom context menu items |
+

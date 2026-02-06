@@ -20,7 +20,11 @@ dotnet build samples/DemoApp/DemoApp.csproj -t:Run -f net10.0-android
 
 > **Note**: The demo uses direct event handlers for simplicity. For production apps, we recommend proper MVVM patterns with commands and view models.
 
-![MAUI Controls Extras Demo](docs/images/main-page.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![MAUI Controls Extras Demo - Desktop](docs/images/main-page.JPG) | ![MAUI Controls Extras Demo - Mobile](docs/images/mobile/main-page.png) |
+
+> Mobile screenshot coverage: 15/16 controls (`MaskedEntry` mobile screenshot pending).
 
 ## Available Controls
 
@@ -142,3 +146,4 @@ Contributions are welcome! Please see the [Contributing Guide](https://stef-k.gi
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+

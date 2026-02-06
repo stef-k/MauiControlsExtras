@@ -2,7 +2,9 @@
 
 A breadcrumb navigation control showing the current location in a hierarchy.
 
-![Breadcrumb](../images/breadcrumb.JPG)
+| Desktop | Mobile |
+|---|---|
+| ![Breadcrumb - Desktop](../images/breadcrumb.JPG) | ![Breadcrumb - Mobile](../images/mobile/breadcrumb.png) |
 
 ## Features
 
@@ -164,3 +166,4 @@ breadcrumb.NavigateTo(2); // Navigate to 3rd item
 | Tag | object | Navigation data |
 | Icon | string | Optional icon |
 | IsEnabled | bool | Whether item is clickable |
+
