@@ -35,9 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**: Reconciled architecture doc drift (default corner radius/border thickness, removed undocumented `InfoColor`/`FocusBackgroundColor` references)
 - **Demo Docs**: Added Android demo run steps in `README.md` and `docs/quickstart.md`
 
-### Known Issues
+### Fixed
 
-- **MaskedEntry (Android mobile typing)**: Input composition is unstable for certain masks (`(000) 000-0000`, IP-style masks), causing cursor jumps and digit reordering in some scenarios. Tracking: #208
+- **MaskedEntry**: Fix mobile typing instability, cursor jumps, and digit reordering on Android (#208)
+  - Extracted `MaskProcessor` helper class with deterministic mobile input processing
+  - Replaced async cursor positioning (`BeginInvokeOnMainThread`) with synchronous set + `Dispatcher.Dispatch` safety backup
+  - Added `_expectedDisplayText` tracking to distinguish programmatic rewrites from user input
+  - Split desktop/mobile input paths for targeted handling of IME behaviors
+
+### Known Issues
 
 - **Clipboard**: Mobile clipboard bridge to fire `IClipboardSupport` commands when users perform Copy/Cut/Paste via native context menus on Android and iOS (#189)
   - Android: Intercepts `ActionMode` callbacks on `AppCompatEditText` to detect clipboard actions

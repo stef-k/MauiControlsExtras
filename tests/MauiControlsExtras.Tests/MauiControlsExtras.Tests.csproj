@@ -106,6 +106,7 @@
 
     <!-- Helpers -->
     <Compile Include="..\..\src\MauiControlsExtras\Helpers\AndroidBackButtonHandler.cs" Link="Linked\Helpers\AndroidBackButtonHandler.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Helpers\MaskProcessor.cs" Link="Linked\Helpers\MaskProcessor.cs" />
   </ItemGroup>
 
 </Project>
