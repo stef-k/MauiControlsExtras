@@ -645,6 +645,40 @@ public class MaskProcessorTests
     }
 
     [Fact]
+    public void Mobile_StaleOlderEcho_MustNotRollbackCurrentRaw()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // Current state is "12", but IME delivers a stale older state "1".
+        var result = p.ProcessMobileInput(
+            oldDisplayText: "(1__) ___-____",
+            newDisplayText: "(1__) ___-____",
+            expectedDisplayText: "(12_) ___-____",
+            currentRawText: "12",
+            showOptionalPrompts: true);
+
+        Assert.Equal("12", result.RawText);
+        Assert.Equal("(12_) ___-____", result.DisplayText);
+    }
+
+    [Fact]
+    public void Mobile_RealBackspace_AllowsRollbackByOne()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // Real backspace: old display matches current state, new display is shorter.
+        var result = p.ProcessMobileInput(
+            oldDisplayText: "(12_) ___-____",
+            newDisplayText: "(1__) ___-____",
+            expectedDisplayText: "(12_) ___-____",
+            currentRawText: "12",
+            showOptionalPrompts: true);
+
+        Assert.Equal("1", result.RawText);
+        Assert.Equal("(1__) ___-____", result.DisplayText);
+    }
+
+    [Fact]
     public void Mobile_Fallback_FullReparse()
     {
         var p = CreateProcessor("(000) 000-0000");

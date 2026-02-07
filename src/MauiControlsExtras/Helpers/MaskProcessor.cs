@@ -361,7 +361,18 @@ public sealed class MaskProcessor
         if (candidateRaw.Length < currentRawText.Length &&
             currentRawText.StartsWith(candidateRaw, StringComparison.Ordinal))
         {
-            return BuildResult(candidateRaw, showOptionalPrompts);
+            // Accept delete only when oldDisplayText represents the current state.
+            // This prevents delayed stale echoes (older masked values) from being
+            // misinterpreted as user backspace and rolling raw text backward.
+            var oldRaw = TrimToMaskCapacity(ExtractRawText(oldDisplayText));
+            var oldMatchesCurrentState =
+                string.Equals(oldRaw, currentRawText, StringComparison.Ordinal) ||
+                string.Equals(oldDisplayText, expectedDisplayText, StringComparison.Ordinal);
+
+            if (oldMatchesCurrentState)
+                return BuildResult(candidateRaw, showOptionalPrompts);
+
+            return BuildResult(currentRawText, expectedDisplayText);
         }
 
         // 7. IME may have sent accumulated raw digits without mask formatting
