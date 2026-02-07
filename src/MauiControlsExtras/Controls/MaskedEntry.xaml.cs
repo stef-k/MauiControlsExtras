@@ -12,12 +12,6 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
 {
     #region Predefined Masks
 
-    /// <summary>US phone number: (000) 000-0000</summary>
-    public const string PhoneUS = "(000) 000-0000";
-
-    /// <summary>International phone: +00 000 000 0000</summary>
-    public const string PhoneIntl = "+00 000 000 0000";
-
     /// <summary>Credit card: 0000 0000 0000 0000</summary>
     public const string CreditCard = "0000 0000 0000 0000";
 
@@ -32,15 +26,6 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
 
     /// <summary>Time with seconds: 00:00:00</summary>
     public const string TimeHHMMSS = "00:00:00";
-
-    /// <summary>Social Security Number: 000-00-0000</summary>
-    public const string SSN = "000-00-0000";
-
-    /// <summary>US ZIP code: 00000-9999</summary>
-    public const string ZipUS = "00000-9999";
-
-    /// <summary>Canadian postal code: A0A 0A0</summary>
-    public const string ZipCA = "A0A 0A0";
 
     #endregion
 

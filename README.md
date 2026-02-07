@@ -36,7 +36,7 @@ dotnet build samples/DemoApp/DemoApp.csproj -t:Run -f net10.0-android
 | **Calendar** | Date picker with single, multiple, and range selection modes |
 | **ComboBox** | Searchable dropdown with complex object and icon support |
 | **DataGridView** | Enterprise data grid with sorting, filtering, grouping, and editing |
-| **MaskedEntry** | Text input with format masks (phone, date, SSN, etc.) |
+| **MaskedEntry** | Text input with format masks (date, credit card, time, etc.) |
 | **MultiSelectComboBox** | Multi-selection dropdown with checkboxes |
 | **NumericUpDown** | Numeric input with increment/decrement buttons |
 | **PropertyGrid** | Property editor similar to Visual Studio Properties panel |

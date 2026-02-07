@@ -30,7 +30,7 @@ A complete demo app showcasing all controls is available in the [`samples/DemoAp
 | [Calendar](controls/calendar.md) | Date picker with single, multiple, and range selection |
 | [ComboBox](controls/combobox.md) | Searchable dropdown with complex object support |
 | [DataGridView](controls/datagridview.md) | Feature-rich data grid with sorting, filtering, editing |
-| [MaskedEntry](controls/maskedentry.md) | Text input with format masks (phone, date, etc.) |
+| [MaskedEntry](controls/maskedentry.md) | Text input with format masks (date, credit card, time, etc.) |
 | [MultiSelectComboBox](controls/multiselectcombobox.md) | Multi-selection dropdown with checkboxes |
 | [NumericUpDown](controls/numericupdown.md) | Numeric input with increment/decrement buttons |
 | [PropertyGrid](controls/propertygrid.md) | Property editor similar to Visual Studio |

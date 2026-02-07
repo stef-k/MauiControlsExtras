@@ -216,7 +216,7 @@ public static class SampleData
         new("ComboBox", "Dropdown with search, icons, and custom templates", "Input", "ComboBoxDemo", Color.FromArgb("#2196F3")),
         new("MultiSelectComboBox", "Multi-select dropdown with chips display", "Input", "MultiSelectDemo", Color.FromArgb("#2196F3")),
         new("NumericUpDown", "Numeric input with increment/decrement buttons", "Input", "NumericUpDownDemo", Color.FromArgb("#2196F3")),
-        new("MaskedEntry", "Text input with masks for phone, date, SSN, etc.", "Input", "MaskedEntryDemo", Color.FromArgb("#2196F3")),
+        new("MaskedEntry", "Text input with masks for date and credit card formats", "Input", "MaskedEntryDemo", Color.FromArgb("#2196F3")),
         new("TokenEntry", "Tag/token input with auto-complete", "Input", "TokenEntryDemo", Color.FromArgb("#2196F3")),
         new("RichTextEditor", "Full-featured rich text editor with toolbar", "Input", "RichTextEditorDemo", Color.FromArgb("#2196F3")),
 
