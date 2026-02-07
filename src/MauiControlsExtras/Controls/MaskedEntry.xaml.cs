@@ -524,13 +524,14 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     {
         if (_isUpdatingText) return;
 
-        // Detect stale echo events: if the new text matches the current or previous
-        // expected display text, it's a deferred IME/platform echo — not real user input.
+        // Ignore only strict no-op echoes. Do not ignore events solely because they
+        // match the previous expected display; some mobile IMEs report real keystrokes
+        // with delayed/stale values and a broad filter can drop valid input.
+        var oldText = e.OldTextValue ?? string.Empty;
         var newText = e.NewTextValue ?? string.Empty;
-        if ((!string.IsNullOrEmpty(_expectedDisplayText) &&
-             string.Equals(newText, _expectedDisplayText, StringComparison.Ordinal)) ||
-            (!string.IsNullOrEmpty(_previousExpectedDisplayText) &&
-             string.Equals(newText, _previousExpectedDisplayText, StringComparison.Ordinal)))
+        if (!string.IsNullOrEmpty(_expectedDisplayText) &&
+            string.Equals(oldText, _expectedDisplayText, StringComparison.Ordinal) &&
+            string.Equals(newText, _expectedDisplayText, StringComparison.Ordinal))
         {
             return;
         }
