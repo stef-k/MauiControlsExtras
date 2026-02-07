@@ -333,10 +333,10 @@ public sealed class MaskProcessor
 
         var maxRaw = GetMaxRawInputLength();
 
-        // 3. Single-char IME replacement: Android often replaces full text with just the typed char
-        if (newDisplayText.Length == 1 &&
-            !string.IsNullOrEmpty(oldDisplayText) && oldDisplayText.Length > 1 &&
-            string.Equals(oldDisplayText, expectedDisplayText, StringComparison.Ordinal))
+        // 3. Single-char input: Android IME often replaces full text with just the typed char,
+        //    or reports unexpected oldDisplayText values. Any single-character newDisplayText
+        //    is treated as a new keystroke to append to the current raw text.
+        if (newDisplayText.Length == 1)
         {
             if (currentRawText.Length < maxRaw &&
                 TryNormalizeInputForRawIndex(newDisplayText[0], currentRawText.Length, out var normalized))

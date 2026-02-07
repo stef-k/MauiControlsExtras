@@ -19,9 +19,6 @@ public partial class MaskedEntryDemoViewModel : BaseViewModel
     [ObservableProperty]
     private string _zipCodeValue = string.Empty;
 
-    [ObservableProperty]
-    private string _ipAddressValue = string.Empty;
-
     public MaskedEntryDemoViewModel()
     {
         Title = "MaskedEntry Demo";
@@ -32,5 +29,5 @@ public partial class MaskedEntryDemoViewModel : BaseViewModel
     partial void OnSsnValueChanged(string value) => UpdateStatus($"SSN: {value}");
     partial void OnCreditCardValueChanged(string value) => UpdateStatus($"Card: {value}");
     partial void OnZipCodeValueChanged(string value) => UpdateStatus($"ZIP: {value}");
-    partial void OnIpAddressValueChanged(string value) => UpdateStatus($"IP: {value}");
+
 }

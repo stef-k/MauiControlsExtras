@@ -575,6 +575,41 @@ public class MaskProcessorTests
     }
 
     [Fact]
+    public void Mobile_SingleChar_WithUnexpectedOldText_StillAppends()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // Android reports old as the raw "5" instead of our formatted display —
+        // step 3 must still recognize this as a new keystroke and append
+        var result = p.ProcessMobileInput(
+            oldDisplayText: "5",
+            newDisplayText: "5",
+            expectedDisplayText: "(5__) ___-____",
+            currentRawText: "5",
+            showOptionalPrompts: true);
+
+        Assert.Equal("55", result.RawText);
+        Assert.Equal("(55_) ___-____", result.DisplayText);
+    }
+
+    [Fact]
+    public void Mobile_SingleChar_FirstDigitFromEmpty_Appends()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // First character typed — oldDisplayText is empty
+        var result = p.ProcessMobileInput(
+            oldDisplayText: "",
+            newDisplayText: "5",
+            expectedDisplayText: "",
+            currentRawText: "",
+            showOptionalPrompts: true);
+
+        Assert.Equal("5", result.RawText);
+        Assert.Equal("(5__) ___-____", result.DisplayText);
+    }
+
+    [Fact]
     public void Mobile_TextGotLonger_AppendsTypedChar()
     {
         var p = CreateProcessor("(000) 000-0000");

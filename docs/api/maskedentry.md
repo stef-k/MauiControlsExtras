@@ -419,7 +419,6 @@ public static class MaskedEntry
     public const string Time12 = "00:00 LL";
     public const string Time24 = "00:00";
     public const string Currency = "$0,000.00";
-    public const string IPv4 = "099.099.099.099";
 }
 ```
 
@@ -474,14 +473,6 @@ public static class MaskedEntry
                     IsRequired="True"
                     RequiredErrorMessage="SSN is required"
                     ValidateCommand="{Binding OnValidatedCommand}" />
-```
-
-### IP Address
-
-```xml
-<extras:MaskedEntry Mask="099.099.099.099"
-                    Value="{Binding IPAddress}"
-                    PromptChar=" " />
 ```
 
 ### Currency

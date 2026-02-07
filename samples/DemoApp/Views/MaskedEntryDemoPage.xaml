@@ -94,23 +94,6 @@
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- IP Address -->
-            <Frame Style="{StaticResource DemoCardStyle}">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="IP Address (zero-padded)" Style="{StaticResource SectionTitleStyle}" />
-                    <Label Text="IPv4 format: 099.099.099.099 (e.g. 192.168.001.001)" Style="{StaticResource SectionDescriptionStyle}" />
-
-                    <extras:MaskedEntry Mask="099.099.099.099"
-                                        IncludeLiterals="True"
-                                        Text="{Binding IpAddressValue}"
-                                        Placeholder="192.168.1.1"
-                                        WidthRequest="220"
-                                        HorizontalOptions="Start" />
-
-                    <Label Text="{Binding IpAddressValue, StringFormat='IP: {0}'}" />
-                </VerticalStackLayout>
-            </Frame>
-
             <!-- Status -->
             <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
         </VerticalStackLayout>
