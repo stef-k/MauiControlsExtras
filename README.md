@@ -1,6 +1,6 @@
 # MAUI Controls Extras
 
-A comprehensive collection of 16 enterprise-grade UI controls for .NET MAUI applications that fill gaps in the standard control library.
+A comprehensive collection of 15 enterprise-grade UI controls for .NET MAUI applications that fill gaps in the standard control library.
 
 [![NuGet](https://img.shields.io/nuget/v/StefK.MauiControlsExtras.svg)](https://www.nuget.org/packages/StefK.MauiControlsExtras/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -24,7 +24,7 @@ dotnet build samples/DemoApp/DemoApp.csproj -t:Run -f net10.0-android
 |---|---|
 | ![MAUI Controls Extras Demo - Desktop](docs/images/main-page.JPG) | ![MAUI Controls Extras Demo - Mobile](docs/images/mobile/main-page.png) |
 
-> Mobile screenshot coverage: 15/16 controls (`MaskedEntry` mobile screenshot pending).
+> Mobile screenshot coverage: 15/15 controls.
 
 ## Available Controls
 
@@ -36,7 +36,6 @@ dotnet build samples/DemoApp/DemoApp.csproj -t:Run -f net10.0-android
 | **Calendar** | Date picker with single, multiple, and range selection modes |
 | **ComboBox** | Searchable dropdown with complex object and icon support |
 | **DataGridView** | Enterprise data grid with sorting, filtering, grouping, and editing |
-| **MaskedEntry** | Text input with format masks (phone, date, SSN, etc.) |
 | **MultiSelectComboBox** | Multi-selection dropdown with checkboxes |
 | **NumericUpDown** | Numeric input with increment/decrement buttons |
 | **PropertyGrid** | Property editor similar to Visual Studio Properties panel |

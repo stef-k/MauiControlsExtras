@@ -278,7 +278,6 @@ Controls implementing `IValidatable` typically also provide these properties (no
 ### Controls Implementing IValidatable
 
 - ComboBox
-- MaskedEntry
 - MultiSelectComboBox
 - NumericUpDown
 - RangeSlider

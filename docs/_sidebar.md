@@ -10,7 +10,6 @@
   - [Calendar](controls/calendar.md)
   - [ComboBox](controls/combobox.md)
   - [DataGridView](controls/datagridview.md)
-  - [MaskedEntry](controls/maskedentry.md)
   - [MultiSelectComboBox](controls/multiselectcombobox.md)
   - [NumericUpDown](controls/numericupdown.md)
   - [PropertyGrid](controls/propertygrid.md)

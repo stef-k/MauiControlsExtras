@@ -16,17 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `PropertyGrid`: `PropertyChangingCommand`
   - `DataGridView`: `ColumnResizingCommand`, `ExportingCommand`, `ContextMenuItemsOpeningCommand`
 - **Documentation**: Added desktop+mobile screenshot pairs to all control docs, `README.md`, and docs home
-  - Mobile image coverage is complete for 15/16 controls
-  - `MaskedEntry` is marked as pending until its mobile screenshot is added
+  - Mobile image coverage is complete for 15/15 controls
 
 ### Fixed
 
 - **Architecture Conformance**: `StyledControlBase` now auto-attaches `KeyboardBehavior` for controls implementing `IKeyboardNavigable`
   - Ensures keyboard input is wired consistently across interactive controls inheriting styled bases
   - `DataGridView` now configures the shared behavior (`HandleTabKey = true`) instead of adding a duplicate behavior
-- **MaskedEntry (Mobile)**: Fixed Android/iOS input path where typing could collapse to a single character
-  - Added deterministic merge logic for replacement-style mobile text-change events
-  - Cursor positioning now runs after text assignment to prevent slot-0 overwrite on subsequent key presses
 - **Theming Lifecycle**: `StyledControlBase` now safely manages theme event subscription across handler detach/reattach
 - **Theme Notifications**: `AnimatedControlBase` now raises `PropertyChanged` for effective animation properties on theme changes
 - **Base Class Alignment**: `AccordionItem`, `WizardStep`, `ComboBoxPopupContent`, and `DataGridFilterPopup` now inherit from `StyledControlBase`
@@ -37,12 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Issues
 
-- **MaskedEntry (Android mobile typing)**: Input composition is unstable for certain masks (`(000) 000-0000`, IP-style masks), causing cursor jumps and digit reordering in some scenarios. Tracking: #208
-
 - **Clipboard**: Mobile clipboard bridge to fire `IClipboardSupport` commands when users perform Copy/Cut/Paste via native context menus on Android and iOS (#189)
   - Android: Intercepts `ActionMode` callbacks on `AppCompatEditText` to detect clipboard actions
   - iOS/Mac Catalyst: Observes `UIPasteboard.ChangedNotification` and text changes to detect operations
-  - Affected controls: ComboBox, MultiSelectComboBox, MaskedEntry, NumericUpDown
+  - Affected controls: ComboBox, MultiSelectComboBox, NumericUpDown
 
 ### Added
 
@@ -58,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGrid**: `IContextMenuSupport` interface implementation on DataGridView (#162)
   - Explicit `IContextMenuSupport.ContextMenuOpening` event (avoids naming conflict with legacy event)
   - `ShowContextMenu(Point?)` overload resolves focused cell context
-- **Clipboard**: `IClipboardSupport` implemented on ComboBox, MultiSelectComboBox, MaskedEntry, and NumericUpDown (#163)
+- **Clipboard**: `IClipboardSupport` implemented on ComboBox, MultiSelectComboBox, and NumericUpDown (#163)
   - `CanCopy`, `CanCut`, `CanPaste` state properties reflect current control state
   - `Copy()`, `Cut()`, `Paste()` programmatic methods delegate to underlying text input
   - `CopyCommand`, `CutCommand`, `PasteCommand` bindable properties for MVVM
@@ -188,7 +182,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TreeView**: Hierarchical tree view control (#6)
 - **RangeSlider**: Dual-thumb range slider (#5)
 - **TokenEntry**: Tag/token input control (#4)
-- **MaskedEntry**: Input mask control (#3)
 - **MultiSelectComboBox**: Multi-select dropdown (#2)
 - **NumericUpDown**: Numeric spinner control (#1)
 

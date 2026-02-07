@@ -18,7 +18,7 @@ A complete demo app showcasing all controls is available in the [`samples/DemoAp
 |---|---|
 | ![MAUI Controls Extras Demo - Desktop](images/main-page.JPG) | ![MAUI Controls Extras Demo - Mobile](images/mobile/main-page.png) |
 
-> Mobile screenshot coverage: 15/16 controls (`MaskedEntry` mobile screenshot pending).
+> Mobile screenshot coverage: 15/15 controls.
 
 ## Available Controls
 
@@ -30,7 +30,6 @@ A complete demo app showcasing all controls is available in the [`samples/DemoAp
 | [Calendar](controls/calendar.md) | Date picker with single, multiple, and range selection |
 | [ComboBox](controls/combobox.md) | Searchable dropdown with complex object support |
 | [DataGridView](controls/datagridview.md) | Feature-rich data grid with sorting, filtering, editing |
-| [MaskedEntry](controls/maskedentry.md) | Text input with format masks (phone, date, etc.) |
 | [MultiSelectComboBox](controls/multiselectcombobox.md) | Multi-selection dropdown with checkboxes |
 | [NumericUpDown](controls/numericupdown.md) | Numeric input with increment/decrement buttons |
 | [PropertyGrid](controls/propertygrid.md) | Property editor similar to Visual Studio |
