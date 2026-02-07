@@ -524,18 +524,6 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     {
         if (_isUpdatingText) return;
 
-        // Ignore only strict no-op echoes. Do not ignore events solely because they
-        // match the previous expected display; some mobile IMEs report real keystrokes
-        // with delayed/stale values and a broad filter can drop valid input.
-        var oldText = e.OldTextValue ?? string.Empty;
-        var newText = e.NewTextValue ?? string.Empty;
-        if (!string.IsNullOrEmpty(_expectedDisplayText) &&
-            string.Equals(oldText, _expectedDisplayText, StringComparison.Ordinal) &&
-            string.Equals(newText, _expectedDisplayText, StringComparison.Ordinal))
-        {
-            return;
-        }
-
         _isUpdatingText = true;
         try
         {
@@ -754,6 +742,11 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     private Keyboard GetKeyboardType()
     {
         if (_processor.Tokens.Count == 0)
+            return Keyboard.Default;
+
+        // On mobile, numeric-only input types can conflict with masked rewrites
+        // when the mask includes literals (e.g., -, (), spaces).
+        if (IsMobilePlatform() && _processor.Tokens.Any(t => t.Type == MaskProcessor.MaskTokenType.Literal))
             return Keyboard.Default;
 
         var hasNonDigit = _processor.Tokens.Any(t =>
