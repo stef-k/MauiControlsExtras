@@ -27,7 +27,6 @@ The app includes dedicated pages for:
 - Calendar
 - ComboBox
 - DataGridView
-- MaskedEntry
 - MultiSelectComboBox
 - NumericUpDown
 - PropertyGrid

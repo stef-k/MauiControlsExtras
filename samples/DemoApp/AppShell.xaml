@@ -73,7 +73,6 @@
         <ShellContent Title="ComboBox" ContentTemplate="{DataTemplate views:ComboBoxDemoPage}" Route="ComboBoxDemo" />
         <ShellContent Title="MultiSelectComboBox" ContentTemplate="{DataTemplate views:MultiSelectDemoPage}" Route="MultiSelectDemo" />
         <ShellContent Title="NumericUpDown" ContentTemplate="{DataTemplate views:NumericUpDownDemoPage}" Route="NumericUpDownDemo" />
-        <ShellContent Title="MaskedEntry" ContentTemplate="{DataTemplate views:MaskedEntryDemoPage}" Route="MaskedEntryDemo" />
         <ShellContent Title="TokenEntry" ContentTemplate="{DataTemplate views:TokenEntryDemoPage}" Route="TokenEntryDemo" />
         <ShellContent Title="RichTextEditor" ContentTemplate="{DataTemplate views:RichTextEditorDemoPage}" Route="RichTextEditorDemo" />
     </FlyoutItem>

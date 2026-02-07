@@ -108,7 +108,6 @@ public abstract class TextStyledControlBase : StyledControlBase
 
 ### Controls Using This Base
 
-- MaskedEntry
 - MultiSelectComboBox
 - NumericUpDown
 - RichTextEditor

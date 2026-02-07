@@ -25,7 +25,6 @@ public static class MauiProgram
         builder.Services.AddTransient<CalendarDemoViewModel>();
         builder.Services.AddTransient<ComboBoxDemoViewModel>();
         builder.Services.AddTransient<DataGridDemoViewModel>();
-        builder.Services.AddTransient<MaskedEntryDemoViewModel>();
         builder.Services.AddTransient<MultiSelectDemoViewModel>();
         builder.Services.AddTransient<NumericUpDownDemoViewModel>();
         builder.Services.AddTransient<PropertyGridDemoViewModel>();
@@ -44,7 +43,6 @@ public static class MauiProgram
         builder.Services.AddTransient<CalendarDemoPage>();
         builder.Services.AddTransient<ComboBoxDemoPage>();
         builder.Services.AddTransient<DataGridDemoPage>();
-        builder.Services.AddTransient<MaskedEntryDemoPage>();
         builder.Services.AddTransient<MultiSelectDemoPage>();
         builder.Services.AddTransient<NumericUpDownDemoPage>();
         builder.Services.AddTransient<PropertyGridDemoPage>();

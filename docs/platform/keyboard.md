@@ -120,15 +120,6 @@ These shortcuts work across all controls:
 | Escape | Clear input / deselect token |
 | Ctrl+A | Select all tokens |
 
-### MaskedEntry
-
-| Key | Action |
-|-----|--------|
-| ← / → | Move cursor within mask |
-| Home / End | Move to start/end of input |
-| Delete / Backspace | Clear character at position |
-| Tab | Move to next mask section |
-
 ## Implementing Keyboard Support
 
 Controls implement the `IKeyboardNavigable` interface:

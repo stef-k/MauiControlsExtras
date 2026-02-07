@@ -50,7 +50,7 @@ Controls inherit from the most specific base class that provides the properties 
 ContentView
     └── StyledControlBase              (colors, borders, shadows)
             ├── TextStyledControlBase      (+ typography)
-            │       └── ComboBox, NumericUpDown, MaskedEntry, etc.
+            │       └── ComboBox, NumericUpDown, TokenEntry, etc.
             ├── ListStyledControlBase      (+ collection styling)
             │       └── TreeView, DataGridView, etc.
             ├── HeaderedControlBase        (+ header styling)

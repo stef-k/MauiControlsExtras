@@ -90,14 +90,6 @@ All MAUI Controls Extras controls support comprehensive mouse interaction for de
 | Double-click token | Edit token |
 | Click input area | Focus for typing |
 
-### MaskedEntry
-
-| Action | Effect |
-|--------|--------|
-| Click position | Set cursor position |
-| Double-click | Select current section |
-| Triple-click | Select all |
-
 ## Context Menus
 
 Right-click (or Ctrl+Click on macOS) shows context-sensitive menus:
