@@ -51,6 +51,10 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     private MaskProcessor _processor = new();
     private string _expectedDisplayText = string.Empty;
     private string _previousExpectedDisplayText = string.Empty;
+    private char? _pendingSingleCharEchoChar;
+    private string _pendingSingleCharEchoRaw = string.Empty;
+    private DateTime _pendingSingleCharEchoAtUtc = DateTime.MinValue;
+    private static readonly TimeSpan SingleCharEchoWindow = TimeSpan.FromMilliseconds(40);
     private bool _isKeyboardNavigationEnabled = true;
     private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
@@ -523,6 +527,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     private void OnEntryTextChanged(object? sender, TextChangedEventArgs e)
     {
         if (_isUpdatingText) return;
+        if (IsMobilePlatform() && ShouldIgnorePendingSingleCharEcho(e)) return;
 
         _isUpdatingText = true;
         try
@@ -571,6 +576,8 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
             previousRawText,
             showOptionalPrompts);
 
+        TrackPendingSingleCharEcho(e, previousRawText, result.RawText);
+
         // Re-insert literals into Text if IncludeLiterals is true
         Text = IncludeLiterals ? _processor.InsertLiteralsIntoRaw(result.RawText) : result.RawText;
 
@@ -612,6 +619,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
             {
                 entry.Text = string.Empty;
                 _expectedDisplayText = string.Empty;
+                ClearPendingSingleCharEcho();
             }
             finally
             {
@@ -726,6 +734,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
             entry.Text = displayText;
             _previousExpectedDisplayText = _expectedDisplayText;
             _expectedDisplayText = displayText;
+            ClearPendingSingleCharEcho();
         }
         finally
         {
@@ -737,6 +746,61 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     {
         var platform = DeviceInfo.Current.Platform;
         return platform == DevicePlatform.Android || platform == DevicePlatform.iOS;
+    }
+
+    private bool ShouldIgnorePendingSingleCharEcho(TextChangedEventArgs e)
+    {
+        if (!_pendingSingleCharEchoChar.HasValue)
+            return false;
+
+        var newText = e.NewTextValue ?? string.Empty;
+        if (newText.Length != 1)
+        {
+            ClearPendingSingleCharEcho();
+            return false;
+        }
+
+        if (DateTime.UtcNow - _pendingSingleCharEchoAtUtc > SingleCharEchoWindow)
+        {
+            ClearPendingSingleCharEcho();
+            return false;
+        }
+
+        var oldText = e.OldTextValue ?? string.Empty;
+        if (!string.Equals(oldText, _expectedDisplayText, StringComparison.Ordinal))
+            return false;
+
+        if (newText[0] != _pendingSingleCharEchoChar.Value)
+            return false;
+
+        if (!string.Equals(GetInputOnlyRawText(), _pendingSingleCharEchoRaw, StringComparison.Ordinal))
+            return false;
+
+        ClearPendingSingleCharEcho();
+        return true;
+    }
+
+    private void TrackPendingSingleCharEcho(TextChangedEventArgs e, string previousRawText, string currentRawText)
+    {
+        var newText = e.NewTextValue ?? string.Empty;
+        if (newText.Length == 1 &&
+            currentRawText.Length == previousRawText.Length + 1 &&
+            currentRawText[^1] == newText[0])
+        {
+            _pendingSingleCharEchoChar = newText[0];
+            _pendingSingleCharEchoRaw = currentRawText;
+            _pendingSingleCharEchoAtUtc = DateTime.UtcNow;
+            return;
+        }
+
+        ClearPendingSingleCharEcho();
+    }
+
+    private void ClearPendingSingleCharEcho()
+    {
+        _pendingSingleCharEchoChar = null;
+        _pendingSingleCharEchoRaw = string.Empty;
+        _pendingSingleCharEchoAtUtc = DateTime.MinValue;
     }
 
     private Keyboard GetKeyboardType()
