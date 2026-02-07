@@ -248,7 +248,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     /// <summary>
     /// Gets whether the mask is completely filled.
     /// </summary>
-    public bool IsMaskComplete => _processor.CheckMaskComplete(Text);
+    public bool IsMaskComplete => _processor.CheckMaskComplete(GetInputOnlyRawText());
 
     /// <summary>
     /// Gets the display text for the entry.
@@ -511,7 +511,6 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     {
         if (bindable is MaskedEntry control)
         {
-            control._processor.IncludeLiterals = control.IncludeLiterals;
             control.OnPropertyChanged(nameof(Text));
         }
     }
@@ -542,8 +541,10 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
 
     private void HandleDesktopInput(TextChangedEventArgs e)
     {
-        var newRawText = _processor.ExtractRawText(e.NewTextValue);
-        Text = _processor.TrimToMaskCapacity(newRawText);
+        var newRawText = _processor.TrimToMaskCapacity(_processor.ExtractRawText(e.NewTextValue));
+
+        // Text stores input-only raw text, or with literals if IncludeLiterals is true
+        Text = IncludeLiterals ? _processor.InsertLiteralsIntoRaw(newRawText) : newRawText;
 
         if (entry != null)
         {
@@ -558,7 +559,8 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
 
     private void HandleMobileInput(TextChangedEventArgs e)
     {
-        var previousRawText = Text ?? string.Empty;
+        // MaskProcessor works with input-only raw text — strip literals at boundary
+        var previousRawText = GetInputOnlyRawText();
         var showOptionalPrompts = entry?.IsFocused == true;
 
         var result = _processor.ProcessMobileInput(
@@ -568,7 +570,8 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
             previousRawText,
             showOptionalPrompts);
 
-        Text = result.RawText;
+        // Re-insert literals into Text if IncludeLiterals is true
+        Text = IncludeLiterals ? _processor.InsertLiteralsIntoRaw(result.RawText) : result.RawText;
 
         if (entry != null)
         {
@@ -683,16 +686,29 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     private void SyncProcessor()
     {
         _processor.PromptChar = PromptChar;
-        _processor.IncludeLiterals = IncludeLiterals;
+    }
+
+    /// <summary>
+    /// Returns the input-only raw text (no literal characters).
+    /// When IncludeLiterals is true, Text contains literals that must be stripped
+    /// before passing to MaskProcessor (which always works with input-only text).
+    /// </summary>
+    private string GetInputOnlyRawText()
+    {
+        var text = Text ?? string.Empty;
+        if (IncludeLiterals && !string.IsNullOrEmpty(text))
+            return _processor.RemoveLiteralsFromRaw(text);
+        return text;
     }
 
     private string GetMaskedText()
     {
-        if (_processor.Tokens.Count == 0 || string.IsNullOrEmpty(Text))
+        var inputOnly = GetInputOnlyRawText();
+        if (_processor.Tokens.Count == 0 || string.IsNullOrEmpty(inputOnly))
             return Text ?? string.Empty;
 
         var showOptionalPrompts = entry?.IsFocused == true;
-        return _processor.GetMaskedText(Text, showOptionalPrompts);
+        return _processor.GetMaskedText(inputOnly, showOptionalPrompts);
     }
 
     private string GetDisplayText()

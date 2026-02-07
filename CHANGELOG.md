@@ -34,14 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PropertyGrid**: Added cancelable pre-change pipeline (`PropertyItem.ValueChanging`) used by `PropertyGrid.PropertyValueChanging`/`PropertyChangingCommand`
 - **Documentation**: Reconciled architecture doc drift (default corner radius/border thickness, removed undocumented `InfoColor`/`FocusBackgroundColor` references)
 - **Demo Docs**: Added Android demo run steps in `README.md` and `docs/quickstart.md`
-
-### Fixed
-
 - **MaskedEntry**: Fix mobile typing instability, cursor jumps, and digit reordering on Android (#208)
   - Extracted `MaskProcessor` helper class with deterministic mobile input processing
+  - `MaskProcessor` always works with input-only raw text; `InsertLiteralsIntoRaw`/`RemoveLiteralsFromRaw` handle `IncludeLiterals` at boundary
   - Replaced async cursor positioning (`BeginInvokeOnMainThread`) with synchronous set + `Dispatcher.Dispatch` safety backup
   - Added `_expectedDisplayText` tracking to distinguish programmatic rewrites from user input
-  - Split desktop/mobile input paths for targeted handling of IME behaviors
+  - Split desktop/mobile input paths with parse-then-compare strategy for robust IME handling
 
 ### Known Issues
 

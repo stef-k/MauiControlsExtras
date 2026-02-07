@@ -5,9 +5,9 @@ namespace MauiControlsExtras.Tests.Helpers;
 
 public class MaskProcessorTests
 {
-    private MaskProcessor CreateProcessor(string mask, char promptChar = '_', bool includeLiterals = false)
+    private MaskProcessor CreateProcessor(string mask, char promptChar = '_')
     {
-        var p = new MaskProcessor(promptChar, includeLiterals);
+        var p = new MaskProcessor(promptChar);
         p.ParseMask(mask);
         return p;
     }
@@ -178,17 +178,6 @@ public class MaskProcessorTests
         var p = CreateProcessor("");
 
         Assert.Equal("hello", p.ExtractRawText("hello"));
-    }
-
-    [Fact]
-    public void ExtractRawText_WithIncludeLiterals()
-    {
-        var p = CreateProcessor("(000) 000-0000", includeLiterals: true);
-
-        var raw = p.ExtractRawText("(555) 123-4567");
-
-        Assert.Contains("(", raw);
-        Assert.Contains("-", raw);
     }
 
     #endregion
@@ -797,6 +786,154 @@ public class MaskProcessorTests
         var masked = p.GetMaskedText("4111111111111111", showOptionalPrompts: false);
         Assert.Equal("4111 1111 1111 1111", masked);
         Assert.True(p.CheckMaskComplete("4111111111111111"));
+    }
+
+    #endregion
+
+    #region InsertLiteralsIntoRaw
+
+    [Fact]
+    public void InsertLiterals_PhoneMask_InsertsParensDashSpace()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        var result = p.InsertLiteralsIntoRaw("5551234567");
+
+        Assert.Equal("(555) 123-4567", result);
+    }
+
+    [Fact]
+    public void InsertLiterals_PartialInput_InsertsUpToInput()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // Trailing literals after last input char are not included
+        var result = p.InsertLiteralsIntoRaw("555");
+
+        Assert.Equal("(555", result);
+    }
+
+    [Fact]
+    public void InsertLiterals_Empty_ReturnsEmpty()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        Assert.Equal(string.Empty, p.InsertLiteralsIntoRaw(""));
+        Assert.Equal(string.Empty, p.InsertLiteralsIntoRaw(null!));
+    }
+
+    [Fact]
+    public void InsertLiterals_IPMask_InsertsDots()
+    {
+        var p = CreateProcessor("099.099.099.099");
+
+        var result = p.InsertLiteralsIntoRaw("192168001001");
+
+        Assert.Equal("192.168.001.001", result);
+    }
+
+    [Fact]
+    public void InsertLiterals_SSN_InsertsDashes()
+    {
+        var p = CreateProcessor("000-00-0000");
+
+        var result = p.InsertLiteralsIntoRaw("123456789");
+
+        Assert.Equal("123-45-6789", result);
+    }
+
+    #endregion
+
+    #region RemoveLiteralsFromRaw
+
+    [Fact]
+    public void RemoveLiterals_PhoneMask_StripsParensDashSpace()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        var result = p.RemoveLiteralsFromRaw("(555) 123-4567");
+
+        Assert.Equal("5551234567", result);
+    }
+
+    [Fact]
+    public void RemoveLiterals_PartialInput()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        var result = p.RemoveLiteralsFromRaw("(555)");
+
+        Assert.Equal("555", result);
+    }
+
+    [Fact]
+    public void RemoveLiterals_Empty_ReturnsEmpty()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        Assert.Equal(string.Empty, p.RemoveLiteralsFromRaw(""));
+        Assert.Equal(string.Empty, p.RemoveLiteralsFromRaw(null!));
+    }
+
+    [Fact]
+    public void RemoveLiterals_IPMask_StripsDots()
+    {
+        var p = CreateProcessor("099.099.099.099");
+
+        var result = p.RemoveLiteralsFromRaw("192.168.001.001");
+
+        Assert.Equal("192168001001", result);
+    }
+
+    [Fact]
+    public void RemoveLiterals_Roundtrip_WithInsert()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+        var inputOnly = "5551234567";
+
+        var withLiterals = p.InsertLiteralsIntoRaw(inputOnly);
+        var stripped = p.RemoveLiteralsFromRaw(withLiterals);
+
+        Assert.Equal(inputOnly, stripped);
+    }
+
+    #endregion
+
+    #region Mobile: Accumulated Digits IME Pattern
+
+    [Fact]
+    public void Mobile_AccumulatedDigits_PhoneMask()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // Android IME sends "55" (raw digits) instead of formatted "(55_) ___-____"
+        var result = p.ProcessMobileInput(
+            oldDisplayText: "(5__) ___-____",
+            newDisplayText: "55",
+            expectedDisplayText: "(5__) ___-____",
+            currentRawText: "5",
+            showOptionalPrompts: true);
+
+        // Should append to get "55", not delete
+        Assert.Equal("55", result.RawText);
+        Assert.Equal("(55_) ___-____", result.DisplayText);
+    }
+
+    [Fact]
+    public void Mobile_AccumulatedDigits_ThreeDigits()
+    {
+        var p = CreateProcessor("(000) 000-0000");
+
+        // IME sends "555" as accumulated digits
+        var result = p.ProcessMobileInput(
+            oldDisplayText: "(55_) ___-____",
+            newDisplayText: "555",
+            expectedDisplayText: "(55_) ___-____",
+            currentRawText: "55",
+            showOptionalPrompts: true);
+
+        Assert.Equal("555", result.RawText);
+        Assert.Equal("(555) ___-____", result.DisplayText);
     }
 
     #endregion
