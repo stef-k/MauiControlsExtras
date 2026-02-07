@@ -50,6 +50,7 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     private readonly List<string> _validationErrors = new();
     private MaskProcessor _processor = new();
     private string _expectedDisplayText = string.Empty;
+    private string _previousExpectedDisplayText = string.Empty;
     private bool _isKeyboardNavigationEnabled = true;
     private static readonly List<Base.KeyboardShortcut> _keyboardShortcuts = new();
 
@@ -523,6 +524,17 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
     {
         if (_isUpdatingText) return;
 
+        // Detect stale echo events: if the new text matches the current or previous
+        // expected display text, it's a deferred IME/platform echo — not real user input.
+        var newText = e.NewTextValue ?? string.Empty;
+        if ((!string.IsNullOrEmpty(_expectedDisplayText) &&
+             string.Equals(newText, _expectedDisplayText, StringComparison.Ordinal)) ||
+            (!string.IsNullOrEmpty(_previousExpectedDisplayText) &&
+             string.Equals(newText, _previousExpectedDisplayText, StringComparison.Ordinal)))
+        {
+            return;
+        }
+
         _isUpdatingText = true;
         try
         {
@@ -581,28 +593,14 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
                 entry.Text = maskedText;
             }
 
+            _previousExpectedDisplayText = _expectedDisplayText;
             _expectedDisplayText = maskedText;
 
-            // Set cursor synchronously — eliminates the race window that caused
-            // the original bug where BeginInvokeOnMainThread let the next keystroke
-            // arrive before cursor repositioning
+            // Set cursor synchronously — no async Dispatcher.Dispatch backup,
+            // which caused stale cursor callbacks to race with subsequent keystrokes
             var desiredCursor = Math.Clamp(result.CursorPosition, 0, entry.Text?.Length ?? 0);
             entry.CursorPosition = desiredCursor;
             entry.SelectionLength = 0;
-
-            // Safety backup via Dispatcher.Dispatch for platforms where
-            // the synchronous set doesn't take effect immediately
-            var capturedCursor = desiredCursor;
-            Dispatcher.Dispatch(() =>
-            {
-                if (entry == null) return;
-                var maxPos = entry.Text?.Length ?? 0;
-                if (entry.CursorPosition != capturedCursor && capturedCursor <= maxPos)
-                {
-                    entry.CursorPosition = capturedCursor;
-                    entry.SelectionLength = 0;
-                }
-            });
         }
     }
 
@@ -621,9 +619,15 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         if (string.IsNullOrEmpty(Text))
         {
             _isUpdatingText = true;
-            entry.Text = string.Empty;
-            _expectedDisplayText = string.Empty;
-            _isUpdatingText = false;
+            try
+            {
+                entry.Text = string.Empty;
+                _expectedDisplayText = string.Empty;
+            }
+            finally
+            {
+                _isUpdatingText = false;
+            }
             return;
         }
 
@@ -727,10 +731,17 @@ public partial class MaskedEntry : TextStyledControlBase, IValidatable, Base.IKe
         if (entry == null) return;
 
         _isUpdatingText = true;
-        var displayText = DisplayText;
-        entry.Text = displayText;
-        _expectedDisplayText = displayText;
-        _isUpdatingText = false;
+        try
+        {
+            var displayText = DisplayText;
+            entry.Text = displayText;
+            _previousExpectedDisplayText = _expectedDisplayText;
+            _expectedDisplayText = displayText;
+        }
+        finally
+        {
+            _isUpdatingText = false;
+        }
     }
 
     private static bool IsMobilePlatform()

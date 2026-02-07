@@ -17,7 +17,6 @@
         <Grid ColumnDefinitions="*,Auto">
             <Entry x:Name="entry"
                    Grid.Column="0"
-                   Text="{Binding DisplayText, Source={x:Reference thisControl}, Mode=OneWay}"
                    Placeholder="{Binding Placeholder, Source={x:Reference thisControl}}"
                    PlaceholderColor="{Binding EffectivePlaceholderColor, Source={x:Reference thisControl}}"
                    TextColor="{Binding EffectiveTextColor, Source={x:Reference thisControl}}"
