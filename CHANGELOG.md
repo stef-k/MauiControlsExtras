@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-02-21
 
 ### Added
 
@@ -224,7 +224,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| 1.0.0 | TBD | Initial release with 14 enterprise controls |
+| 2.0.0 | 2026-02-21 | 15 enterprise controls, keyboard/clipboard/undo-redo, dark theme, MVVM parity |
+| 1.0.0 | — | Initial release with ComboBox |
 
 ## Contributing
 
