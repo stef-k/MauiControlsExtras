@@ -5,8 +5,6 @@ A comprehensive collection of 15 enterprise-grade UI controls for .NET MAUI appl
 [![NuGet](https://img.shields.io/nuget/v/StefK.MauiControlsExtras.svg)](https://www.nuget.org/packages/StefK.MauiControlsExtras/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Work in Progress**: This library is under active development. APIs may change between releases. See the [Changelog](./CHANGELOG.md) for breaking changes.
-
 ## Demo Application
 
 A complete cross-platform demo app showcasing all controls is available in [`samples/DemoApp/`](./samples/DemoApp/).
