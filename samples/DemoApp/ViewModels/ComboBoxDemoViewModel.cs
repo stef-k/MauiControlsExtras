@@ -36,6 +36,9 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     [ObservableProperty]
     private ObservableCollection<string> _priorities = [];
 
+    [ObservableProperty]
+    private Country? _popupCountry;
+
     public ComboBoxDemoViewModel()
     {
         Title = "ComboBox Demo";
@@ -78,5 +81,11 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     partial void OnIsSearchVisibleChanged(bool value)
     {
         UpdateStatus($"Search visibility: {(value ? "Visible" : "Hidden")}");
+    }
+
+    partial void OnPopupCountryChanged(Country? value)
+    {
+        if (value is not null)
+            UpdateStatus($"Popup selected: {value.Name} ({value.Code})");
     }
 }

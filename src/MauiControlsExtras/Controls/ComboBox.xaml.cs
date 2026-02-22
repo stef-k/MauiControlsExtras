@@ -72,6 +72,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     private readonly ContextMenuItemCollection _contextMenuItems = new();
     private CancellationTokenSource? _longPressCts;
 
+    // Self-hosted popup state
+    private Grid? _popupOverlay;
+    private ComboBoxPopupContent? _standalonePopup;
+
     #region Bindable Properties
 
     /// <summary>
@@ -244,6 +248,15 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         typeof(bool),
         typeof(ComboBox),
         false);
+
+    /// <summary>
+    /// Identifies the <see cref="PopupPlacement"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty PopupPlacementProperty = BindableProperty.Create(
+        nameof(PopupPlacement),
+        typeof(PopupPlacement),
+        typeof(ComboBox),
+        PopupPlacement.Auto);
 
     /// <summary>
     /// Identifies the <see cref="IsSearchVisible"/> bindable property.
@@ -599,6 +612,16 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         get => (bool)GetValue(PopupModeProperty);
         set => SetValue(PopupModeProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the preferred placement of the popup relative to the ComboBox.
+    /// Only applies when <see cref="PopupMode"/> is true.
+    /// </summary>
+    public PopupPlacement PopupPlacement
+    {
+        get => (PopupPlacement)GetValue(PopupPlacementProperty);
+        set => SetValue(PopupPlacementProperty, value);
     }
 
     /// <summary>
@@ -1369,6 +1392,12 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     /// </summary>
     public void Close()
     {
+        if (_popupOverlay != null)
+        {
+            DismissSelfHostedPopup();
+            return;
+        }
+
         if (_isExpanded)
         {
             ToggleDropdown();
@@ -1614,7 +1643,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
     private void ToggleDropdown()
     {
-        // In popup mode, don't show inline dropdown - raise event for parent to handle
+        // In popup mode, don't show inline dropdown
         if (PopupMode && !_isExpanded)
         {
             var bounds = GetBoundsRelativeToPage();
@@ -1625,12 +1654,32 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 DisplayMemberPath,
                 SelectedItem,
                 Placeholder,
-                IsSearchVisible);
+                IsSearchVisible,
+                PopupPlacement);
+
+            // Raise event for external handlers (e.g., DataGridView)
             PopupRequested?.Invoke(this, args);
+
+            // Execute command if set
             if (PopupRequestedCommand?.CanExecute(args) == true)
             {
                 PopupRequestedCommand.Execute(PopupRequestedCommandParameter ?? args);
+                return;
             }
+
+            // If an external handler subscribed, let them handle it
+            if (PopupRequested != null)
+                return;
+
+            // Self-hosting fallback: no external handler, show popup ourselves
+            ShowSelfHostedPopup(args);
+            return;
+        }
+
+        // If popup is currently self-hosted and we're closing
+        if (PopupMode && _isExpanded)
+        {
+            DismissSelfHostedPopup();
             return;
         }
 
@@ -1683,32 +1732,79 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     /// <summary>
     /// Gets the bounds of this control relative to the page/window.
     /// </summary>
-    private Rect GetBoundsRelativeToPage()
+    private Rect GetBoundsRelativeToPage() => PopupOverlayHelper.GetBoundsRelativeToPage(this);
+
+    #region Self-Hosted Popup
+
+    private void ShowSelfHostedPopup(ComboBoxPopupRequestEventArgs args)
     {
-        var x = 0.0;
-        var y = 0.0;
+        if (_popupOverlay != null)
+            return;
 
-        // Walk up the visual tree to calculate absolute position
-        Element? current = this;
-        while (current != null)
+        var popup = new ComboBoxPopupContent
         {
-            if (current is VisualElement ve)
-            {
-                x += ve.X;
-                y += ve.Y;
+            ItemsSource = args.ItemsSource,
+            DisplayMemberPath = args.DisplayMemberPath,
+            SelectedItem = args.SelectedItem,
+            IsSearchVisible = args.IsSearchVisible
+        };
 
-                // Also account for scroll position in parent ScrollViews
-                if (current.Parent is ScrollView scrollView)
-                {
-                    x -= scrollView.ScrollX;
-                    y -= scrollView.ScrollY;
-                }
-            }
-            current = current.Parent;
+        popup.ItemSelected += OnSelfHostedPopupItemSelected;
+        popup.Cancelled += OnSelfHostedPopupCancelled;
+
+        _standalonePopup = popup;
+        _popupOverlay = PopupOverlayHelper.ShowAnchored(this, popup, args.PreferredPlacement, DismissSelfHostedPopup);
+        _isExpanded = true;
+        RaiseOpened();
+
+#if ANDROID
+        AndroidBackButtonHandler.Register(this, DismissSelfHostedPopup);
+#endif
+
+        // Focus popup after rendering
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), () =>
+        {
+            _standalonePopup?.Focus();
+        });
+    }
+
+    private void OnSelfHostedPopupItemSelected(object? sender, object? item)
+    {
+        if (item != null)
+            SetSelectedItemFromPopup(item);
+        DismissSelfHostedPopup();
+    }
+
+    private void OnSelfHostedPopupCancelled(object? sender, EventArgs e)
+    {
+        DismissSelfHostedPopup();
+    }
+
+    private void DismissSelfHostedPopup()
+    {
+        if (_standalonePopup != null)
+        {
+            _standalonePopup.ItemSelected -= OnSelfHostedPopupItemSelected;
+            _standalonePopup.Cancelled -= OnSelfHostedPopupCancelled;
+            _standalonePopup = null;
         }
 
-        return new Rect(x, y, Width, Height);
+        if (_popupOverlay != null)
+        {
+            PopupOverlayHelper.Dismiss(_popupOverlay);
+            _popupOverlay = null;
+        }
+
+        _isExpanded = false;
+
+#if ANDROID
+        AndroidBackButtonHandler.Unregister(this);
+#endif
+
+        RaiseClosed();
     }
+
+    #endregion
 
     private void SelectItem(object item)
     {

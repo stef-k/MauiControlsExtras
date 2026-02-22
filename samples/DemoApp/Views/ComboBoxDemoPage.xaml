@@ -149,6 +149,25 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Popup Mode (Standalone) -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Popup Mode (Standalone)" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="ComboBox with PopupMode showing an anchored overlay popup, no external handler needed."
+                           Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:ComboBox ItemsSource="{Binding Countries}"
+                                     SelectedItem="{Binding PopupCountry}"
+                                     DisplayMemberPath="Name"
+                                     PopupMode="True"
+                                     Placeholder="Select a country (popup)..."
+                                     WidthRequest="300"
+                                     HorizontalOptions="Start" />
+
+                    <Label Text="{Binding PopupCountry.Name, StringFormat='Selected: {0}', TargetNullValue='None selected'}" />
+                </VerticalStackLayout>
+            </Frame>
+
             <!-- Status -->
             <Label Text="{Binding StatusMessage}" Style="{StaticResource StatusLabelStyle}" />
         </VerticalStackLayout>
