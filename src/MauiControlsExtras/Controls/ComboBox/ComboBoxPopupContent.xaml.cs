@@ -16,6 +16,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
     private object? _selectedItem;
     private int _highlightedIndex = -1;
     private bool _isUpdatingHighlight;
+    private Grid? _dismissOverlay;
 
     /// <summary>
     /// Occurs when an item is selected.
@@ -154,6 +155,40 @@ public partial class ComboBoxPopupContent : StyledControlBase
         // Initialize highlight to first item when search is hidden
         _highlightedIndex = _filteredItems.Count > 0 ? 0 : -1;
         UpdateHighlightVisual();
+    }
+
+    /// <summary>
+    /// Gets or sets an optional anchor view for standalone popup positioning.
+    /// </summary>
+    public View? AnchorView { get; set; }
+
+    /// <summary>
+    /// Shows the popup anchored to the specified view (or <see cref="AnchorView"/> if not provided).
+    /// Returns true if the popup was shown successfully.
+    /// </summary>
+    public bool ShowAnchored(View? anchor = null, PopupPlacement placement = PopupPlacement.Auto)
+    {
+        var target = anchor ?? AnchorView;
+        if (target == null)
+            return false;
+
+        if (_dismissOverlay != null)
+            return false; // Already showing
+
+        _dismissOverlay = PopupOverlayHelper.ShowAnchored(target, this, placement, Hide);
+        return true;
+    }
+
+    /// <summary>
+    /// Hides the popup and removes the overlay.
+    /// </summary>
+    public void Hide()
+    {
+        if (_dismissOverlay != null)
+        {
+            PopupOverlayHelper.Dismiss(_dismissOverlay);
+            _dismissOverlay = null;
+        }
     }
 
     /// <summary>

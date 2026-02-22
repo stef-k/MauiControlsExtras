@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **ComboBox**: Anchor-based popup placement for standalone `PopupMode` (#213)
+  - Self-hosting fallback: when no external handler subscribes to `PopupRequested`, the ComboBox automatically shows an anchored overlay popup
+  - New `PopupPlacement` property (`Auto`, `Bottom`, `Top`) for preferred popup positioning
+  - New `PopupOverlayHelper` internal helper for reusable anchor-based overlay logic
+  - `ComboBoxPopupContent` gains `AnchorView`, `ShowAnchored()`, and `Hide()` for manual usage
+  - `ComboBoxPopupRequestEventArgs` gains `PreferredPlacement` property (backwards compatible)
+
 ## [2.0.0] - 2026-02-21
 
 ### Added

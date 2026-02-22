@@ -43,6 +43,11 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
     public ComboBox Source { get; }
 
     /// <summary>
+    /// Gets the preferred popup placement relative to the anchor.
+    /// </summary>
+    public PopupPlacement PreferredPlacement { get; }
+
+    /// <summary>
     /// Initializes a new instance of ComboBoxPopupRequestEventArgs.
     /// </summary>
     public ComboBoxPopupRequestEventArgs(
@@ -52,7 +57,8 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
         string? displayMemberPath,
         object? selectedItem,
         string? placeholder,
-        bool isSearchVisible = true)
+        bool isSearchVisible = true,
+        PopupPlacement preferredPlacement = PopupPlacement.Auto)
     {
         Source = source;
         AnchorBounds = anchorBounds;
@@ -61,5 +67,6 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
         SelectedItem = selectedItem;
         Placeholder = placeholder;
         IsSearchVisible = isSearchVisible;
+        PreferredPlacement = preferredPlacement;
     }
 }

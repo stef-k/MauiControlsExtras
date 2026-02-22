@@ -199,6 +199,59 @@ public partial class MyViewModel : ObservableObject
 }
 ```
 
+## Popup Mode
+
+When `PopupMode="True"`, the ComboBox shows its dropdown as an anchored overlay popup instead of inline. This is useful for standalone ComboBoxes where the inline dropdown would be clipped or positioned incorrectly.
+
+### Standalone Usage (Self-Hosting)
+
+When no external handler subscribes to the `PopupRequested` event, the ComboBox automatically hosts its own popup overlay anchored to itself:
+
+```xml
+<extras:ComboBox ItemsSource="{Binding Items}"
+                 SelectedItem="{Binding SelectedItem}"
+                 DisplayMemberPath="Name"
+                 PopupMode="True"
+                 Placeholder="Select an item..." />
+```
+
+The popup automatically positions below the ComboBox, flipping above if there isn't enough space below.
+
+### PopupPlacement Property
+
+Control the preferred placement of the popup:
+
+```xml
+<!-- Prefer above the ComboBox -->
+<extras:ComboBox PopupMode="True"
+                 PopupPlacement="Top"
+                 ... />
+```
+
+| Value | Description |
+|-------|-------------|
+| `Auto` (default) | Prefer below, flip above if insufficient space |
+| `Bottom` | Prefer below, flip above if insufficient space |
+| `Top` | Prefer above, flip below if insufficient space |
+
+### Manual Popup Control
+
+For advanced scenarios, use `ComboBoxPopupContent` directly:
+
+```csharp
+var popup = new ComboBoxPopupContent
+{
+    ItemsSource = myItems,
+    DisplayMemberPath = "Name",
+    AnchorView = myComboBox
+};
+popup.ShowAnchored();
+```
+
+### External Handling (DataGrid)
+
+When an external handler subscribes to `PopupRequested` (e.g., DataGridView), self-hosting is skipped and the handler manages popup display. This preserves full backwards compatibility.
+
 ## Programmatic Control
 
 ### Open/Close

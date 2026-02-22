@@ -106,6 +106,10 @@
 
     <!-- Helpers -->
     <Compile Include="..\..\src\MauiControlsExtras\Helpers\AndroidBackButtonHandler.cs" Link="Linked\Helpers\AndroidBackButtonHandler.cs" />
+
+    <!-- ComboBox (testable types only) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\ComboBox\PopupPlacement.cs" Link="Linked\Controls\ComboBox\PopupPlacement.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\ComboBox\PopupPositionCalculator.cs" Link="Linked\Controls\ComboBox\PopupPositionCalculator.cs" />
   </ItemGroup>
 
 </Project>
