@@ -75,20 +75,26 @@ internal static class PopupOverlayHelper
             ZIndex = 9999
         };
 
+        // Guard against multiple dismiss calls
+        var dismissed = false;
+        void safeDismiss()
+        {
+            if (dismissed) return;
+            dismissed = true;
+            page.SizeChanged -= onPageSizeChanged;
+            onDismissed?.Invoke();
+        }
+
         // Dismiss on backdrop tap
         var tapGesture = new TapGestureRecognizer();
-        tapGesture.Tapped += (_, _) => onDismissed?.Invoke();
+        tapGesture.Tapped += (_, _) => safeDismiss();
         overlay.GestureRecognizers.Add(tapGesture);
 
         overlay.Children.Add(popup);
 
         // Dismiss on page size change (rotation, resize)
-        void onSizeChanged(object? s, EventArgs e)
-        {
-            page.SizeChanged -= onSizeChanged;
-            onDismissed?.Invoke();
-        }
-        page.SizeChanged += onSizeChanged;
+        void onPageSizeChanged(object? s, EventArgs e) => safeDismiss();
+        page.SizeChanged += onPageSizeChanged;
 
         rootLayout.Children.Add(overlay);
 
@@ -103,7 +109,6 @@ internal static class PopupOverlayHelper
         if (overlay.Parent is Layout parentLayout)
         {
             parentLayout.Children.Remove(overlay);
-            UnwrapRootLayoutIfNeeded(parentLayout);
         }
     }
 
@@ -146,21 +151,4 @@ internal static class PopupOverlayHelper
         throw new InvalidOperationException("Cannot find a Layout in the Page to host the popup overlay. The Page must be a ContentPage.");
     }
 
-    /// <summary>
-    /// If we previously wrapped the page content in a Grid,
-    /// unwrap it when the overlay is removed and only the original content remains.
-    /// </summary>
-    private static void UnwrapRootLayoutIfNeeded(Layout layout)
-    {
-        // Only unwrap if this is a wrapper Grid with exactly one child
-        // and the Grid's parent is a ContentPage (meaning we created it)
-        if (layout is Grid grid
-            && grid.Parent is ContentPage contentPage
-            && grid.Children.Count == 1
-            && grid.Children[0] is View singleChild
-            && singleChild is not ComboBoxPopupContent)
-        {
-            contentPage.Content = singleChild;
-        }
-    }
 }
