@@ -78,6 +78,7 @@
     <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridDatePickerColumn.cs" Link="Linked\Controls\DataGrid\DataGridDatePickerColumn.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridTimePickerColumn.cs" Link="Linked\Controls\DataGrid\DataGridTimePickerColumn.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridPrintOptions.cs" Link="Linked\Controls\DataGrid\DataGridPrintOptions.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\VirtualizingDataGridPanel.cs" Link="Linked\Controls\DataGrid\VirtualizingDataGridPanel.cs" />
 
     <!-- PropertyGrid -->
     <Compile Include="..\..\src\MauiControlsExtras\Controls\PropertyGrid\PropertyItem.cs" Link="Linked\Controls\PropertyGrid\PropertyItem.cs" />

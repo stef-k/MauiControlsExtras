@@ -4734,20 +4734,26 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (startingArgs.Cancel)
             return;
 
+        // Create edit control
+        _currentEditControl = column.CreateEditContent(item);
+        if (_currentEditControl == null)
+            return;
+
+        // Find the cell container before setting editing state to avoid half-initialized state
+        var cellContainer = FindCellContainer(rowIndex, colIndex);
+        if (cellContainer == null || cellContainer.Children.Count == 0)
+        {
+            _currentEditControl = null;
+            return;
+        }
+
         _editingItem = item;
         _editingColumn = column;
         _editingRowIndex = rowIndex;
         _editingColumnIndex = colIndex;
         _originalEditValue = column.GetCellValue(item);
 
-        // Create edit control
-        _currentEditControl = column.CreateEditContent(item);
-        if (_currentEditControl == null)
-            return;
-
-        // Replace cell content with edit control
-        var cellContainer = FindCellContainer(rowIndex, colIndex);
-        if (cellContainer != null && cellContainer.Children.Count > 0)
+        // Replace cell content with edit control (Children.Count > 0 guaranteed by early return above)
         {
             // Store original content for restoration on cancel
             _originalCellContent = cellContainer.Children[0] as View;
@@ -4897,7 +4903,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 _cellValidationErrors[(_editingRowIndex, _editingColumnIndex)] = ValidationResult.Failure(validationArgs.ErrorMessage ?? "Validation failed");
                 UpdateGridValidationState();
-                BuildDataRows();
+
+                // Use targeted refresh when virtualization is active to avoid full panel rebuild
+                if (EnableVirtualization && !EnablePagination && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
+                    RefreshVirtualizedCell(_editingRowIndex, _editingColumnIndex);
+                else
+                    BuildDataRows();
+
                 return;
             }
             else
@@ -5005,6 +5017,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             _editedColumnsInRow.Clear();
         }
 
+        var editedRowIndex = _editingRowIndex;
+        var editedColIndex = _editingColumnIndex;
+
         _editingItem = null;
         _editingColumn = null;
         _editingRowIndex = -1;
@@ -5013,7 +5028,53 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _originalEditValue = null;
         _originalCellContent = null;
 
+        // Use targeted refresh when virtualization is active to avoid full panel rebuild
+        if (EnableVirtualization && !EnablePagination && editedRowIndex >= 0 && editedColIndex >= 0)
+        {
+            RefreshVirtualizedCell(editedRowIndex, editedColIndex);
+            return;
+        }
+
         BuildDataRows();
+    }
+
+    private void RefreshVirtualizedCell(int rowIndex, int colIndex)
+    {
+        var frozenColumns = GetFrozenColumns();
+        var scrollableColumns = GetScrollableColumns();
+        var isFrozen = colIndex < frozenColumns.Count;
+        var panel = isFrozen ? _frozenVirtualizingPanel : _virtualizingPanel;
+        var columns = isFrozen ? frozenColumns : scrollableColumns;
+        var adjustedColIndex = isFrozen ? colIndex : colIndex - frozenColumns.Count;
+
+        var rowView = panel?.GetVisibleRow(rowIndex);
+        if (rowView is not Grid rowGrid)
+            return;
+
+        if (rowIndex < 0 || rowIndex >= _sortedItems.Count)
+            return;
+
+        var item = _sortedItems[rowIndex];
+        if (item == null || adjustedColIndex < 0 || adjustedColIndex >= columns.Count)
+            return;
+
+        var column = columns[adjustedColIndex];
+        var isSelected = _selectedItems.Contains(item);
+        var isAlternate = rowIndex % 2 == 1;
+        var newCell = CreateDataCell(item, column, rowIndex, colIndex, isSelected, isAlternate);
+
+        // Find and replace the existing cell at this column.
+        // If not found the row was recycled and will render correctly when it returns to view.
+        for (int i = 0; i < rowGrid.Children.Count; i++)
+        {
+            if (rowGrid.Children[i] is Grid cellGrid && Grid.GetColumn(cellGrid) == adjustedColIndex)
+            {
+                rowGrid.Children.RemoveAt(i);
+                rowGrid.Children.Insert(i, newCell);
+                Grid.SetColumn(newCell, adjustedColIndex);
+                return;
+            }
+        }
     }
 
     private static object? GetValueFromEditControl(View control, DataGridColumn column)
@@ -5032,6 +5093,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private Grid? FindCellContainer(int rowIndex, int colIndex)
     {
+        // Virtualized path: cells live inside the virtualizing panels, not the static grids
+        if (EnableVirtualization && !EnablePagination)
+            return FindCellContainerVirtualized(rowIndex, colIndex);
+
         var frozenColumns = GetFrozenColumns();
         var isFrozen = colIndex < frozenColumns.Count;
         var grid = isFrozen ? frozenDataGrid : dataGrid;
@@ -5056,6 +5121,26 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 return cellGrid;
             }
         }
+        return null;
+    }
+
+    private Grid? FindCellContainerVirtualized(int rowIndex, int colIndex)
+    {
+        var frozenColumns = GetFrozenColumns();
+        var isFrozen = colIndex < frozenColumns.Count;
+        var panel = isFrozen ? _frozenVirtualizingPanel : _virtualizingPanel;
+        var adjustedColIndex = isFrozen ? colIndex : colIndex - frozenColumns.Count;
+
+        var rowView = panel?.GetVisibleRow(rowIndex);
+        if (rowView is not Grid rowGrid)
+            return null;
+
+        foreach (var child in rowGrid.Children)
+        {
+            if (child is Grid cellGrid && Grid.GetColumn(cellGrid) == adjustedColIndex)
+                return cellGrid;
+        }
+
         return null;
     }
 
@@ -5869,8 +5954,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Update virtualization panels if active
-        if (EnableVirtualization && _virtualizingPanel != null)
+        if (EnableVirtualization && !EnablePagination && _virtualizingPanel != null)
         {
+            // Auto-commit any active edit before recycling rows to prevent data loss
+            if (_editingItem != null && _editingRowIndex >= 0)
+            {
+                var newFirstVisible = Math.Max(0, (int)(e.ScrollY / _virtualizingPanel.RowHeight) - _virtualizingPanel.BufferSize);
+                var newLastVisible = Math.Min((_sortedItems?.Count ?? 0) - 1,
+                    (int)((e.ScrollY + dataScrollView.Height) / _virtualizingPanel.RowHeight) + _virtualizingPanel.BufferSize);
+
+                if (_editingRowIndex < newFirstVisible || _editingRowIndex > newLastVisible)
+                {
+                    CommitEdit();
+                }
+            }
+
             _virtualizingPanel.UpdateScrollPosition(e.ScrollY, dataScrollView.Height);
             _frozenVirtualizingPanel?.UpdateScrollPosition(e.ScrollY, dataScrollView.Height);
         }
