@@ -40,6 +40,14 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
     public Action<View, object, int>? RowUpdater { get; set; }
 
     /// <summary>
+    /// Gets or sets a callback invoked for each row when it enters the recycle pool or
+    /// is discarded during <see cref="Clear"/>. Use this to detach native handlers that
+    /// would otherwise leak. The callback must be idempotent—<see cref="Clear"/> may call
+    /// it on rows that were already cleaned up when recycled.
+    /// </summary>
+    public Action<View>? RowCleanup { get; set; }
+
+    /// <summary>
     /// Gets the total content height.
     /// </summary>
     public double TotalHeight => (ItemsSource?.Count ?? 0) * RowHeight;
@@ -74,7 +82,7 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
         foreach (var row in _visibleRows.Values)
         {
             Children.Remove(row);
-            _recycledRows.Enqueue(row);
+            RecycleRow(row);
         }
         _visibleRows.Clear();
 
@@ -86,9 +94,26 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
     /// </summary>
     public new void Clear()
     {
+        // Rows in the recycle pool already had RowCleanup called via RecycleRow,
+        // but we call again here because the callback is idempotent and this
+        // provides a safety net for any code path that enqueued without cleanup.
+        if (RowCleanup != null)
+        {
+            foreach (var row in _visibleRows.Values)
+                RowCleanup(row);
+            foreach (var row in _recycledRows)
+                RowCleanup(row);
+        }
+
         _visibleRows.Clear();
         _recycledRows.Clear();
         Children.Clear();
+    }
+
+    private void RecycleRow(View row)
+    {
+        RowCleanup?.Invoke(row);
+        _recycledRows.Enqueue(row);
     }
 
     private void UpdateVisibleRows(double viewportHeight)
@@ -99,7 +124,7 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
             foreach (var row in _visibleRows.Values)
             {
                 Children.Remove(row);
-                _recycledRows.Enqueue(row);
+                RecycleRow(row);
             }
             _visibleRows.Clear();
             return;
@@ -123,7 +148,7 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
             var row = _visibleRows[index];
             _visibleRows.Remove(index);
             Children.Remove(row);
-            _recycledRows.Enqueue(row);
+            RecycleRow(row);
         }
 
         // Add/update rows in visible range

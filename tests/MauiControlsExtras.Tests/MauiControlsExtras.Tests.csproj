@@ -71,7 +71,8 @@
     <Compile Include="..\..\src\MauiControlsExtras\Controls\Calendar\CalendarEnums.cs" Link="Linked\Controls\Calendar\CalendarEnums.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Controls\Calendar\CalendarEventArgs.cs" Link="Linked\Controls\Calendar\CalendarEventArgs.cs" />
 
-    <!-- DataGrid (columns, enums, events - no ComboBoxColumn/UndoOps/Exporter which depend on full controls) -->
+    <!-- DataGrid (columns, enums, events, helpers - no ComboBoxColumn/UndoOps/Exporter which depend on full controls) -->
+    <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridContextMenuHelper.cs" Link="Linked\Controls\DataGrid\DataGridContextMenuHelper.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridColumn.cs" Link="Linked\Controls\DataGrid\DataGridColumn.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridEnums.cs" Link="Linked\Controls\DataGrid\DataGridEnums.cs" />
     <Compile Include="..\..\src\MauiControlsExtras\Controls\DataGrid\DataGridEventArgs.cs" Link="Linked\Controls\DataGrid\DataGridEventArgs.cs" />

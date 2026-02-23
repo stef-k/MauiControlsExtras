@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.6] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: Context menu long-press now works reliably on all platforms (#223)
+  - iOS/Android: Replaced unreliable `PanGestureRecognizer` timer with native long-press handlers (`UILongPressGestureRecognizer` / `View.LongClick`)
+  - Windows: Added `Holding` event for touch long-press alongside existing right-click support
+  - macOS: Added `UILongPressGestureRecognizer` alongside existing secondary-click support
+  - Context menu is suppressed for all edit control types when a cell is in edit mode, simplifying the previous per-type approach
+
+## [2.1.5] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: Cell editing now works when virtualization is active (#222, #227)
+  - Tap-to-edit and double-tap-to-edit correctly resolve the data item from virtualized rows
+  - Edit commit updates the underlying data source even when rows are recycled
+
 ## [2.1.4] - 2026-02-23
 
 ### Fixed
@@ -267,7 +285,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
-| 2.1.3 | 2026-02-23 | DataGrid filter icon 44pt touch target fix |
+| 2.1.6 | 2026-02-23 | DataGrid context menu native long-press on all platforms (#223) |
+| 2.1.5 | 2026-02-23 | DataGrid cell editing with virtualization enabled (#222, #227) |
+| 2.1.4 | 2026-02-23 | DataGrid RefreshData visual update in default mode (#221) |
+| 2.1.3 | 2026-02-23 | DataGrid filter icon 44pt touch target fix (#220) |
+| 2.1.2 | 2026-02-23 | DataGrid cascading/progressive filter popup values (#219) |
+| 2.1.1 | 2026-02-23 | ComboBox: no software keyboard on iOS/Android when IsSearchVisible=false (#216) |
+| 2.1.0 | 2026-02-22 | ComboBox anchor-based popup placement for standalone PopupMode (#213) |
 | 2.0.0 | 2026-02-21 | 15 enterprise controls, keyboard/clipboard/undo-redo, dark theme, MVVM parity |
 | 1.0.0 | — | Initial release with ComboBox |
 

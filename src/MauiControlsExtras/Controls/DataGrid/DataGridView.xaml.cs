@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -153,6 +155,49 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private ComboBox? _activeComboBox;
     private DataGridComboBoxColumn? _activeComboBoxColumn;
     private object? _activeComboBoxItem;
+
+    // Context menu long-press duration for iOS/macOS UILongPressGestureRecognizer.
+    // Android and Windows use their platform-default long-press/holding thresholds.
+    private const double LongPressDurationSeconds = 0.5;
+    // ConditionalWeakTable keyed by Grid cell containers. Entries are removed deterministically
+    // by DetachContextMenuHandlersFromChildren (which calls Remove after detaching handlers),
+    // so the weak-reference semantics serve only as a safety net for missed cleanup paths.
+    private readonly ConditionalWeakTable<Grid, CellContextMenuState> _cellContextMenuStates = new();
+#if ANDROID
+    private readonly ConditionalWeakTable<Android.Views.View, PointHolder> _androidLastTouchPositions = new();
+    /// <summary>
+    /// Reference-type wrapper for a DIP touch position, required because
+    /// <see cref="ConditionalWeakTable{TKey,TValue}"/> values must be reference types.
+    /// Immutable — replaced atomically via AddOrUpdate to eliminate torn-read risk.
+    /// </summary>
+    private sealed class PointHolder(Point positionDip)
+    {
+        public readonly Point PositionDip = positionDip;
+    }
+#endif
+
+    // RowIndex/ColIndex are set at creation time. This is safe because CreateDataCell always
+    // creates fresh Grid containers; if container reuse is ever added, these must be updated.
+    // IsAttached is only accessed from the main thread (MAUI handler lifecycle events).
+    private sealed class CellContextMenuState
+    {
+        public required int RowIndex { get; init; }
+        public required int ColIndex { get; init; }
+        public required DataGridColumn Column { get; init; }
+        public bool IsAttached;
+#if WINDOWS
+        public Microsoft.UI.Xaml.Input.RightTappedEventHandler? RightTappedHandler;
+        public Microsoft.UI.Xaml.Input.HoldingEventHandler? HoldingHandler;
+#elif MACCATALYST || IOS
+#if MACCATALYST
+        public UIKit.UITapGestureRecognizer? SecondaryClickRecognizer;
+#endif
+        public UIKit.UILongPressGestureRecognizer? LongPressRecognizer;
+#elif ANDROID
+        public EventHandler<Android.Views.View.LongClickEventArgs>? LongClickHandler;
+        public EventHandler<Android.Views.View.TouchEventArgs>? TouchHandler;
+#endif
+    }
 
     #endregion
 
@@ -2294,6 +2339,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             keyboardBehavior.HandleTabKey = true;
         }
 
+        Unloaded += OnDataGridViewUnloaded;
     }
 
     #endregion
@@ -3273,7 +3319,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 column = visibleCols[columnIndex];
         }
 
-        ShowContextMenuAsync(item, column, rowIndex, columnIndex, position).ConfigureAwait(false);
+        DispatchShowContextMenuSafely(item, column, rowIndex, columnIndex, position, null);
     }
 
     /// <summary>
@@ -3281,7 +3327,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public void ShowContextMenu(object? item, DataGridColumn? column, int rowIndex, int columnIndex)
     {
-        ShowContextMenuAsync(item, column, rowIndex, columnIndex, null).ConfigureAwait(false);
+        DispatchShowContextMenuSafely(item, column, rowIndex, columnIndex, null, null);
     }
 
     /// <summary>
@@ -3475,6 +3521,261 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// Use this in the ContextMenuOpening event handler to build custom menus.
     /// </summary>
     public IReadOnlyList<DataGridContextMenuAction>? GetDefaultContextMenuActions() => _lastContextMenuActions;
+
+    private void OnCellContainerHandlerChanging(object? sender, HandlerChangingEventArgs e)
+    {
+        if (sender is not Grid container)
+            return;
+
+        if (e.OldHandler?.PlatformView != null && _cellContextMenuStates.TryGetValue(container, out var state))
+        {
+            DetachNativeContextMenuHandlers(e.OldHandler.PlatformView, state);
+            container.HandlerChanging -= OnCellContainerHandlerChanging;
+            container.HandlerChanged -= OnCellContainerHandlerChanged;
+            // CWT entry is intentionally kept (not removed here) so that
+            // DetachContextMenuHandlersFromChildren can find it during row
+            // teardown. Re-attachment after a handler swap (e.g. hot reload)
+            // is handled by full row rebuild, not by HandlerChanged.
+        }
+    }
+
+    private void OnCellContainerHandlerChanged(object? sender, EventArgs e)
+    {
+        if (sender is not Grid container)
+            return;
+
+        if (!_cellContextMenuStates.TryGetValue(container, out var state) || state.IsAttached)
+            return;
+
+        if (container.Handler?.PlatformView == null)
+            return;
+
+        AttachNativeContextMenuHandlers(container, container.Handler.PlatformView, state);
+    }
+
+    private void AttachNativeContextMenuHandlers(Grid container, object platformView, CellContextMenuState state)
+    {
+        Debug.Assert(MainThread.IsMainThread, "AttachNativeContextMenuHandlers must be called on the UI thread.");
+
+#if WINDOWS
+        if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
+        {
+            state.RightTappedHandler = (sender, args) =>
+            {
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
+                    return;
+
+                args.Handled = true;
+                var winPos = args.GetPosition(element);
+                var position = new Point(winPos.X, winPos.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            };
+            element.RightTapped += state.RightTappedHandler;
+
+            state.HoldingHandler = (sender, args) =>
+            {
+                if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
+                    return;
+
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
+                    return;
+
+                args.Handled = true;
+                var winPos = args.GetPosition(element);
+                var position = new Point(winPos.X, winPos.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            };
+            element.Holding += state.HoldingHandler;
+        }
+#elif MACCATALYST || IOS
+        if (platformView is UIKit.UIView uiView)
+        {
+#if MACCATALYST
+            state.SecondaryClickRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
+            {
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
+                    return;
+
+                var location = gesture.LocationInView(uiView);
+                var position = new Point(location.X, location.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            });
+            state.SecondaryClickRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
+            uiView.AddGestureRecognizer(state.SecondaryClickRecognizer);
+#endif
+
+            state.LongPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
+            {
+                if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                    return;
+
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
+                    return;
+
+                var location = gesture.LocationInView(uiView);
+                var position = new Point(location.X, location.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            });
+            state.LongPressRecognizer.MinimumPressDuration = LongPressDurationSeconds;
+            uiView.AddGestureRecognizer(state.LongPressRecognizer);
+        }
+#elif ANDROID
+        if (platformView is Android.Views.View androidView)
+        {
+            state.TouchHandler = (sender, args) =>
+            {
+                if (args.Event?.Action == Android.Views.MotionEventActions.Down)
+                {
+                    var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+                    var rawX = args.Event.GetX();
+                    var rawY = args.Event.GetY();
+                    _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder(new Point(rawX / density, rawY / density)));
+                }
+                // Touch handler only records position for the subsequent LongClick handler.
+                // Handled must remain false so the event propagates to nested ScrollView
+                // and other gesture recognizers. Verified with nested scroll scenarios.
+                args.Handled = false;
+            };
+            androidView.LongClickable = true;
+            androidView.Touch += state.TouchHandler;
+
+            state.LongClickHandler = (sender, args) =>
+            {
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
+                    return;
+
+                args.Handled = true;
+                var position = GetLastAndroidTouchPosition(androidView);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            };
+            androidView.LongClick += state.LongClickHandler;
+        }
+#endif
+        state.IsAttached = true;
+    }
+
+    /// <summary>
+    /// Detaches native context menu handlers from all cell containers in the given grid.
+    /// Must be called before Children.Clear() to ensure cleanup even if HandlerChanging
+    /// does not fire synchronously on child removal.
+    /// </summary>
+    private void DetachContextMenuHandlersFromChildren(Grid grid)
+    {
+        foreach (var child in grid.Children.OfType<Grid>().ToList())
+        {
+            if (_cellContextMenuStates.TryGetValue(child, out var s) && s.IsAttached
+                && child.Handler?.PlatformView != null)
+            {
+                DetachNativeContextMenuHandlers(child.Handler.PlatformView, s);
+                child.HandlerChanging -= OnCellContainerHandlerChanging;
+                child.HandlerChanged -= OnCellContainerHandlerChanged;
+            }
+            _cellContextMenuStates.Remove(child);
+        }
+    }
+
+    private void DetachNativeContextMenuHandlers(object platformView, CellContextMenuState state)
+    {
+        Debug.Assert(MainThread.IsMainThread, "DetachNativeContextMenuHandlers must be called on the UI thread.");
+
+        if (!state.IsAttached)
+            return;
+
+#if WINDOWS
+        if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
+        {
+            if (state.RightTappedHandler != null)
+            {
+                element.RightTapped -= state.RightTappedHandler;
+                state.RightTappedHandler = null;
+            }
+            if (state.HoldingHandler != null)
+            {
+                element.Holding -= state.HoldingHandler;
+                state.HoldingHandler = null;
+            }
+        }
+#elif MACCATALYST || IOS
+        if (platformView is UIKit.UIView uiView)
+        {
+#if MACCATALYST
+            if (state.SecondaryClickRecognizer != null)
+            {
+                uiView.RemoveGestureRecognizer(state.SecondaryClickRecognizer);
+                state.SecondaryClickRecognizer.Dispose();
+                state.SecondaryClickRecognizer = null;
+            }
+#endif
+            if (state.LongPressRecognizer != null)
+            {
+                uiView.RemoveGestureRecognizer(state.LongPressRecognizer);
+                state.LongPressRecognizer.Dispose();
+                state.LongPressRecognizer = null;
+            }
+        }
+#elif ANDROID
+        if (platformView is Android.Views.View androidView)
+        {
+            if (state.LongClickHandler != null)
+            {
+                androidView.LongClick -= state.LongClickHandler;
+                state.LongClickHandler = null;
+            }
+            if (state.TouchHandler != null)
+            {
+                androidView.Touch -= state.TouchHandler;
+                state.TouchHandler = null;
+            }
+            _androidLastTouchPositions.Remove(androidView);
+        }
+#endif
+        state.IsAttached = false;
+    }
+
+    private void DispatchShowContextMenuSafely(object? item, DataGridColumn? column,
+        int rowIndex, int colIndex, Point? position, View? anchorView)
+    {
+        Dispatcher.Dispatch(async () =>
+        {
+            try
+            {
+                await ShowContextMenuAsync(item, column, rowIndex, colIndex, position, anchorView);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
+#if DEBUG
+                throw;
+#endif
+            }
+        });
+    }
+
+    /// <summary>
+    /// Suppresses the DataGrid context menu when any cell is in edit mode.
+    /// This is an intentional blanket suppression for all edit control types
+    /// (Entry, CheckBox, DatePicker, TimePicker, Picker, ComboBox) rather than
+    /// per-control-type checking—simpler and safer against new control types.
+    /// </summary>
+    private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
+        => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
+
+#if ANDROID
+    private Point GetLastAndroidTouchPosition(Android.Views.View androidView)
+    {
+        if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
+            return holder.PositionDip;
+
+        return Point.Zero;
+    }
+#endif
+
+    private void OnDataGridViewUnloaded(object? sender, EventArgs e)
+    {
+        DetachContextMenuHandlersFromChildren(dataGrid);
+        DetachContextMenuHandlersFromChildren(frozenDataGrid);
+        ClearVirtualizationPanels();
+    }
 
     #endregion
 
@@ -3809,6 +4110,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Clear any virtualization panels
         ClearVirtualizationPanels();
 
+        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously)
+        DetachContextMenuHandlersFromChildren(dataGrid);
+        DetachContextMenuHandlersFromChildren(frozenDataGrid);
+
         // Clear existing rows
         dataGrid.Children.Clear();
         dataGrid.RowDefinitions.Clear();
@@ -3898,6 +4203,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var frozenColumns = GetFrozenColumns();
         var scrollableColumns = GetScrollableColumns();
 
+        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously)
+        DetachContextMenuHandlersFromChildren(dataGrid);
+        DetachContextMenuHandlersFromChildren(frozenDataGrid);
+
         // Clear non-virtualized grids
         dataGrid.Children.Clear();
         dataGrid.RowDefinitions.Clear();
@@ -3918,6 +4227,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _virtualizingPanel.ItemsSource = _sortedItems;
         _virtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, scrollableColumns, frozenColumns.Count);
         _virtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, scrollableColumns, frozenColumns.Count);
+        _virtualizingPanel.RowCleanup = row => { if (row is Grid g) DetachContextMenuHandlersFromChildren(g); };
         _virtualizingPanel.Refresh(dataScrollView.Height > 0 ? dataScrollView.Height : 400);
 
         // Initialize or update frozen virtualizing panel
@@ -3934,6 +4244,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             _frozenVirtualizingPanel.ItemsSource = _sortedItems;
             _frozenVirtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, frozenColumns, 0);
             _frozenVirtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, frozenColumns, 0);
+            _frozenVirtualizingPanel.RowCleanup = row => { if (row is Grid g) DetachContextMenuHandlersFromChildren(g); };
             _frozenVirtualizingPanel.Refresh(dataScrollView.Height > 0 ? dataScrollView.Height : 400);
         }
     }
@@ -3972,6 +4283,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         var isSelected = _selectedItems.Contains(item);
         var isAlternate = rowIndex % 2 == 1;
+
+        // Guard: if container reuse is ever added (skipping Children.Clear), CellContextMenuState
+        // RowIndex/ColIndex would become stale. This assertion catches that during development.
+        Debug.Assert(rowGrid.Children.Count == 0 || !rowGrid.Children.OfType<Grid>().Any(c =>
+            _cellContextMenuStates.TryGetValue(c, out var s) && s.IsAttached && s.RowIndex != rowIndex),
+            "Virtualized row is being reused with attached context menu handlers from a different row. " +
+            "CellContextMenuState.RowIndex/ColIndex must be updated when containers are recycled.");
+
+        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously)
+        DetachContextMenuHandlersFromChildren(rowGrid);
 
         // Clear and rebuild cells (simpler approach; could optimize to update in-place)
         rowGrid.Children.Clear();
@@ -4097,6 +4418,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             bgColor = Colors.Transparent;
         }
         container.BackgroundColor = bgColor;
+        container.BindingContext = item;
 
         // Cell content
         var content = column.CreateCellContent(item);
@@ -4182,139 +4504,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Add context menu gesture (right-click on desktop, long-press on mobile)
         if (ShowDefaultContextMenu || ContextMenuTemplate != null || ContextMenuItems.Count > 0)
         {
-#if WINDOWS
-            // For Windows, use Handler to attach RightTapped event (ButtonsMask.Secondary has known bugs)
-            // Capture container reference and indices for use in event handler
-            var cellContainer = container;
-            var capturedRowIndex = rowIndex;
-            var capturedColIndex = colIndex;
-            container.HandlerChanged += (s, e) =>
-            {
-                if (cellContainer.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
-                {
-                    element.RightTapped += (sender, args) =>
-                    {
-                        // If we're currently editing this cell, check if click originated from a TextBox
-                        if (_editingRowIndex == capturedRowIndex && _editingColumnIndex == capturedColIndex && _currentEditControl != null)
-                        {
-                            // Check if the event source is a native TextBox (Entry's platform control)
-                            // TextBox has its own context menu (Cut/Copy/Paste/Select All) that should work
-                            if (args.OriginalSource is Microsoft.UI.Xaml.Controls.TextBox)
-                            {
-                                // Let native TextBox handle its context menu - don't interfere
-                                return;
-                            }
-
-                            // For other edit controls (CheckBox, pickers), show DataGrid context menu
-                            // These don't have useful native context menus
-                        }
-
-                        args.Handled = true;
-                        // Get position relative to the cell element for proper menu placement
-                        var winPos = args.GetPosition(element);
-                        var position = new Point(winPos.X, winPos.Y);
-                        // Pass the cell container as anchor so position is relative to it
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, capturedRowIndex, capturedColIndex, position, cellContainer).ConfigureAwait(false));
-                    };
-                }
-            };
-#elif MACCATALYST
-            // For Mac, use secondary click via PointerGestureRecognizer
-            var macCellContainer = container;
-            var macCapturedRowIndex = rowIndex;
-            var macCapturedColIndex = colIndex;
-            container.HandlerChanged += (s, e) =>
-            {
-                if (macCellContainer.Handler?.PlatformView is UIKit.UIView uiView)
-                {
-                    var tapRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
-                    {
-                        // If we're currently editing this cell, check if click is on a text input
-                        if (_editingRowIndex == macCapturedRowIndex && _editingColumnIndex == macCapturedColIndex && _currentEditControl != null)
-                        {
-                            // Check if the tap location is within a UITextField or UITextView
-                            // These have their own context menus (Cut/Copy/Paste) that should work
-                            var tapLocation = gesture.LocationInView(uiView);
-                            var hitView = uiView.HitTest(tapLocation, null);
-                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
-                            {
-                                // Let native text control handle its context menu
-                                return;
-                            }
-
-                            // For other edit controls (switches, pickers), show DataGrid context menu
-                        }
-
-                        var location = gesture.LocationInView(uiView);
-                        var position = new Point(location.X, location.Y);
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, macCapturedRowIndex, macCapturedColIndex, position, macCellContainer).ConfigureAwait(false));
-                    });
-                    tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
-                    uiView.AddGestureRecognizer(tapRecognizer);
-                }
-            };
-#endif
-
-            // Long-press for context menu on all platforms (mobile fallback)
-            var longPressCellContainer = container;
-            var longPressCapturedRowIndex = rowIndex;
-            var longPressCapturedColIndex = colIndex;
-            var panGesture = new PanGestureRecognizer();
-            bool isPanStarted = false;
-            System.Timers.Timer? longPressTimer = null;
-            Point longPressPosition = Point.Zero;
-
-            panGesture.PanUpdated += (s, e) =>
-            {
-                if (e.StatusType == GestureStatus.Started)
-                {
-                    // If we're currently editing this cell with an Entry, let the native text control
-                    // handle long-press for text selection instead of showing DataGrid context menu
-                    if (_editingRowIndex == longPressCapturedRowIndex && _editingColumnIndex == longPressCapturedColIndex && _currentEditControl != null)
-                    {
-                        // Entry controls need long-press for text selection on mobile
-                        if (_currentEditControl is Entry)
-                        {
-                            return;
-                        }
-
-                        // For other edit controls (CheckBox, pickers), we could show context menu
-                        // but long-press on these typically has no useful native behavior
-                    }
-
-                    isPanStarted = true;
-                    // Capture the position at the start of the gesture
-                    longPressPosition = new Point(e.TotalX, e.TotalY);
-                    longPressTimer = new System.Timers.Timer(500); // 500ms for long press
-                    longPressTimer.AutoReset = false;
-                    longPressTimer.Elapsed += (ts, te) =>
-                    {
-                        if (isPanStarted)
-                        {
-                            var pos = longPressPosition;
-                            Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, longPressCapturedRowIndex, longPressCapturedColIndex, pos, longPressCellContainer).ConfigureAwait(false));
-                        }
-                    };
-                    longPressTimer.Start();
-                }
-                else if (e.StatusType == GestureStatus.Running)
-                {
-                    // If moved too much, cancel the long-press
-                    if (Math.Abs(e.TotalX) > 10 || Math.Abs(e.TotalY) > 10)
-                    {
-                        isPanStarted = false;
-                        longPressTimer?.Stop();
-                        longPressTimer?.Dispose();
-                    }
-                }
-                else
-                {
-                    isPanStarted = false;
-                    longPressTimer?.Stop();
-                    longPressTimer?.Dispose();
-                }
-            };
-            longPressCellContainer.GestureRecognizers.Add(panGesture);
+            var state = new CellContextMenuState { RowIndex = rowIndex, ColIndex = colIndex, Column = column };
+            _cellContextMenuStates.AddOrUpdate(container, state);
+            container.HandlerChanging += OnCellContainerHandlerChanging;
+            container.HandlerChanged += OnCellContainerHandlerChanged;
         }
 
         return container;
