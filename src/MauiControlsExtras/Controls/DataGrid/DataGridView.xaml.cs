@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -153,6 +155,34 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private ComboBox? _activeComboBox;
     private DataGridComboBoxColumn? _activeComboBoxColumn;
     private object? _activeComboBoxItem;
+
+    // Context menu long-press
+    private const double LongPressDurationSeconds = 0.5;
+    private readonly ConditionalWeakTable<Grid, CellContextMenuState> _cellContextMenuStates = new();
+#if ANDROID
+    private readonly ConditionalWeakTable<Android.Views.View, PointHolder> _androidLastTouchPositions = new();
+    private sealed class PointHolder { public Point Position; }
+#endif
+
+    private sealed class CellContextMenuState
+    {
+        public int RowIndex;
+        public int ColIndex;
+        public DataGridColumn Column = null!;
+        public bool IsAttached;
+#if WINDOWS
+        public Microsoft.UI.Xaml.Input.RightTappedEventHandler? RightTappedHandler;
+        public Microsoft.UI.Xaml.Input.HoldingEventHandler? HoldingHandler;
+#elif MACCATALYST
+        public UIKit.UITapGestureRecognizer? SecondaryClickRecognizer;
+        public UIKit.UILongPressGestureRecognizer? LongPressRecognizer;
+#elif IOS
+        public UIKit.UILongPressGestureRecognizer? LongPressRecognizer;
+#elif ANDROID
+        public EventHandler<Android.Views.View.LongClickEventArgs>? LongClickHandler;
+        public EventHandler<Android.Views.View.TouchEventArgs>? TouchHandler;
+#endif
+    }
 
     #endregion
 
@@ -3476,6 +3506,289 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public IReadOnlyList<DataGridContextMenuAction>? GetDefaultContextMenuActions() => _lastContextMenuActions;
 
+    private void OnCellContainerHandlerChanging(object? sender, HandlerChangingEventArgs e)
+    {
+        if (sender is not Grid container)
+            return;
+
+        if (e.OldHandler?.PlatformView != null && _cellContextMenuStates.TryGetValue(container, out var state))
+        {
+            DetachNativeContextMenuHandlers(e.OldHandler.PlatformView, state);
+        }
+    }
+
+    private void OnCellContainerHandlerChanged(object? sender, EventArgs e)
+    {
+        if (sender is not Grid container)
+            return;
+
+        if (!_cellContextMenuStates.TryGetValue(container, out var state) || state.IsAttached)
+            return;
+
+        if (container.Handler?.PlatformView == null)
+            return;
+
+        AttachNativeContextMenuHandlers(container, container.Handler.PlatformView, state);
+    }
+
+    private void AttachNativeContextMenuHandlers(Grid container, object platformView, CellContextMenuState state)
+    {
+#if WINDOWS
+        if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
+        {
+            state.RightTappedHandler = (sender, args) =>
+            {
+                if (ShouldSuppressContextMenuForEditing(state.RowIndex, state.ColIndex, args.OriginalSource))
+                    return;
+
+                args.Handled = true;
+                var winPos = args.GetPosition(element);
+                var position = new Point(winPos.X, winPos.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            };
+            element.RightTapped += state.RightTappedHandler;
+
+            state.HoldingHandler = (sender, args) =>
+            {
+                if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
+                    return;
+
+                if (ShouldSuppressContextMenuForEditing(state.RowIndex, state.ColIndex, args.OriginalSource))
+                    return;
+
+                args.Handled = true;
+                var winPos = args.GetPosition(element);
+                var position = new Point(winPos.X, winPos.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            };
+            element.Holding += state.HoldingHandler;
+        }
+#elif MACCATALYST
+        if (platformView is UIKit.UIView uiView)
+        {
+            state.SecondaryClickRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
+            {
+                if (ShouldSuppressContextMenuForEditingApple(state.RowIndex, state.ColIndex, uiView, gesture))
+                    return;
+
+                var location = gesture.LocationInView(uiView);
+                var position = new Point(location.X, location.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            });
+            state.SecondaryClickRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
+            uiView.AddGestureRecognizer(state.SecondaryClickRecognizer);
+
+            state.LongPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
+            {
+                if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                    return;
+
+                if (ShouldSuppressContextMenuForEditingApple(state.RowIndex, state.ColIndex, uiView, gesture))
+                    return;
+
+                var location = gesture.LocationInView(uiView);
+                var position = new Point(location.X, location.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            });
+            state.LongPressRecognizer.MinimumPressDuration = LongPressDurationSeconds;
+            uiView.AddGestureRecognizer(state.LongPressRecognizer);
+        }
+#elif IOS
+        if (platformView is UIKit.UIView uiView)
+        {
+            state.LongPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
+            {
+                if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                    return;
+
+                if (ShouldSuppressContextMenuForEditingApple(state.RowIndex, state.ColIndex, uiView, gesture))
+                    return;
+
+                var location = gesture.LocationInView(uiView);
+                var position = new Point(location.X, location.Y);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            });
+            state.LongPressRecognizer.MinimumPressDuration = LongPressDurationSeconds;
+            uiView.AddGestureRecognizer(state.LongPressRecognizer);
+        }
+#elif ANDROID
+        if (platformView is Android.Views.View androidView)
+        {
+            state.TouchHandler = (sender, args) =>
+            {
+                if (args.Event?.Action == Android.Views.MotionEventActions.Down ||
+                    args.Event?.Action == Android.Views.MotionEventActions.Move)
+                {
+                    var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+                    var pos = new Point(args.Event.GetX() / density, args.Event.GetY() / density);
+                    _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder { Position = pos });
+                }
+                args.Handled = false; // Don't consume touch events
+            };
+            androidView.Touch += state.TouchHandler;
+
+            state.LongClickHandler = (sender, args) =>
+            {
+                if (ShouldSuppressContextMenuForEditingAndroid(state.RowIndex, state.ColIndex, androidView))
+                    return;
+
+                args.Handled = true;
+                var position = GetLastAndroidTouchPosition(androidView);
+                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+            };
+            androidView.LongClick += state.LongClickHandler;
+        }
+#endif
+        state.IsAttached = true;
+    }
+
+    private void DetachNativeContextMenuHandlers(object platformView, CellContextMenuState state)
+    {
+        if (!state.IsAttached)
+            return;
+
+#if WINDOWS
+        if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
+        {
+            if (state.RightTappedHandler != null)
+            {
+                element.RightTapped -= state.RightTappedHandler;
+                state.RightTappedHandler = null;
+            }
+            if (state.HoldingHandler != null)
+            {
+                element.Holding -= state.HoldingHandler;
+                state.HoldingHandler = null;
+            }
+        }
+#elif MACCATALYST
+        if (platformView is UIKit.UIView uiView)
+        {
+            if (state.SecondaryClickRecognizer != null)
+            {
+                uiView.RemoveGestureRecognizer(state.SecondaryClickRecognizer);
+                state.SecondaryClickRecognizer = null;
+            }
+            if (state.LongPressRecognizer != null)
+            {
+                uiView.RemoveGestureRecognizer(state.LongPressRecognizer);
+                state.LongPressRecognizer = null;
+            }
+        }
+#elif IOS
+        if (platformView is UIKit.UIView uiView)
+        {
+            if (state.LongPressRecognizer != null)
+            {
+                uiView.RemoveGestureRecognizer(state.LongPressRecognizer);
+                state.LongPressRecognizer = null;
+            }
+        }
+#elif ANDROID
+        if (platformView is Android.Views.View androidView)
+        {
+            if (state.LongClickHandler != null)
+            {
+                androidView.LongClick -= state.LongClickHandler;
+                state.LongClickHandler = null;
+            }
+            if (state.TouchHandler != null)
+            {
+                androidView.Touch -= state.TouchHandler;
+                state.TouchHandler = null;
+            }
+        }
+#endif
+        state.IsAttached = false;
+    }
+
+    private void DispatchShowContextMenuSafely(object? item, DataGridColumn? column,
+        int rowIndex, int colIndex, Point? position, View? anchorView)
+    {
+        Dispatcher.Dispatch(async () =>
+        {
+            try
+            {
+                await ShowContextMenuAsync(item, column, rowIndex, colIndex, position, anchorView);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
+            }
+        });
+    }
+
+#if WINDOWS
+    private bool ShouldSuppressContextMenuForEditing(int rowIndex, int colIndex, object? originalSource)
+    {
+        if (!DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null))
+            return false;
+
+        return originalSource is Microsoft.UI.Xaml.Controls.TextBox;
+    }
+#endif
+
+#if MACCATALYST || IOS
+    private bool ShouldSuppressContextMenuForEditingApple(int rowIndex, int colIndex, UIKit.UIView uiView, UIKit.UIGestureRecognizer gesture)
+    {
+        if (!DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null))
+            return false;
+
+        var tapLocation = gesture.LocationInView(uiView);
+        var hitView = uiView.HitTest(tapLocation, null);
+        return hitView is UIKit.UITextField || hitView is UIKit.UITextView;
+    }
+#endif
+
+#if ANDROID
+    private bool ShouldSuppressContextMenuForEditingAndroid(int rowIndex, int colIndex, Android.Views.View androidView)
+    {
+        if (!DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null))
+            return false;
+
+        // Hit-test at last touch position for accurate edit control detection
+        if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
+        {
+            var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+            var hitView = FindAndroidViewAtPosition(androidView, (int)(holder.Position.X * density), (int)(holder.Position.Y * density));
+            if (hitView is Android.Widget.EditText)
+                return true;
+        }
+
+        // Fall back to checking MAUI edit control type
+        return _currentEditControl is Entry;
+    }
+
+    private static Android.Views.View? FindAndroidViewAtPosition(Android.Views.View root, int x, int y)
+    {
+        if (root is Android.Views.ViewGroup group)
+        {
+            for (int i = group.ChildCount - 1; i >= 0; i--)
+            {
+                var child = group.GetChildAt(i);
+                if (child == null) continue;
+
+                var rect = new Android.Graphics.Rect();
+                child.GetHitRect(rect);
+                if (rect.Contains(x, y))
+                {
+                    var result = FindAndroidViewAtPosition(child, x - rect.Left, y - rect.Top);
+                    return result ?? child;
+                }
+            }
+        }
+        return root;
+    }
+
+    private Point GetLastAndroidTouchPosition(Android.Views.View androidView)
+    {
+        if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
+            return holder.Position;
+
+        return Point.Zero;
+    }
+#endif
+
     #endregion
 
     #region Private Methods - Grid Building
@@ -4097,6 +4410,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             bgColor = Colors.Transparent;
         }
         container.BackgroundColor = bgColor;
+        container.BindingContext = item;
 
         // Cell content
         var content = column.CreateCellContent(item);
@@ -4182,164 +4496,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Add context menu gesture (right-click on desktop, long-press on mobile)
         if (ShowDefaultContextMenu || ContextMenuTemplate != null || ContextMenuItems.Count > 0)
         {
-#if WINDOWS
-            // For Windows, use Handler to attach RightTapped and Holding events
-            // Capture container reference and indices for use in event handler
-            var cellContainer = container;
-            var capturedRowIndex = rowIndex;
-            var capturedColIndex = colIndex;
-            container.HandlerChanged += (s, e) =>
-            {
-                if (cellContainer.Handler?.PlatformView is Microsoft.UI.Xaml.FrameworkElement element)
-                {
-                    element.RightTapped += (sender, args) =>
-                    {
-                        // If we're currently editing this cell, check if click originated from a TextBox
-                        if (_editingRowIndex == capturedRowIndex && _editingColumnIndex == capturedColIndex && _currentEditControl != null)
-                        {
-                            if (args.OriginalSource is Microsoft.UI.Xaml.Controls.TextBox)
-                            {
-                                return;
-                            }
-                        }
-
-                        args.Handled = true;
-                        var winPos = args.GetPosition(element);
-                        var position = new Point(winPos.X, winPos.Y);
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, capturedRowIndex, capturedColIndex, position, cellContainer).ConfigureAwait(false));
-                    };
-
-                    // Touch long-press support via Holding event
-                    element.Holding += (sender, args) =>
-                    {
-                        if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
-                            return;
-
-                        // Skip if editing a TextBox (let native text selection work)
-                        if (_editingRowIndex == capturedRowIndex && _editingColumnIndex == capturedColIndex && _currentEditControl != null)
-                        {
-                            if (args.OriginalSource is Microsoft.UI.Xaml.Controls.TextBox)
-                            {
-                                return;
-                            }
-                        }
-
-                        args.Handled = true;
-                        var winPos = args.GetPosition(element);
-                        var position = new Point(winPos.X, winPos.Y);
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, capturedRowIndex, capturedColIndex, position, cellContainer).ConfigureAwait(false));
-                    };
-                }
-            };
-#elif MACCATALYST
-            // For Mac, use secondary click and long-press
-            var macCellContainer = container;
-            var macCapturedRowIndex = rowIndex;
-            var macCapturedColIndex = colIndex;
-            container.HandlerChanged += (s, e) =>
-            {
-                if (macCellContainer.Handler?.PlatformView is UIKit.UIView uiView)
-                {
-                    // Secondary click (right-click / two-finger tap)
-                    var tapRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
-                    {
-                        if (_editingRowIndex == macCapturedRowIndex && _editingColumnIndex == macCapturedColIndex && _currentEditControl != null)
-                        {
-                            var tapLocation = gesture.LocationInView(uiView);
-                            var hitView = uiView.HitTest(tapLocation, null);
-                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
-                            {
-                                return;
-                            }
-                        }
-
-                        var location = gesture.LocationInView(uiView);
-                        var position = new Point(location.X, location.Y);
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, macCapturedRowIndex, macCapturedColIndex, position, macCellContainer).ConfigureAwait(false));
-                    });
-                    tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
-                    uiView.AddGestureRecognizer(tapRecognizer);
-
-                    // Touch long-press (500ms hold)
-                    var longPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
-                    {
-                        if (gesture.State != UIKit.UIGestureRecognizerState.Began)
-                            return;
-
-                        if (_editingRowIndex == macCapturedRowIndex && _editingColumnIndex == macCapturedColIndex && _currentEditControl != null)
-                        {
-                            var tapLocation = gesture.LocationInView(uiView);
-                            var hitView = uiView.HitTest(tapLocation, null);
-                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
-                            {
-                                return;
-                            }
-                        }
-
-                        var location = gesture.LocationInView(uiView);
-                        var position = new Point(location.X, location.Y);
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, macCapturedRowIndex, macCapturedColIndex, position, macCellContainer).ConfigureAwait(false));
-                    });
-                    longPressRecognizer.MinimumPressDuration = 0.5;
-                    uiView.AddGestureRecognizer(longPressRecognizer);
-                }
-            };
-#elif IOS
-            // For iOS, use long-press gesture recognizer
-            var iosCellContainer = container;
-            var iosCapturedRowIndex = rowIndex;
-            var iosCapturedColIndex = colIndex;
-            container.HandlerChanged += (s, e) =>
-            {
-                if (iosCellContainer.Handler?.PlatformView is UIKit.UIView uiView)
-                {
-                    var longPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
-                    {
-                        if (gesture.State != UIKit.UIGestureRecognizerState.Began)
-                            return;
-
-                        if (_editingRowIndex == iosCapturedRowIndex && _editingColumnIndex == iosCapturedColIndex && _currentEditControl != null)
-                        {
-                            var tapLocation = gesture.LocationInView(uiView);
-                            var hitView = uiView.HitTest(tapLocation, null);
-                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
-                            {
-                                return;
-                            }
-                        }
-
-                        var location = gesture.LocationInView(uiView);
-                        var position = new Point(location.X, location.Y);
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, iosCapturedRowIndex, iosCapturedColIndex, position, iosCellContainer).ConfigureAwait(false));
-                    });
-                    longPressRecognizer.MinimumPressDuration = 0.5;
-                    uiView.AddGestureRecognizer(longPressRecognizer);
-                }
-            };
-#elif ANDROID
-            // For Android, use native LongClick event
-            var droidCellContainer = container;
-            var droidCapturedRowIndex = rowIndex;
-            var droidCapturedColIndex = colIndex;
-            container.HandlerChanged += (s, e) =>
-            {
-                if (droidCellContainer.Handler?.PlatformView is Android.Views.View androidView)
-                {
-                    androidView.LongClick += (sender, args) =>
-                    {
-                        // Skip if editing an Entry (let native text selection work)
-                        if (_editingRowIndex == droidCapturedRowIndex && _editingColumnIndex == droidCapturedColIndex && _currentEditControl is Entry)
-                        {
-                            return;
-                        }
-
-                        args.Handled = true;
-                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, droidCapturedRowIndex, droidCapturedColIndex, Point.Zero, droidCellContainer).ConfigureAwait(false));
-                    };
-                }
-            };
-#endif
-
+            var state = new CellContextMenuState { RowIndex = rowIndex, ColIndex = colIndex, Column = column };
+            _cellContextMenuStates.AddOrUpdate(container, state);
+            container.HandlerChanging += OnCellContainerHandlerChanging;
+            container.HandlerChanged += OnCellContainerHandlerChanged;
         }
 
         return container;
