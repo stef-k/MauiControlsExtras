@@ -4753,8 +4753,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _editingColumnIndex = colIndex;
         _originalEditValue = column.GetCellValue(item);
 
-        // Replace cell content with edit control
-        if (cellContainer.Children.Count > 0)
+        // Replace cell content with edit control (Children.Count > 0 guaranteed by early return above)
         {
             // Store original content for restoration on cancel
             _originalCellContent = cellContainer.Children[0] as View;
@@ -4904,7 +4903,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 _cellValidationErrors[(_editingRowIndex, _editingColumnIndex)] = ValidationResult.Failure(validationArgs.ErrorMessage ?? "Validation failed");
                 UpdateGridValidationState();
-                BuildDataRows();
+
+                // Use targeted refresh when virtualization is active to avoid full panel rebuild
+                if (EnableVirtualization && !EnablePagination && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
+                    RefreshVirtualizedCell(_editingRowIndex, _editingColumnIndex);
+                else
+                    BuildDataRows();
+
                 return;
             }
             else
@@ -5058,7 +5063,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var isAlternate = rowIndex % 2 == 1;
         var newCell = CreateDataCell(item, column, rowIndex, colIndex, isSelected, isAlternate);
 
-        // Find and replace the existing cell at this column
+        // Find and replace the existing cell at this column.
+        // If not found the row was recycled and will render correctly when it returns to view.
         for (int i = 0; i < rowGrid.Children.Count; i++)
         {
             if (rowGrid.Children[i] is Grid cellGrid && Grid.GetColumn(cellGrid) == adjustedColIndex)
@@ -5948,7 +5954,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Update virtualization panels if active
-        if (EnableVirtualization && _virtualizingPanel != null)
+        if (EnableVirtualization && !EnablePagination && _virtualizingPanel != null)
         {
             // Auto-commit any active edit before recycling rows to prevent data loss
             if (_editingItem != null && _editingRowIndex >= 0)
