@@ -17,7 +17,7 @@
 
 		<!-- NuGet Package Metadata -->
 		<PackageId>StefK.MauiControlsExtras</PackageId>
-		<Version>2.1.1</Version>
+		<Version>2.1.2</Version>
 		<Authors>stef-k</Authors>
 		<Company>stef-k</Company>
 		<Product>MAUI Controls Extras</Product>

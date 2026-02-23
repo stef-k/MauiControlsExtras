@@ -4359,9 +4359,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private void ApplyFilters()
     {
         _filteredItems.Clear();
+        _filteredItems.AddRange(ApplyFiltersCore());
+    }
 
+    private List<object> GetItemsFilteredExcluding(DataGridColumn excludeColumn)
+        => ApplyFiltersCore(excludeColumn);
+
+    private List<object> ApplyFiltersCore(DataGridColumn? excludeColumn = null)
+    {
         if (ItemsSource == null)
-            return;
+            return new List<object>();
 
         var items = ItemsSource.Cast<object>().ToList();
 
@@ -4381,8 +4388,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }).ToList();
         }
 
-        // Apply column filters
-        foreach (var filter in _activeFilters.Values.Where(f => f.IsActive))
+        // Apply column filters (skip excludeColumn when provided for cascading popup values)
+        foreach (var filter in _activeFilters.Values.Where(f => f.IsActive && (excludeColumn == null || f.Column != excludeColumn)))
         {
             items = items.Where(item =>
             {
@@ -4407,12 +4414,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }).ToList();
         }
 
-        _filteredItems.AddRange(items);
+        return items;
     }
 
     private void ShowFilterPopup(DataGridColumn column)
     {
-        var distinctValues = GetDistinctValues(column);
+        // Cascading filter: show only values from rows filtered by all OTHER columns
+        var baseItems = GetItemsFilteredExcluding(column);
+
+        var seen = new HashSet<object?>();
+        var distinctValues = new List<object?>();
+        foreach (var item in baseItems)
+        {
+            var value = column.GetCellValue(item);
+            if (seen.Add(value))
+                distinctValues.Add(value);
+        }
 
         IEnumerable<object>? currentSelection = null;
         if (_activeFilters.TryGetValue(column, out var existingFilter))
