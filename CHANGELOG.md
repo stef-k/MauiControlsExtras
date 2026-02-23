@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: Filter popup now shows cascading/progressive values — only distinct values from the currently filtered dataset are shown when multiple column filters are active (#219)
+  - When Column A is filtered, Column B's popup shows only values present in filtered rows (Excel-like behavior)
+  - A column's own filter is excluded so users can still see and modify their previous selection
+
 ## [2.1.1] - 2026-02-23
 
 ### Fixed

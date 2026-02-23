@@ -4410,9 +4410,69 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _filteredItems.AddRange(items);
     }
 
+    private List<object> GetItemsFilteredExcluding(DataGridColumn excludeColumn)
+    {
+        if (ItemsSource == null)
+            return new List<object>();
+
+        var items = ItemsSource.Cast<object>().ToList();
+
+        // Apply search text filter
+        if (!string.IsNullOrEmpty(SearchText))
+        {
+            var visibleColumns = GetVisibleColumns();
+            items = items.Where(item =>
+            {
+                foreach (var column in visibleColumns)
+                {
+                    var value = column.GetCellValue(item)?.ToString();
+                    if (value != null && value.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+                return false;
+            }).ToList();
+        }
+
+        // Apply all active column filters EXCEPT the excluded column
+        foreach (var filter in _activeFilters.Values.Where(f => f.IsActive && f.Column != excludeColumn))
+        {
+            items = items.Where(item =>
+            {
+                var value = filter.Column.GetCellValue(item);
+
+                if (filter.SelectedValues.Count > 0)
+                {
+                    if (!filter.SelectedValues.Contains(value!))
+                        return false;
+                }
+
+                if (!string.IsNullOrEmpty(filter.SearchText))
+                {
+                    var strValue = value?.ToString() ?? string.Empty;
+                    if (!strValue.Contains(filter.SearchText, StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+
+                return true;
+            }).ToList();
+        }
+
+        return items;
+    }
+
     private void ShowFilterPopup(DataGridColumn column)
     {
-        var distinctValues = GetDistinctValues(column);
+        // Cascading filter: show only values from rows filtered by all OTHER columns
+        var baseItems = GetItemsFilteredExcluding(column);
+
+        var seen = new HashSet<object?>();
+        var distinctValues = new List<object?>();
+        foreach (var item in baseItems)
+        {
+            var value = column.GetCellValue(item);
+            if (seen.Add(value))
+                distinctValues.Add(value);
+        }
 
         IEnumerable<object>? currentSelection = null;
         if (_activeFilters.TryGetValue(column, out var existingFilter))
