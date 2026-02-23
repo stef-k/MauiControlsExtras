@@ -148,6 +148,17 @@ The DataGridView supports native context menus with platform-specific implementa
 - **iOS**: UIAlertController action sheet
 - **Android**: PopupMenu
 
+### Context Menu Triggers
+
+| Platform | Right-click | Long-press (touch) |
+|----------|------------|-------------------|
+| Windows  | Yes (RightTapped) | Yes (Holding) |
+| macOS    | Yes (secondary click / two-finger tap) | Yes (500ms hold) |
+| iOS      | N/A | Yes (500ms hold) |
+| Android  | N/A | Yes (500ms hold) |
+
+> **Note:** When a cell is in text edit mode, long-press and right-click are passed through to the native text control for text selection — the DataGrid context menu is suppressed.
+
 ### Default Context Menu
 
 The default context menu provides Copy, Cut, Paste, Undo, Redo, and Delete actions:

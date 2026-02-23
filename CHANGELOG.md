@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.6] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: Context menu long-press now works reliably on all platforms (#223)
+  - iOS/Android: Replaced unreliable `PanGestureRecognizer` timer with native long-press handlers (`UILongPressGestureRecognizer` / `View.LongClick`)
+  - Windows: Added `Holding` event for touch long-press alongside existing right-click support
+  - macOS: Added `UILongPressGestureRecognizer` alongside existing secondary-click support
+  - Native text editing context menus (Cut/Copy/Paste) still take priority when a cell is in edit mode
+
 ## [2.1.4] - 2026-02-23
 
 ### Fixed

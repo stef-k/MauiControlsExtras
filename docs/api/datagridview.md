@@ -87,9 +87,20 @@ Per-column filter state is exposed on `DataGridColumn`:
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| ShowDefaultContextMenu | bool | true | Show built-in context menu items (Copy, Cut, Paste, Undo, Redo, Delete) |
+| ShowDefaultContextMenu | bool | true | Show built-in context menu items (Copy, Cut, Paste, Undo, Redo, Delete). See trigger table below. |
 | ContextMenuItems | ContextMenuItemCollection | | Custom context menu items defined in XAML or code |
 | ContextMenuTemplate | DataTemplate | null | Custom template for full control over context menu appearance |
+
+### Context Menu Triggers
+
+| Platform | Right-click | Long-press (touch) |
+|----------|------------|-------------------|
+| Windows  | Yes (RightTapped) | Yes (Holding) |
+| macOS    | Yes (secondary click / two-finger tap) | Yes (500ms hold) |
+| iOS      | N/A | Yes (500ms hold) |
+| Android  | N/A | Yes (500ms hold) |
+
+> When a cell is in text edit mode, long-press and right-click are passed through to the native text control for text selection — the DataGrid context menu is suppressed.
 
 ## Events
 

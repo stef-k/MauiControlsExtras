@@ -4183,7 +4183,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (ShowDefaultContextMenu || ContextMenuTemplate != null || ContextMenuItems.Count > 0)
         {
 #if WINDOWS
-            // For Windows, use Handler to attach RightTapped event (ButtonsMask.Secondary has known bugs)
+            // For Windows, use Handler to attach RightTapped and Holding events
             // Capture container reference and indices for use in event handler
             var cellContainer = container;
             var capturedRowIndex = rowIndex;
@@ -4197,29 +4197,42 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                         // If we're currently editing this cell, check if click originated from a TextBox
                         if (_editingRowIndex == capturedRowIndex && _editingColumnIndex == capturedColIndex && _currentEditControl != null)
                         {
-                            // Check if the event source is a native TextBox (Entry's platform control)
-                            // TextBox has its own context menu (Cut/Copy/Paste/Select All) that should work
                             if (args.OriginalSource is Microsoft.UI.Xaml.Controls.TextBox)
                             {
-                                // Let native TextBox handle its context menu - don't interfere
                                 return;
                             }
-
-                            // For other edit controls (CheckBox, pickers), show DataGrid context menu
-                            // These don't have useful native context menus
                         }
 
                         args.Handled = true;
-                        // Get position relative to the cell element for proper menu placement
                         var winPos = args.GetPosition(element);
                         var position = new Point(winPos.X, winPos.Y);
-                        // Pass the cell container as anchor so position is relative to it
+                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, capturedRowIndex, capturedColIndex, position, cellContainer).ConfigureAwait(false));
+                    };
+
+                    // Touch long-press support via Holding event
+                    element.Holding += (sender, args) =>
+                    {
+                        if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
+                            return;
+
+                        // Skip if editing a TextBox (let native text selection work)
+                        if (_editingRowIndex == capturedRowIndex && _editingColumnIndex == capturedColIndex && _currentEditControl != null)
+                        {
+                            if (args.OriginalSource is Microsoft.UI.Xaml.Controls.TextBox)
+                            {
+                                return;
+                            }
+                        }
+
+                        args.Handled = true;
+                        var winPos = args.GetPosition(element);
+                        var position = new Point(winPos.X, winPos.Y);
                         Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, capturedRowIndex, capturedColIndex, position, cellContainer).ConfigureAwait(false));
                     };
                 }
             };
 #elif MACCATALYST
-            // For Mac, use secondary click via PointerGestureRecognizer
+            // For Mac, use secondary click and long-press
             var macCellContainer = container;
             var macCapturedRowIndex = rowIndex;
             var macCapturedColIndex = colIndex;
@@ -4227,22 +4240,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 if (macCellContainer.Handler?.PlatformView is UIKit.UIView uiView)
                 {
+                    // Secondary click (right-click / two-finger tap)
                     var tapRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
                     {
-                        // If we're currently editing this cell, check if click is on a text input
                         if (_editingRowIndex == macCapturedRowIndex && _editingColumnIndex == macCapturedColIndex && _currentEditControl != null)
                         {
-                            // Check if the tap location is within a UITextField or UITextView
-                            // These have their own context menus (Cut/Copy/Paste) that should work
                             var tapLocation = gesture.LocationInView(uiView);
                             var hitView = uiView.HitTest(tapLocation, null);
                             if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
                             {
-                                // Let native text control handle its context menu
                                 return;
                             }
-
-                            // For other edit controls (switches, pickers), show DataGrid context menu
                         }
 
                         var location = gesture.LocationInView(uiView);
@@ -4251,70 +4259,87 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     });
                     tapRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
                     uiView.AddGestureRecognizer(tapRecognizer);
+
+                    // Touch long-press (500ms hold)
+                    var longPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
+                    {
+                        if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                            return;
+
+                        if (_editingRowIndex == macCapturedRowIndex && _editingColumnIndex == macCapturedColIndex && _currentEditControl != null)
+                        {
+                            var tapLocation = gesture.LocationInView(uiView);
+                            var hitView = uiView.HitTest(tapLocation, null);
+                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
+                            {
+                                return;
+                            }
+                        }
+
+                        var location = gesture.LocationInView(uiView);
+                        var position = new Point(location.X, location.Y);
+                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, macCapturedRowIndex, macCapturedColIndex, position, macCellContainer).ConfigureAwait(false));
+                    });
+                    longPressRecognizer.MinimumPressDuration = 0.5;
+                    uiView.AddGestureRecognizer(longPressRecognizer);
                 }
             };
-#endif
-
-            // Long-press for context menu on all platforms (mobile fallback)
-            var longPressCellContainer = container;
-            var longPressCapturedRowIndex = rowIndex;
-            var longPressCapturedColIndex = colIndex;
-            var panGesture = new PanGestureRecognizer();
-            bool isPanStarted = false;
-            System.Timers.Timer? longPressTimer = null;
-            Point longPressPosition = Point.Zero;
-
-            panGesture.PanUpdated += (s, e) =>
+#elif IOS
+            // For iOS, use long-press gesture recognizer
+            var iosCellContainer = container;
+            var iosCapturedRowIndex = rowIndex;
+            var iosCapturedColIndex = colIndex;
+            container.HandlerChanged += (s, e) =>
             {
-                if (e.StatusType == GestureStatus.Started)
+                if (iosCellContainer.Handler?.PlatformView is UIKit.UIView uiView)
                 {
-                    // If we're currently editing this cell with an Entry, let the native text control
-                    // handle long-press for text selection instead of showing DataGrid context menu
-                    if (_editingRowIndex == longPressCapturedRowIndex && _editingColumnIndex == longPressCapturedColIndex && _currentEditControl != null)
+                    var longPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
                     {
-                        // Entry controls need long-press for text selection on mobile
-                        if (_currentEditControl is Entry)
+                        if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                            return;
+
+                        if (_editingRowIndex == iosCapturedRowIndex && _editingColumnIndex == iosCapturedColIndex && _currentEditControl != null)
+                        {
+                            var tapLocation = gesture.LocationInView(uiView);
+                            var hitView = uiView.HitTest(tapLocation, null);
+                            if (hitView is UIKit.UITextField || hitView is UIKit.UITextView)
+                            {
+                                return;
+                            }
+                        }
+
+                        var location = gesture.LocationInView(uiView);
+                        var position = new Point(location.X, location.Y);
+                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, iosCapturedRowIndex, iosCapturedColIndex, position, iosCellContainer).ConfigureAwait(false));
+                    });
+                    longPressRecognizer.MinimumPressDuration = 0.5;
+                    uiView.AddGestureRecognizer(longPressRecognizer);
+                }
+            };
+#elif ANDROID
+            // For Android, use native LongClick event
+            var droidCellContainer = container;
+            var droidCapturedRowIndex = rowIndex;
+            var droidCapturedColIndex = colIndex;
+            container.HandlerChanged += (s, e) =>
+            {
+                if (droidCellContainer.Handler?.PlatformView is Android.Views.View androidView)
+                {
+                    androidView.LongClick += (sender, args) =>
+                    {
+                        // Skip if editing an Entry (let native text selection work)
+                        if (_editingRowIndex == droidCapturedRowIndex && _editingColumnIndex == droidCapturedColIndex && _currentEditControl is Entry)
                         {
                             return;
                         }
 
-                        // For other edit controls (CheckBox, pickers), we could show context menu
-                        // but long-press on these typically has no useful native behavior
-                    }
-
-                    isPanStarted = true;
-                    // Capture the position at the start of the gesture
-                    longPressPosition = new Point(e.TotalX, e.TotalY);
-                    longPressTimer = new System.Timers.Timer(500); // 500ms for long press
-                    longPressTimer.AutoReset = false;
-                    longPressTimer.Elapsed += (ts, te) =>
-                    {
-                        if (isPanStarted)
-                        {
-                            var pos = longPressPosition;
-                            Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, longPressCapturedRowIndex, longPressCapturedColIndex, pos, longPressCellContainer).ConfigureAwait(false));
-                        }
+                        args.Handled = true;
+                        Dispatcher.Dispatch(() => ShowContextMenuAsync(item, column, droidCapturedRowIndex, droidCapturedColIndex, Point.Zero, droidCellContainer).ConfigureAwait(false));
                     };
-                    longPressTimer.Start();
-                }
-                else if (e.StatusType == GestureStatus.Running)
-                {
-                    // If moved too much, cancel the long-press
-                    if (Math.Abs(e.TotalX) > 10 || Math.Abs(e.TotalY) > 10)
-                    {
-                        isPanStarted = false;
-                        longPressTimer?.Stop();
-                        longPressTimer?.Dispose();
-                    }
-                }
-                else
-                {
-                    isPanStarted = false;
-                    longPressTimer?.Stop();
-                    longPressTimer?.Dispose();
                 }
             };
-            longPressCellContainer.GestureRecognizers.Add(panGesture);
+#endif
+
         }
 
         return container;
