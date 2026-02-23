@@ -1710,8 +1710,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             }
             else
             {
+#if WINDOWS || MACCATALYST
                 // Focus the hidden keyboard capture entry for keyboard navigation when search is hidden
                 Dispatcher.Dispatch(() => keyboardCaptureEntry?.Focus());
+#endif
             }
         }
         else

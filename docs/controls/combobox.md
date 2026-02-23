@@ -139,6 +139,8 @@ For small item lists where search adds unnecessary complexity, hide the search i
                  Placeholder="Select status..." />
 ```
 
+> **Note:** On iOS and Android, hiding the search box also prevents the software keyboard from appearing when the dropdown opens — the dropdown is touch-only on mobile platforms.
+
 **When to hide the search box:**
 
 | Scenario | Recommendation |

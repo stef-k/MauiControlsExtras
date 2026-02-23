@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-02-23
+
+### Fixed
+
+- **ComboBox**: Software keyboard no longer appears on iOS/Android when `IsSearchVisible="False"` (#216)
+  - Hidden keyboard-capture entry focus is now restricted to desktop platforms (`WINDOWS` / `MACCATALYST`) via preprocessor guard
+  - No behavioral change on Windows or macOS — keyboard navigation continues to work when search is hidden
+
 ## [2.1.0] - 2026-02-22
 
 ### Added

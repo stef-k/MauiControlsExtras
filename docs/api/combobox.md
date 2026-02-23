@@ -254,6 +254,8 @@ public bool IsSearchVisible { get; set; }
                  Placeholder="Select priority..." />
 ```
 
+> **Note:** On iOS and Android, the software keyboard does not appear when the dropdown opens with search hidden. Desktop platforms (Windows, macOS) retain hidden keyboard-capture for keyboard navigation.
+
 **Example - Dynamic toggle via binding:**
 
 ```xml
