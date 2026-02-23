@@ -53,13 +53,17 @@ A feature-rich data grid control for displaying and editing tabular data.
 ```xml
 <extras:DataGridView
     ItemsSource="{Binding Employees}"
-    EnableSorting="True"
-    EnableFiltering="True"
+    CanUserSort="True"
+    CanUserFilter="True"
     DefaultSortColumn="Name"
     DefaultSortDirection="Ascending">
     ...
 </extras:DataGridView>
 ```
+
+Per-column filtering can be controlled via `DataGridColumn.CanUserFilter`. When a column is filtered, `IsFiltered` returns `true` and the active filter state is available through `FilterValues` (checkbox-list selection) and `FilterText` (text search).
+
+> **Touch targets**: The filter icon in column headers meets the 44×44pt minimum touch target recommended by Apple HIG and Material Design guidelines.
 
 ## Column Types
 

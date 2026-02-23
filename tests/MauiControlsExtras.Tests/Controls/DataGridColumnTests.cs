@@ -167,4 +167,147 @@ public class DataGridColumnTests
         Assert.False(failResult.IsValid);
         Assert.Equal("Required", failResult.FirstError);
     }
+
+    // --- FilterValues tests ---
+
+    [Fact]
+    public void FilterValues_DefaultsToNull()
+    {
+        var col = new DataGridTextColumn();
+        Assert.Null(col.FilterValues);
+    }
+
+    [Fact]
+    public void FilterValues_Set_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = new List<string>();
+        col.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        col.FilterValues = new object[] { "A", "B" };
+
+        Assert.Contains(nameof(DataGridColumn.FilterValues), raised);
+        Assert.Contains(nameof(DataGridColumn.IsFiltered), raised);
+    }
+
+    [Fact]
+    public void FilterValues_NonEmpty_SetsIsFilteredTrue()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterValues = new object[] { "A" };
+        Assert.True(col.IsFiltered);
+    }
+
+    [Fact]
+    public void FilterValues_EmptyCollection_SetsIsFilteredFalse()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterValues = Enumerable.Empty<object>();
+        Assert.False(col.IsFiltered);
+    }
+
+    [Fact]
+    public void FilterValues_ResetToNull_SetsIsFilteredFalse()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterValues = new object[] { "A" };
+        Assert.True(col.IsFiltered);
+
+        col.FilterValues = null;
+        Assert.False(col.IsFiltered);
+    }
+
+    // --- FilterText tests ---
+
+    [Fact]
+    public void FilterText_DefaultsToNull()
+    {
+        var col = new DataGridTextColumn();
+        Assert.Null(col.FilterText);
+    }
+
+    [Fact]
+    public void FilterText_Set_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = new List<string>();
+        col.PropertyChanged += (_, e) => raised.Add(e.PropertyName!);
+
+        col.FilterText = "search";
+
+        Assert.Contains(nameof(DataGridColumn.FilterText), raised);
+        Assert.Contains(nameof(DataGridColumn.IsFiltered), raised);
+    }
+
+    [Fact]
+    public void FilterText_NonEmpty_SetsIsFilteredTrue()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterText = "search";
+        Assert.True(col.IsFiltered);
+    }
+
+    [Fact]
+    public void FilterText_EmptyString_SetsIsFilteredFalse()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterText = "";
+        Assert.False(col.IsFiltered);
+    }
+
+    [Fact]
+    public void FilterText_ResetToNull_SetsIsFilteredFalse()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterText = "search";
+        Assert.True(col.IsFiltered);
+
+        col.FilterText = null;
+        Assert.False(col.IsFiltered);
+    }
+
+    // --- IsFiltered combined tests ---
+
+    [Fact]
+    public void IsFiltered_FalseByDefault()
+    {
+        var col = new DataGridTextColumn();
+        Assert.False(col.IsFiltered);
+    }
+
+    [Fact]
+    public void IsFiltered_TrueWithOnlyFilterValues()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterValues = new object[] { 1, 2 };
+        Assert.True(col.IsFiltered);
+        Assert.Null(col.FilterText);
+    }
+
+    [Fact]
+    public void IsFiltered_TrueWithOnlyFilterText()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterText = "abc";
+        Assert.True(col.IsFiltered);
+        Assert.Null(col.FilterValues);
+    }
+
+    [Fact]
+    public void IsFiltered_TrueWithBoth()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterValues = new object[] { "X" };
+        col.FilterText = "Y";
+        Assert.True(col.IsFiltered);
+    }
+
+    [Fact]
+    public void IsFiltered_FalseWhenBothEmptyOrNull()
+    {
+        var col = new DataGridTextColumn();
+        col.FilterValues = Enumerable.Empty<object>();
+        col.FilterText = "";
+        Assert.False(col.IsFiltered);
+    }
 }

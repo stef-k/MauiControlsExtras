@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: Filter icon touch target enlarged to meet 44×44pt minimum (#220)
+  - Icon wrapped in transparent `Border` with `MinimumWidthRequest = 44` / `MinimumHeightRequest = 44`
+  - `TapGestureRecognizer` attached to the wrapper for full-area tap detection
+  - Icon `FontSize` increased from 12 to 14 for improved legibility
+
 ## [2.1.2] - 2026-02-23
 
 ### Fixed
@@ -251,6 +260,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 2.1.3 | 2026-02-23 | DataGrid filter icon 44pt touch target fix |
 | 2.0.0 | 2026-02-21 | 15 enterprise controls, keyboard/clipboard/undo-redo, dark theme, MVVM parity |
 | 1.0.0 | — | Initial release with ComboBox |
 

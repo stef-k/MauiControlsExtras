@@ -3689,18 +3689,31 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             var filterLabel = new Label
             {
                 Text = column.IsFiltered ? "⫧" : "⫶",
-                FontSize = 12,
+                FontSize = 14,
+                HorizontalOptions = LayoutOptions.Center,
                 VerticalOptions = LayoutOptions.Center,
-                TextColor = column.IsFiltered ? EffectiveAccentColor : Colors.Gray,
-                Margin = new Thickness(4, 0, 0, 0)
+                TextColor = column.IsFiltered ? EffectiveAccentColor : Colors.Gray
+            };
+
+            // Wrap in Border for 44×44pt minimum touch target (Apple HIG / Material Design)
+            var filterContainer = new Border
+            {
+                BackgroundColor = Colors.Transparent,
+                StrokeThickness = 0,
+                MinimumWidthRequest = 44,
+                MinimumHeightRequest = 44,
+                HorizontalOptions = LayoutOptions.Center,
+                VerticalOptions = LayoutOptions.Center,
+                Margin = new Thickness(4, 0, 0, 0),
+                Content = filterLabel
             };
 
             var filterTap = new TapGestureRecognizer();
             filterTap.Tapped += (s, e) => ShowFilterPopup(column);
-            filterLabel.GestureRecognizers.Add(filterTap);
+            filterContainer.GestureRecognizers.Add(filterTap);
 
-            contentGrid.Children.Add(filterLabel);
-            Grid.SetColumn(filterLabel, 1);
+            contentGrid.Children.Add(filterContainer);
+            Grid.SetColumn(filterContainer, 1);
         }
 
         // Sort indicator (only show if sorting is enabled)

@@ -34,11 +34,22 @@ public class DataGridView : StyledControlBase, IUndoRedo, IClipboardSupport, IKe
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
-| EnableSorting | bool | false | Allow column sorting |
-| EnableFiltering | bool | false | Show filter UI |
+| CanUserSort | bool | false | Allow column sorting |
+| CanUserFilter | bool | false | Show filter UI |
 | SortColumn | string | null | Current sort column |
 | SortDirection | SortDirection | None | Current sort direction |
 | FilterExpression | string | null | Current filter |
+
+### Column Filter Properties
+
+Per-column filter state is exposed on `DataGridColumn`:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| CanUserFilter | bool | true | Whether this column shows a filter icon |
+| IsFiltered | bool | (computed) | `true` when `FilterValues` or `FilterText` is non-empty |
+| FilterValues | IEnumerable\<object\>? | null | Selected values from the filter popup checkbox list |
+| FilterText | string? | null | Text search filter applied to this column |
 
 ### Selection Properties
 
