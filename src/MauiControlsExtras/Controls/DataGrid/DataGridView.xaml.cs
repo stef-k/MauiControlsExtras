@@ -163,7 +163,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private readonly ConditionalWeakTable<Grid, CellContextMenuState> _cellContextMenuStates = new();
 #if ANDROID
     private readonly ConditionalWeakTable<Android.Views.View, PointHolder> _androidLastTouchPositions = new();
-    private sealed class PointHolder { public Point Position; }
+    /// <summary>Stores both DIP and raw pixel touch positions to avoid round-trip density conversion.</summary>
+    private sealed class PointHolder
+    {
+        public Point PositionDip;
+        public Point PositionPx;
+    }
 #endif
 
     // RowIndex/ColIndex are set at creation time. This is safe because CreateDataCell always
@@ -3627,14 +3632,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     args.Event?.Action == Android.Views.MotionEventActions.Move)
                 {
                     var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
-                    var pos = new Point(args.Event.GetX() / density, args.Event.GetY() / density);
+                    var rawX = args.Event.GetX();
+                    var rawY = args.Event.GetY();
+                    var posDip = new Point(rawX / density, rawY / density);
+                    var posPx = new Point(rawX, rawY);
                     if (_androidLastTouchPositions.TryGetValue(androidView, out var existing))
-                        existing.Position = pos;
+                    {
+                        existing.PositionDip = posDip;
+                        existing.PositionPx = posPx;
+                    }
                     else
-                        _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder { Position = pos });
+                        _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder { PositionDip = posDip, PositionPx = posPx });
                 }
                 args.Handled = false; // Don't consume touch events
             };
+            androidView.LongClickable = true;
             androidView.Touch += state.TouchHandler;
 
             state.LongClickHandler = (sender, args) =>
@@ -3677,11 +3689,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (state.SecondaryClickRecognizer != null)
             {
                 uiView.RemoveGestureRecognizer(state.SecondaryClickRecognizer);
+                state.SecondaryClickRecognizer.Dispose();
                 state.SecondaryClickRecognizer = null;
             }
             if (state.LongPressRecognizer != null)
             {
                 uiView.RemoveGestureRecognizer(state.LongPressRecognizer);
+                state.LongPressRecognizer.Dispose();
                 state.LongPressRecognizer = null;
             }
         }
@@ -3691,6 +3705,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (state.LongPressRecognizer != null)
             {
                 uiView.RemoveGestureRecognizer(state.LongPressRecognizer);
+                state.LongPressRecognizer.Dispose();
                 state.LongPressRecognizer = null;
             }
         }
@@ -3756,11 +3771,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (!DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null))
             return false;
 
-        // Hit-test at last touch position for accurate edit control detection
+        // Hit-test at last touch position (raw pixels) for accurate edit control detection
         if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
         {
-            var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
-            var hitView = FindAndroidViewAtPosition(androidView, (int)(holder.Position.X * density), (int)(holder.Position.Y * density));
+            var hitView = FindAndroidViewAtPosition(androidView, (int)holder.PositionPx.X, (int)holder.PositionPx.Y);
             if (hitView is Android.Widget.EditText)
                 return true;
         }
@@ -3793,7 +3807,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private Point GetLastAndroidTouchPosition(Android.Views.View androidView)
     {
         if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
-            return holder.Position;
+            return holder.PositionDip;
 
         return Point.Zero;
     }
@@ -4295,6 +4309,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         var isSelected = _selectedItems.Contains(item);
         var isAlternate = rowIndex % 2 == 1;
+
+        // Guard: if container reuse is ever added (skipping Children.Clear), CellContextMenuState
+        // RowIndex/ColIndex would become stale. This assertion catches that during development.
+        Debug.Assert(rowGrid.Children.Count == 0 || !rowGrid.Children.OfType<Grid>().Any(c =>
+            _cellContextMenuStates.TryGetValue(c, out var s) && s.IsAttached && s.RowIndex != rowIndex),
+            "Virtualized row is being reused with attached context menu handlers from a different row. " +
+            "CellContextMenuState.RowIndex/ColIndex must be updated when containers are recycled.");
 
         // Clear and rebuild cells (simpler approach; could optimize to update in-place)
         rowGrid.Children.Clear();
