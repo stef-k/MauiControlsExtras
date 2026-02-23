@@ -4359,58 +4359,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private void ApplyFilters()
     {
         _filteredItems.Clear();
-
-        if (ItemsSource == null)
-            return;
-
-        var items = ItemsSource.Cast<object>().ToList();
-
-        // Apply search text filter
-        if (!string.IsNullOrEmpty(SearchText))
-        {
-            var visibleColumns = GetVisibleColumns();
-            items = items.Where(item =>
-            {
-                foreach (var column in visibleColumns)
-                {
-                    var value = column.GetCellValue(item)?.ToString();
-                    if (value != null && value.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
-                        return true;
-                }
-                return false;
-            }).ToList();
-        }
-
-        // Apply column filters
-        foreach (var filter in _activeFilters.Values.Where(f => f.IsActive))
-        {
-            items = items.Where(item =>
-            {
-                var value = filter.Column.GetCellValue(item);
-
-                // Check selected values
-                if (filter.SelectedValues.Count > 0)
-                {
-                    if (!filter.SelectedValues.Contains(value!))
-                        return false;
-                }
-
-                // Check search text
-                if (!string.IsNullOrEmpty(filter.SearchText))
-                {
-                    var strValue = value?.ToString() ?? string.Empty;
-                    if (!strValue.Contains(filter.SearchText, StringComparison.OrdinalIgnoreCase))
-                        return false;
-                }
-
-                return true;
-            }).ToList();
-        }
-
-        _filteredItems.AddRange(items);
+        _filteredItems.AddRange(ApplyFiltersCore());
     }
 
     private List<object> GetItemsFilteredExcluding(DataGridColumn excludeColumn)
+        => ApplyFiltersCore(excludeColumn);
+
+    private List<object> ApplyFiltersCore(DataGridColumn? excludeColumn = null)
     {
         if (ItemsSource == null)
             return new List<object>();
@@ -4433,19 +4388,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }).ToList();
         }
 
-        // Apply all active column filters EXCEPT the excluded column
-        foreach (var filter in _activeFilters.Values.Where(f => f.IsActive && f.Column != excludeColumn))
+        // Apply column filters (skip excludeColumn when provided for cascading popup values)
+        foreach (var filter in _activeFilters.Values.Where(f => f.IsActive && (excludeColumn == null || f.Column != excludeColumn)))
         {
             items = items.Where(item =>
             {
                 var value = filter.Column.GetCellValue(item);
 
+                // Check selected values
                 if (filter.SelectedValues.Count > 0)
                 {
                     if (!filter.SelectedValues.Contains(value!))
                         return false;
                 }
 
+                // Check search text
                 if (!string.IsNullOrEmpty(filter.SearchText))
                 {
                     var strValue = value?.ToString() ?? string.Empty;
