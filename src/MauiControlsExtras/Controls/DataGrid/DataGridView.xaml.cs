@@ -3752,10 +3752,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     }
 
     /// <summary>
-    /// Suppresses the DataGrid context menu when any cell is in edit mode.
-    /// This is an intentional blanket suppression for all edit control types
-    /// (Entry, CheckBox, DatePicker, TimePicker, Picker, ComboBox) rather than
-    /// per-control-type checking—simpler and safer against new control types.
+    /// Suppresses the DataGrid context menu when the target cell is currently being edited.
+    /// All edit control types (Entry, CheckBox, DatePicker, TimePicker, Picker, ComboBox) are
+    /// suppressed uniformly rather than per-type—simpler and safer against new control types.
+    /// Non-editing cells are not affected and will show the context menu normally.
     /// </summary>
     private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
         => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
