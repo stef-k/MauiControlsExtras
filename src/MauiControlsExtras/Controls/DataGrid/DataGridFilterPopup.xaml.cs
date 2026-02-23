@@ -7,6 +7,11 @@ namespace MauiControlsExtras.Controls;
 /// </summary>
 public partial class DataGridFilterPopup : StyledControlBase
 {
+    // Sentinel used in _selectedValues and _checkboxMap to represent null cell values,
+    // because HashSet<object>/Dictionary<object,T> cannot use null as a key.
+    // Converted back to null at the emit boundary (OnApplyClicked).
+    private static readonly object NullSentinel = new();
+
     private readonly HashSet<object> _selectedValues = new();
     private readonly Dictionary<object, CheckBox> _checkboxMap = new();
     private List<FilterItem> _allItems = new();
@@ -52,24 +57,25 @@ public partial class DataGridFilterPopup : StyledControlBase
         _selectedValues.Clear();
         _checkboxMap.Clear();
 
-        // Add current selections
+        // Add current selections (wrap null → NullSentinel for HashSet compatibility)
         if (currentlySelected != null)
         {
             foreach (var val in currentlySelected)
             {
-                _selectedValues.Add(val);
+                _selectedValues.Add(val ?? NullSentinel);
             }
         }
 
-        // Build items list
+        // Build items list (store NullSentinel internally for null values)
         foreach (var value in distinctValues)
         {
+            var wrappedValue = value ?? NullSentinel;
             var displayText = value?.ToString() ?? "(Empty)";
             var item = new FilterItem
             {
-                Value = value,
+                Value = wrappedValue,
                 DisplayText = displayText,
-                IsSelected = value != null && _selectedValues.Contains(value)
+                IsSelected = _selectedValues.Contains(wrappedValue)
             };
             _allItems.Add(item);
         }
@@ -100,21 +106,15 @@ public partial class DataGridFilterPopup : StyledControlBase
                 VerticalOptions = LayoutOptions.Center
             };
 
-            // Store reference for Select All / Clear
-            if (item.Value != null)
-            {
-                _checkboxMap[item.Value] = checkBox;
-            }
+            // Store reference for Select All / Clear (Value is never null; NullSentinel used for null cells)
+            _checkboxMap[item.Value!] = checkBox;
 
             checkBox.CheckedChanged += (s, e) =>
             {
-                if (item.Value != null)
-                {
-                    if (e.Value)
-                        _selectedValues.Add(item.Value);
-                    else
-                        _selectedValues.Remove(item.Value);
-                }
+                if (e.Value)
+                    _selectedValues.Add(item.Value!);
+                else
+                    _selectedValues.Remove(item.Value!);
             };
 
             var label = new Label
@@ -154,13 +154,10 @@ public partial class DataGridFilterPopup : StyledControlBase
     {
         foreach (var item in _allItems)
         {
-            if (item.Value != null)
+            _selectedValues.Add(item.Value!);
+            if (_checkboxMap.TryGetValue(item.Value!, out var checkBox))
             {
-                _selectedValues.Add(item.Value);
-                if (_checkboxMap.TryGetValue(item.Value, out var checkBox))
-                {
-                    checkBox.IsChecked = true;
-                }
+                checkBox.IsChecked = true;
             }
         }
     }
@@ -181,13 +178,16 @@ public partial class DataGridFilterPopup : StyledControlBase
 
     private void OnApplyClicked(object? sender, EventArgs e)
     {
-        var args = new FilterAppliedEventArgs(_column, _selectedValues.ToList(), searchEntry.Text);
+        // Convert NullSentinel back to null for downstream consumers
+        var values = _selectedValues.Select(v => v == NullSentinel ? null! : v).ToList();
+        var args = new FilterAppliedEventArgs(_column, values, searchEntry.Text);
         FilterApplied?.Invoke(this, args);
     }
 
     private class FilterItem
     {
-        public object? Value { get; set; }
+        // Value is never null internally; NullSentinel represents null cell values
+        public object Value { get; set; } = null!;
         public string DisplayText { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
     }

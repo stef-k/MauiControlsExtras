@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.7] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: Filter popup now correctly preserves the "(Empty)" checkbox state when reopening after filtering null values (#217)
+  - Null cell values are represented internally via a sentinel object for `HashSet`/`Dictionary` compatibility
+  - Select All / Clear actions now include null entries
+- **DataGrid**: Corrected `ShouldSuppressContextMenu` doc comment to accurately describe per-cell (not per-grid) suppression behavior
+
 ## [2.1.6] - 2026-02-23
 
 ### Fixed
@@ -285,6 +294,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 2.1.7 | 2026-02-23 | DataGrid filter popup null-value checkbox preservation (#217) |
 | 2.1.6 | 2026-02-23 | DataGrid context menu native long-press on all platforms (#223) |
 | 2.1.5 | 2026-02-23 | DataGrid cell editing with virtualization enabled (#222, #227) |
 | 2.1.4 | 2026-02-23 | DataGrid RefreshData visual update in default mode (#221) |
