@@ -3820,7 +3820,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Get items for current page
         var displayItems = GetDisplayItems();
         if (displayItems.Count == 0)
+        {
+            dataGrid.InvalidateMeasure();
+            frozenDataGrid.InvalidateMeasure();
             return;
+        }
 
         var frozenColumns = GetFrozenColumns();
         var scrollableColumns = GetScrollableColumns();
