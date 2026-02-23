@@ -139,7 +139,9 @@ public partial class ComboBoxPopupContent : StyledControlBase
         }
         else
         {
+#if WINDOWS || MACCATALYST
             Dispatcher.Dispatch(() => keyboardCaptureEntry?.Focus());
+#endif
         }
     }
 
