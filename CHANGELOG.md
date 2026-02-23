@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.4] - 2026-02-23
+
+### Fixed
+
+- **DataGrid**: `RefreshData()` and `ItemsSource` reassignment now visually update the grid in default mode (no pagination, no virtualization) (#221)
+  - Added explicit `InvalidateMeasure()` on data grids after row rebuild to ensure layout re-measurement
+
 ## [2.1.3] - 2026-02-23
 
 ### Fixed

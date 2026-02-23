@@ -3883,6 +3883,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 gridRowIndex++;
             }
         }
+
+        // Force layout invalidation so ScrollView containers re-measure
+        dataGrid.InvalidateMeasure();
+        frozenDataGrid.InvalidateMeasure();
     }
 
     private void BuildVirtualizedRows()
