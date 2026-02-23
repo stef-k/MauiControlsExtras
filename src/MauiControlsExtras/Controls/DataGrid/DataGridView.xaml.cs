@@ -158,22 +158,20 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     // Context menu long-press
     private const double LongPressDurationSeconds = 0.5;
-    // Note: although ConditionalWeakTable holds weak references to keys, the handler lambdas
-    // in CellContextMenuState capture the Grid container, keeping it alive through the closure
-    // chain. In practice, this table acts as a regular dictionary while native handlers are
-    // attached. Explicit cleanup via DetachContextMenuHandlersFromChildren ensures entries are
-    // cleared before Children.Clear() calls.
+    // ConditionalWeakTable keyed by Grid cell containers. Entries are removed deterministically
+    // by DetachContextMenuHandlersFromChildren (which calls Remove after detaching handlers),
+    // so the weak-reference semantics serve only as a safety net for missed cleanup paths.
     private readonly ConditionalWeakTable<Grid, CellContextMenuState> _cellContextMenuStates = new();
 #if ANDROID
     private readonly ConditionalWeakTable<Android.Views.View, PointHolder> _androidLastTouchPositions = new();
     /// <summary>
-    /// Stores both DIP and raw pixel touch positions to avoid round-trip density conversion.
+    /// Reference-type wrapper for a DIP touch position, required because
+    /// <see cref="ConditionalWeakTable{TKey,TValue}"/> values must be reference types.
     /// Immutable — replaced atomically via AddOrUpdate to eliminate torn-read risk.
     /// </summary>
-    private sealed class PointHolder(Point positionDip, Point positionPx)
+    private sealed class PointHolder(Point positionDip)
     {
         public readonly Point PositionDip = positionDip;
-        public readonly Point PositionPx = positionPx;
     }
 #endif
 
@@ -3556,7 +3554,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             state.RightTappedHandler = (sender, args) =>
             {
-                if (ShouldSuppressContextMenuForEditing(state.RowIndex, state.ColIndex, args.OriginalSource))
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
                     return;
 
                 args.Handled = true;
@@ -3571,7 +3569,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
                     return;
 
-                if (ShouldSuppressContextMenuForEditing(state.RowIndex, state.ColIndex, args.OriginalSource))
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
                     return;
 
                 args.Handled = true;
@@ -3587,7 +3585,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 #if MACCATALYST
             state.SecondaryClickRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
             {
-                if (ShouldSuppressContextMenuForEditingApple(state.RowIndex, state.ColIndex, uiView, gesture))
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
                     return;
 
                 var location = gesture.LocationInView(uiView);
@@ -3603,7 +3601,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 if (gesture.State != UIKit.UIGestureRecognizerState.Began)
                     return;
 
-                if (ShouldSuppressContextMenuForEditingApple(state.RowIndex, state.ColIndex, uiView, gesture))
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
                     return;
 
                 var location = gesture.LocationInView(uiView);
@@ -3618,15 +3616,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             state.TouchHandler = (sender, args) =>
             {
-                if (args.Event?.Action == Android.Views.MotionEventActions.Down ||
-                    args.Event?.Action == Android.Views.MotionEventActions.Move)
+                if (args.Event?.Action == Android.Views.MotionEventActions.Down)
                 {
                     var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
                     var rawX = args.Event.GetX();
                     var rawY = args.Event.GetY();
-                    var posDip = new Point(rawX / density, rawY / density);
-                    var posPx = new Point(rawX, rawY);
-                    _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder(posDip, posPx));
+                    _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder(new Point(rawX / density, rawY / density)));
                 }
                 args.Handled = false; // Don't consume touch events
             };
@@ -3635,7 +3630,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             state.LongClickHandler = (sender, args) =>
             {
-                if (ShouldSuppressContextMenuForEditingAndroid(state.RowIndex, state.ColIndex, androidView))
+                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
                     return;
 
                 args.Handled = true;
@@ -3664,6 +3659,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 child.HandlerChanging -= OnCellContainerHandlerChanging;
                 child.HandlerChanged -= OnCellContainerHandlerChanged;
             }
+            _cellContextMenuStates.Remove(child);
         }
     }
 
@@ -3742,60 +3738,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         });
     }
 
-#if WINDOWS
     /// <summary>
     /// Suppresses the DataGrid context menu when any cell is in edit mode.
     /// All edit controls (Entry, CheckBox, DatePicker, TimePicker, Picker, ComboBox)
     /// are suppressed to avoid conflicting with their native interaction.
     /// </summary>
-    private bool ShouldSuppressContextMenuForEditing(int rowIndex, int colIndex, object? originalSource)
-    {
-        return DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
-    }
-#endif
-
-#if MACCATALYST || IOS
-    /// <summary>
-    /// Suppresses the DataGrid context menu when any cell is in edit mode.
-    /// All edit controls are suppressed to avoid conflicting with their native interaction.
-    /// </summary>
-    private bool ShouldSuppressContextMenuForEditingApple(int rowIndex, int colIndex, UIKit.UIView uiView, UIKit.UIGestureRecognizer gesture)
-    {
-        return DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
-    }
-#endif
+    private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
+        => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
 
 #if ANDROID
-    /// <summary>
-    /// Suppresses the DataGrid context menu when any cell is in edit mode.
-    /// All edit controls are suppressed to avoid conflicting with their native interaction.
-    /// </summary>
-    private bool ShouldSuppressContextMenuForEditingAndroid(int rowIndex, int colIndex, Android.Views.View androidView)
-    {
-        return DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
-    }
-
-    private static Android.Views.View? FindAndroidViewAtPosition(Android.Views.View root, int x, int y)
-    {
-        if (root is Android.Views.ViewGroup group)
-        {
-            var rect = new Android.Graphics.Rect();
-            for (int i = group.ChildCount - 1; i >= 0; i--)
-            {
-                var child = group.GetChildAt(i);
-                if (child == null) continue;
-
-                child.GetHitRect(rect);
-                if (rect.Contains(x, y))
-                {
-                    var result = FindAndroidViewAtPosition(child, x - rect.Left, y - rect.Top);
-                    return result ?? child;
-                }
-            }
-        }
-        return root;
-    }
-
     private Point GetLastAndroidTouchPosition(Android.Views.View androidView)
     {
         if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
@@ -4255,6 +4206,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _virtualizingPanel.ItemsSource = _sortedItems;
         _virtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, scrollableColumns, frozenColumns.Count);
         _virtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, scrollableColumns, frozenColumns.Count);
+        _virtualizingPanel.RowCleanup = row => { if (row is Grid g) DetachContextMenuHandlersFromChildren(g); };
         _virtualizingPanel.Refresh(dataScrollView.Height > 0 ? dataScrollView.Height : 400);
 
         // Initialize or update frozen virtualizing panel
@@ -4271,6 +4223,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             _frozenVirtualizingPanel.ItemsSource = _sortedItems;
             _frozenVirtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, frozenColumns, 0);
             _frozenVirtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, frozenColumns, 0);
+            _frozenVirtualizingPanel.RowCleanup = row => { if (row is Grid g) DetachContextMenuHandlersFromChildren(g); };
             _frozenVirtualizingPanel.Refresh(dataScrollView.Height > 0 ? dataScrollView.Height : 400);
         }
     }

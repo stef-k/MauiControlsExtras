@@ -40,6 +40,12 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
     public Action<View, object, int>? RowUpdater { get; set; }
 
     /// <summary>
+    /// Gets or sets a callback invoked for each row before it is discarded during <see cref="Clear"/>.
+    /// Use this to detach native handlers that would otherwise leak.
+    /// </summary>
+    public Action<View>? RowCleanup { get; set; }
+
+    /// <summary>
     /// Gets the total content height.
     /// </summary>
     public double TotalHeight => (ItemsSource?.Count ?? 0) * RowHeight;
@@ -86,6 +92,14 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
     /// </summary>
     public new void Clear()
     {
+        if (RowCleanup != null)
+        {
+            foreach (var row in _visibleRows.Values)
+                RowCleanup(row);
+            foreach (var row in _recycledRows)
+                RowCleanup(row);
+        }
+
         _visibleRows.Clear();
         _recycledRows.Clear();
         Children.Clear();
