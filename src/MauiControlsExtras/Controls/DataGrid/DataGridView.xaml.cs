@@ -3532,10 +3532,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             DetachNativeContextMenuHandlers(e.OldHandler.PlatformView, state);
             container.HandlerChanging -= OnCellContainerHandlerChanging;
             container.HandlerChanged -= OnCellContainerHandlerChanged;
-            // CWT entry is intentionally kept: OnCellContainerHandlerChanged will
-            // re-attach native handlers if a new handler is created (e.g. hot reload,
-            // theme changes). DetachContextMenuHandlersFromChildren removes the entry
-            // when the row is fully torn down.
+            // CWT entry is intentionally kept (not removed here) so that
+            // DetachContextMenuHandlersFromChildren can find it during row
+            // teardown. Re-attachment after a handler swap (e.g. hot reload)
+            // is handled by full row rebuild, not by HandlerChanged.
         }
     }
 
@@ -3555,6 +3555,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void AttachNativeContextMenuHandlers(Grid container, object platformView, CellContextMenuState state)
     {
+        Debug.Assert(MainThread.IsMainThread, "AttachNativeContextMenuHandlers must be called on the UI thread.");
+
 #if WINDOWS
         if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
         {
@@ -3659,7 +3661,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     private void DetachContextMenuHandlersFromChildren(Grid grid)
     {
-        foreach (var child in grid.Children.OfType<Grid>())
+        foreach (var child in grid.Children.OfType<Grid>().ToList())
         {
             if (_cellContextMenuStates.TryGetValue(child, out var s) && s.IsAttached
                 && child.Handler?.PlatformView != null)
@@ -3674,6 +3676,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void DetachNativeContextMenuHandlers(object platformView, CellContextMenuState state)
     {
+        Debug.Assert(MainThread.IsMainThread, "DetachNativeContextMenuHandlers must be called on the UI thread.");
+
         if (!state.IsAttached)
             return;
 
@@ -3739,7 +3743,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
+                Trace.TraceWarning($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
 #if DEBUG
                 throw;
 #endif

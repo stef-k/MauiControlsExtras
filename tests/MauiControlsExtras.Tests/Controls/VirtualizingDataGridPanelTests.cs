@@ -133,4 +133,26 @@ public class VirtualizingDataGridPanelTests
 
         Assert.NotEmpty(cleanedRows);
     }
+
+    [Fact]
+    public void RowCleanup_IsIdempotent_CalledTwiceOnSameRowWithoutError()
+    {
+        var cleanupCounts = new Dictionary<View, int>();
+        var panel = CreatePanel();
+        panel.RowCleanup = row =>
+        {
+            cleanupCounts.TryGetValue(row, out var count);
+            cleanupCounts[row] = count + 1;
+        };
+
+        // Materialize rows then scroll so some enter the recycle pool (cleanup called once via RecycleRow)
+        panel.Refresh(200);
+        panel.UpdateScrollPosition(2000, 200);
+
+        // Clear calls cleanup again on recycled rows (second call on the same row)
+        panel.Clear();
+
+        // At least one row should have been cleaned up more than once
+        Assert.Contains(cleanupCounts, kvp => kvp.Value >= 2);
+    }
 }
