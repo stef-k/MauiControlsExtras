@@ -156,7 +156,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private DataGridComboBoxColumn? _activeComboBoxColumn;
     private object? _activeComboBoxItem;
 
-    // Context menu long-press
+    // Context menu long-press duration for iOS/macOS UILongPressGestureRecognizer.
+    // Android and Windows use their platform-default long-press/holding thresholds.
     private const double LongPressDurationSeconds = 0.5;
     // ConditionalWeakTable keyed by Grid cell containers. Entries are removed deterministically
     // by DetachContextMenuHandlersFromChildren (which calls Remove after detaching handlers),
@@ -2338,6 +2339,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             keyboardBehavior.HandleTabKey = true;
         }
 
+        Unloaded += OnDataGridViewUnloaded;
     }
 
     #endregion
@@ -3530,6 +3532,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             DetachNativeContextMenuHandlers(e.OldHandler.PlatformView, state);
             container.HandlerChanging -= OnCellContainerHandlerChanging;
             container.HandlerChanged -= OnCellContainerHandlerChanged;
+            // CWT entry is intentionally kept: OnCellContainerHandlerChanged will
+            // re-attach native handlers if a new handler is created (e.g. hot reload,
+            // theme changes). DetachContextMenuHandlersFromChildren removes the entry
+            // when the row is fully torn down.
         }
     }
 
@@ -3623,7 +3629,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     var rawY = args.Event.GetY();
                     _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder(new Point(rawX / density, rawY / density)));
                 }
-                args.Handled = false; // Don't consume touch events
+                // Touch handler only records position for the subsequent LongClick handler.
+                // Handled must remain false so the event propagates to nested ScrollView
+                // and other gesture recognizers. Verified with nested scroll scenarios.
+                args.Handled = false;
             };
             androidView.LongClickable = true;
             androidView.Touch += state.TouchHandler;
@@ -3740,8 +3749,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     /// <summary>
     /// Suppresses the DataGrid context menu when any cell is in edit mode.
-    /// All edit controls (Entry, CheckBox, DatePicker, TimePicker, Picker, ComboBox)
-    /// are suppressed to avoid conflicting with their native interaction.
+    /// This is an intentional blanket suppression for all edit control types
+    /// (Entry, CheckBox, DatePicker, TimePicker, Picker, ComboBox) rather than
+    /// per-control-type checking—simpler and safer against new control types.
     /// </summary>
     private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
         => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
@@ -3755,6 +3765,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         return Point.Zero;
     }
 #endif
+
+    private void OnDataGridViewUnloaded(object? sender, EventArgs e)
+    {
+        DetachContextMenuHandlersFromChildren(dataGrid);
+        DetachContextMenuHandlersFromChildren(frozenDataGrid);
+        ClearVirtualizationPanels();
+    }
 
     #endregion
 
@@ -4265,7 +4282,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         // Guard: if container reuse is ever added (skipping Children.Clear), CellContextMenuState
         // RowIndex/ColIndex would become stale. This assertion catches that during development.
-        Trace.Assert(rowGrid.Children.Count == 0 || !rowGrid.Children.OfType<Grid>().Any(c =>
+        Debug.Assert(rowGrid.Children.Count == 0 || !rowGrid.Children.OfType<Grid>().Any(c =>
             _cellContextMenuStates.TryGetValue(c, out var s) && s.IsAttached && s.RowIndex != rowIndex),
             "Virtualized row is being reused with attached context menu handlers from a different row. " +
             "CellContextMenuState.RowIndex/ColIndex must be updated when containers are recycled.");

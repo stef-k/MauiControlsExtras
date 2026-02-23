@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - iOS/Android: Replaced unreliable `PanGestureRecognizer` timer with native long-press handlers (`UILongPressGestureRecognizer` / `View.LongClick`)
   - Windows: Added `Holding` event for touch long-press alongside existing right-click support
   - macOS: Added `UILongPressGestureRecognizer` alongside existing secondary-click support
-  - Native text editing context menus (Cut/Copy/Paste) still take priority when a cell is in edit mode
+  - Context menu is suppressed for all edit control types when a cell is in edit mode, simplifying the previous per-type approach
 
 ## [2.1.5] - 2026-02-23
 

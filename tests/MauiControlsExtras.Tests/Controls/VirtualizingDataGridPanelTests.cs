@@ -79,4 +79,58 @@ public class VirtualizingDataGridPanelTests
         // Row 45 (middle of new range) should be visible
         Assert.NotNull(panel.GetVisibleRow(45));
     }
+
+    [Fact]
+    public void Clear_CallsRowCleanup_ForVisibleAndRecycledRows()
+    {
+        var cleanedRows = new List<View>();
+        var panel = CreatePanel();
+        panel.RowCleanup = row => cleanedRows.Add(row);
+
+        // Materialize rows, then scroll so some go to recycle pool
+        panel.Refresh(200);
+        panel.UpdateScrollPosition(2000, 200);
+
+        cleanedRows.Clear();
+        panel.Clear();
+
+        // Should have cleaned up both visible rows and recycled rows
+        Assert.NotEmpty(cleanedRows);
+    }
+
+    [Fact]
+    public void UpdateScrollPosition_CallsRowCleanup_WhenRowsScrollOut()
+    {
+        var cleanedRows = new List<View>();
+        var panel = CreatePanel();
+        panel.RowCleanup = row => cleanedRows.Add(row);
+
+        panel.Refresh(200);
+
+        cleanedRows.Clear();
+
+        // Scroll far enough that all initially visible rows go out of range
+        panel.UpdateScrollPosition(2000, 200);
+
+        // RowCleanup should have been called for the rows that scrolled out
+        Assert.NotEmpty(cleanedRows);
+    }
+
+    [Fact]
+    public void Refresh_CallsRowCleanup_BeforeRebuilding()
+    {
+        var cleanedRows = new List<View>();
+        var panel = CreatePanel();
+        panel.RowCleanup = row => cleanedRows.Add(row);
+
+        panel.Refresh(200);
+        var initialRowCount = cleanedRows.Count;
+
+        cleanedRows.Clear();
+
+        // Refresh rebuilds all rows — existing rows should get cleanup before recycling
+        panel.Refresh(200);
+
+        Assert.NotEmpty(cleanedRows);
+    }
 }

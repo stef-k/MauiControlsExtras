@@ -25,4 +25,22 @@ public class DataGridContextMenuTests
 
         Assert.Equal(expected, result);
     }
+
+    /// <summary>
+    /// Validates that IsCellInEditMode correctly transitions from edit to non-edit
+    /// when hasEditControl changes. This is a pure-logic helper so no lifecycle
+    /// (attach/detach) concerns apply—just parameter combinations.
+    /// </summary>
+    [Fact]
+    public void IsCellInEditMode_TransitionFromEditToNonEdit()
+    {
+        // Cell is in edit mode
+        Assert.True(DataGridContextMenuHelper.IsCellInEditMode(1, 2, 1, 2, true));
+
+        // Same cell, edit control removed → no longer in edit mode
+        Assert.False(DataGridContextMenuHelper.IsCellInEditMode(1, 2, 1, 2, false));
+
+        // Different cell queried while editing is active
+        Assert.False(DataGridContextMenuHelper.IsCellInEditMode(3, 4, 1, 2, true));
+    }
 }
