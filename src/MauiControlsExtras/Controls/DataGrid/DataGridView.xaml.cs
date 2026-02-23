@@ -158,12 +158,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     // Context menu long-press
     private const double LongPressDurationSeconds = 0.5;
+    // Entries are removed when the Grid key is GC'd. Native handler cleanup is handled
+    // by HandlerChanging, which fires before the Grid loses its platform handler.
     private readonly ConditionalWeakTable<Grid, CellContextMenuState> _cellContextMenuStates = new();
 #if ANDROID
     private readonly ConditionalWeakTable<Android.Views.View, PointHolder> _androidLastTouchPositions = new();
     private sealed class PointHolder { public Point Position; }
 #endif
 
+    // RowIndex/ColIndex are set at creation time. This is safe because CreateDataCell always
+    // creates fresh Grid containers; if container reuse is ever added, these must be updated.
+    // IsAttached is only accessed from the main thread (MAUI handler lifecycle events).
     private sealed class CellContextMenuState
     {
         public int RowIndex;
@@ -3303,7 +3308,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 column = visibleCols[columnIndex];
         }
 
-        ShowContextMenuAsync(item, column, rowIndex, columnIndex, position).ConfigureAwait(false);
+        DispatchShowContextMenuSafely(item, column, rowIndex, columnIndex, position, null);
     }
 
     /// <summary>
@@ -3311,7 +3316,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public void ShowContextMenu(object? item, DataGridColumn? column, int rowIndex, int columnIndex)
     {
-        ShowContextMenuAsync(item, column, rowIndex, columnIndex, null).ConfigureAwait(false);
+        DispatchShowContextMenuSafely(item, column, rowIndex, columnIndex, null, null);
     }
 
     /// <summary>
@@ -3514,6 +3519,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (e.OldHandler?.PlatformView != null && _cellContextMenuStates.TryGetValue(container, out var state))
         {
             DetachNativeContextMenuHandlers(e.OldHandler.PlatformView, state);
+            container.HandlerChanging -= OnCellContainerHandlerChanging;
+            container.HandlerChanged -= OnCellContainerHandlerChanged;
         }
     }
 
@@ -3621,7 +3628,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 {
                     var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
                     var pos = new Point(args.Event.GetX() / density, args.Event.GetY() / density);
-                    _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder { Position = pos });
+                    if (_androidLastTouchPositions.TryGetValue(androidView, out var existing))
+                        existing.Position = pos;
+                    else
+                        _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder { Position = pos });
                 }
                 args.Handled = false; // Don't consume touch events
             };
