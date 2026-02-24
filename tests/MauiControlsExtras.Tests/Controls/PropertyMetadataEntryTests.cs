@@ -414,4 +414,113 @@ public class PropertyMetadataEntryTests
         Assert.False(item.IsExpandable);
         Assert.Empty(item.SubProperties);
     }
+
+    [Fact]
+    public void Register_ThrowsArgumentException_WhenNoEntries()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            PropertyMetadataRegistry.Register(typeof(TestProduct)));
+
+        Assert.Contains("At least one PropertyMetadataEntry", ex.Message);
+    }
+
+    [Fact]
+    public void Register_ThrowsArgumentException_WhenEmptyArray()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            PropertyMetadataRegistry.Register(typeof(TestProduct), Array.Empty<PropertyMetadataEntry>()));
+
+        Assert.Contains("At least one PropertyMetadataEntry", ex.Message);
+    }
+
+    [Fact]
+    public void Register_DuplicateType_ThrowsInvalidOperationException()
+    {
+        try
+        {
+            var entry = new PropertyMetadataEntry
+            {
+                Name = "Name",
+                PropertyType = typeof(string),
+                GetValue = obj => ((TestProduct)obj).Name,
+                IsReadOnly = true
+            };
+
+            PropertyMetadataRegistry.Register(typeof(TestProduct), entry);
+
+            var ex = Assert.Throws<InvalidOperationException>(() =>
+                PropertyMetadataRegistry.Register(typeof(TestProduct), entry));
+
+            Assert.Contains("already registered", ex.Message);
+        }
+        finally
+        {
+            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
+        }
+    }
+
+    [Fact]
+    public void Register_AfterUnregister_Succeeds()
+    {
+        var entry = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            GetValue = obj => ((TestProduct)obj).Name,
+            IsReadOnly = true
+        };
+
+        PropertyMetadataRegistry.Register(typeof(TestProduct), entry);
+        PropertyMetadataRegistry.Unregister(typeof(TestProduct));
+        PropertyMetadataRegistry.Register(typeof(TestProduct), entry);
+
+        Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
+        PropertyMetadataRegistry.Unregister(typeof(TestProduct));
+    }
+
+    [Fact]
+    public void PropertyItem_FromMetadata_GetterThrows_SetsValueToNull()
+    {
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            GetValue = _ => throw new InvalidOperationException("Getter failed"),
+            IsReadOnly = true
+        };
+
+        var target = new TestProduct();
+        var item = new PropertyItem(metadata, target);
+
+        Assert.Null(item.Value);
+    }
+
+    [Fact]
+    public void PropertyItem_FromMetadata_SubPropertyGetterThrows_NotExpandable()
+    {
+        var target = new TestProductWithDimensions();
+
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Size",
+            PropertyType = typeof(TestDimensions),
+            GetValue = _ => throw new InvalidOperationException("Getter failed"),
+            IsReadOnly = true,
+            SubProperties = new List<PropertyMetadataEntry>
+            {
+                new PropertyMetadataEntry
+                {
+                    Name = "Width",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((TestDimensions)obj).Width,
+                    SetValue = (obj, val) => ((TestDimensions)obj).Width = (double)val!
+                }
+            }
+        };
+
+        var item = new PropertyItem(metadata, target);
+
+        Assert.False(item.IsExpandable);
+        Assert.Empty(item.SubProperties);
+    }
 }

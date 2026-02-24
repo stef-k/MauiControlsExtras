@@ -75,6 +75,8 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     private string? _validationErrorMessage;
     private IEnumerable<object>? _filterValues;
     private string? _filterText;
+    private Func<object, object?>? _cellValueFunc;
+    private Action<object, object?>? _cellValueSetter;
 
     /// <summary>
     /// Gets or sets the column header text.
@@ -546,13 +548,35 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     /// Gets or sets an AOT-safe function to get the cell value from a row item.
     /// When set, takes priority over reflection via <see cref="PropertyPath"/>.
     /// </summary>
-    public virtual Func<object, object?>? CellValueFunc { get; set; }
+    public virtual Func<object, object?>? CellValueFunc
+    {
+        get => _cellValueFunc;
+        set
+        {
+            if (_cellValueFunc != value)
+            {
+                _cellValueFunc = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets an AOT-safe action to set the cell value on a row item.
     /// When set, takes priority over reflection via <see cref="PropertyPath"/>.
     /// </summary>
-    public virtual Action<object, object?>? CellValueSetter { get; set; }
+    public virtual Action<object, object?>? CellValueSetter
+    {
+        get => _cellValueSetter;
+        set
+        {
+            if (_cellValueSetter != value)
+            {
+                _cellValueSetter = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Creates the cell content for this column.

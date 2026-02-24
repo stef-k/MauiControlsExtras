@@ -292,4 +292,30 @@ public class PropertyAccessorTests
         Assert.Equal(0.0, point.X);
         Assert.Equal(0.0, point.Y);
     }
+
+    [Fact]
+    public void ClearCache_DoesNotAffectSubsequentLookups()
+    {
+        var model = new TestModel { Name = "Before" };
+        _ = PropertyAccessor.GetValue(model, "Name");
+
+        PropertyAccessor.ClearCache();
+
+        model.Name = "After";
+        var result = PropertyAccessor.GetValue(model, "Name");
+
+        Assert.Equal("After", result);
+    }
+
+    [Fact]
+    public void ClearCache_CalledOnEmptyCache_DoesNotThrow()
+    {
+        PropertyAccessor.ClearCache();
+        PropertyAccessor.ClearCache(); // double-call on empty cache
+
+        var model = new TestModel { Name = "Test" };
+        var result = PropertyAccessor.GetValue(model, "Name");
+
+        Assert.Equal("Test", result);
+    }
 }

@@ -240,6 +240,30 @@ public class PropertyItemTests
         Assert.False(changedFired);
     }
 
+    [Fact]
+    public void Value_Set_Null_OnValueTypeProperty_SetsDefault()
+    {
+        var target = new SampleObject { RangeProp = 42 };
+        var item = CreatePropertyItem(target, nameof(SampleObject.RangeProp));
+
+        // Should not throw (Convert.ChangeType(null, int) would throw; ConvertToType handles it)
+        item.Value = null;
+
+        Assert.Equal(0, target.RangeProp);
+        Assert.Null(item.Value); // raw value stored in PropertyItem
+    }
+
+    [Fact]
+    public void Value_Set_StringOnIntProperty_Converts()
+    {
+        var target = new SampleObject { RangeProp = 0 };
+        var item = CreatePropertyItem(target, nameof(SampleObject.RangeProp));
+
+        item.Value = "50";
+
+        Assert.Equal(50, target.RangeProp);
+    }
+
     private static PropertyItem CreatePropertyItem(object target, string propertyName)
     {
         var propInfo = target.GetType().GetProperty(propertyName)!;

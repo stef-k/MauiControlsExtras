@@ -311,6 +311,76 @@ public class DataGridColumnTests
         Assert.False(col.IsFiltered);
     }
 
+    #region CellValueFunc / CellValueSetter PropertyChanged Tests
+
+    [Fact]
+    public void CellValueFunc_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueFunc)) raised = true;
+        };
+
+        col.CellValueFunc = item => "value";
+
+        Assert.True(raised);
+    }
+
+    [Fact]
+    public void CellValueFunc_SameValue_DoesNotRaisePropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        Func<object, object?> func = item => "value";
+        col.CellValueFunc = func;
+
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueFunc)) raised = true;
+        };
+
+        col.CellValueFunc = func; // same reference
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public void CellValueSetter_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueSetter)) raised = true;
+        };
+
+        col.CellValueSetter = (item, value) => { };
+
+        Assert.True(raised);
+    }
+
+    [Fact]
+    public void CellValueSetter_SameValue_DoesNotRaisePropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        Action<object, object?> setter = (item, value) => { };
+        col.CellValueSetter = setter;
+
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueSetter)) raised = true;
+        };
+
+        col.CellValueSetter = setter; // same reference
+
+        Assert.False(raised);
+    }
+
+    #endregion
+
     #region CellValueFunc / CellValueSetter Tests
 
     private class TestRowItem

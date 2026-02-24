@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -307,7 +308,16 @@ public class PropertyItem : INotifyPropertyChanged
         // Skip expansion for value types to prevent silent data loss.
         if (metadata.SubProperties is { Count: > 0 })
         {
-            var subTarget = _getterFunc(target);
+            object? subTarget;
+            try
+            {
+                subTarget = _getterFunc(target);
+            }
+            catch
+            {
+                subTarget = null;
+            }
+
             if (subTarget != null && !metadata.PropertyType.IsValueType)
             {
                 IsExpandable = true;
@@ -328,7 +338,14 @@ public class PropertyItem : INotifyPropertyChanged
         }
 
         // Get initial value via func
-        _value = _getterFunc(target);
+        try
+        {
+            _value = _getterFunc(target);
+        }
+        catch
+        {
+            _value = null;
+        }
     }
 
     /// <summary>
@@ -351,7 +368,7 @@ public class PropertyItem : INotifyPropertyChanged
         Justification = "Reflection fallback for PropertyInfo-based items. Metadata-based items use _setterFunc.")]
     private void SetValueViaReflection(object? value)
     {
-        PropertyInfo!.SetValue(Target, Convert.ChangeType(value, PropertyType));
+        PropertyInfo!.SetValue(Target, PropertyAccessor.ConvertToType(value, PropertyType));
     }
 
     private void OnPropertyChanged(string propertyName)

@@ -59,6 +59,12 @@ internal static class PropertyAccessor
     }
 
     /// <summary>
+    /// Clears the property info cache. Intended for testing or scenarios where
+    /// types are dynamically loaded/unloaded.
+    /// </summary>
+    internal static void ClearCache() => _cache.Clear();
+
+    /// <summary>
     /// Returns the default value for a given type without using Activator.CreateInstance for known types.
     /// </summary>
     [UnconditionalSuppressMessage("AOT", "IL2067:DynamicallyAccessedMembers",

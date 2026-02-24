@@ -16,6 +16,8 @@ public class DataGridComboBoxColumn : DataGridColumn
     private string? _selectedValuePath;
     private string? _placeholder;
     private int _visibleItemCount = 6;
+    private Func<object, string?>? _displayMemberFunc;
+    private Func<object, object?>? _selectedValueFunc;
 
     /// <summary>
     /// Gets or sets the property binding path for the selected value.
@@ -85,13 +87,35 @@ public class DataGridComboBoxColumn : DataGridColumn
     /// Gets or sets an AOT-safe function to extract the display text from combo items.
     /// When set, takes priority over <see cref="DisplayMemberPath"/>.
     /// </summary>
-    public Func<object, string?>? DisplayMemberFunc { get; set; }
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => _displayMemberFunc;
+        set
+        {
+            if (_displayMemberFunc != value)
+            {
+                _displayMemberFunc = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets an AOT-safe function to extract the value from combo items.
     /// When set, takes priority over <see cref="SelectedValuePath"/>.
     /// </summary>
-    public Func<object, object?>? SelectedValueFunc { get; set; }
+    public Func<object, object?>? SelectedValueFunc
+    {
+        get => _selectedValueFunc;
+        set
+        {
+            if (_selectedValueFunc != value)
+            {
+                _selectedValueFunc = value;
+                OnPropertyChanged();
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets the placeholder text shown when no item is selected.

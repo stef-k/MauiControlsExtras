@@ -16,7 +16,14 @@ public static class PropertyMetadataRegistry
     public static void Register(Type type, params PropertyMetadataEntry[] entries)
     {
         ArgumentNullException.ThrowIfNull(type);
-        _registry[type] = entries.ToArray();
+
+        if (entries.Length == 0)
+            throw new ArgumentException("At least one PropertyMetadataEntry must be provided.", nameof(entries));
+
+        var snapshot = entries.ToArray();
+        if (!_registry.TryAdd(type, snapshot))
+            throw new InvalidOperationException(
+                $"Metadata is already registered for type '{type.FullName}'. Call Unregister first to replace existing metadata.");
     }
 
     /// <summary>
@@ -55,7 +62,7 @@ public static class PropertyMetadataRegistry
     /// </summary>
     internal static bool TryGetMetadata(Type type, out IReadOnlyList<PropertyMetadataEntry>? metadata)
     {
-        if (_registry.TryGetValue(type, out var entries))
+        if (_registry.TryGetValue(type, out var entries) && entries.Count > 0)
         {
             metadata = entries;
             return true;
