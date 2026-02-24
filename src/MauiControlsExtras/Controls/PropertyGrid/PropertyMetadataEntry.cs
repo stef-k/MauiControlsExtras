@@ -64,5 +64,5 @@ public class PropertyMetadataEntry
     /// <summary>
     /// Gets sub-property metadata for expandable complex types.
     /// </summary>
-    public List<PropertyMetadataEntry>? SubProperties { get; init; }
+    public IReadOnlyList<PropertyMetadataEntry>? SubProperties { get; init; }
 }

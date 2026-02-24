@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
@@ -6,13 +8,14 @@ namespace MauiControlsExtras.Controls;
 /// </summary>
 public static class PropertyMetadataRegistry
 {
-    private static readonly Dictionary<Type, List<PropertyMetadataEntry>> _registry = new();
+    private static readonly ConcurrentDictionary<Type, List<PropertyMetadataEntry>> _registry = new();
 
     /// <summary>
     /// Registers AOT-safe property metadata for a type.
     /// </summary>
     public static void Register(Type type, params PropertyMetadataEntry[] entries)
     {
+        ArgumentNullException.ThrowIfNull(type);
         _registry[type] = new List<PropertyMetadataEntry>(entries);
     }
 
@@ -25,15 +28,39 @@ public static class PropertyMetadataRegistry
     }
 
     /// <summary>
+    /// Removes registered metadata for the specified type.
+    /// </summary>
+    public static void Unregister(Type type)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        _registry.TryRemove(type, out _);
+    }
+
+    /// <summary>
+    /// Removes all registered metadata. Intended for testing.
+    /// </summary>
+    internal static void Clear()
+    {
+        _registry.Clear();
+    }
+
+    /// <summary>
     /// Returns true if metadata has been registered for the specified type.
     /// </summary>
-    public static bool HasMetadata(Type type) => _registry.ContainsKey(type);
+    public static bool HasMetadata(Type type) =>
+        _registry.TryGetValue(type, out var entries) && entries.Count > 0;
 
     /// <summary>
     /// Tries to get registered metadata for the specified type.
     /// </summary>
-    internal static bool TryGetMetadata(Type type, out List<PropertyMetadataEntry>? metadata)
+    internal static bool TryGetMetadata(Type type, out IReadOnlyList<PropertyMetadataEntry>? metadata)
     {
-        return _registry.TryGetValue(type, out metadata);
+        if (_registry.TryGetValue(type, out var entries))
+        {
+            metadata = entries;
+            return true;
+        }
+        metadata = null;
+        return false;
     }
 }

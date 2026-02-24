@@ -709,7 +709,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         RefreshUI();
     }
 
-    private static List<PropertyItem> BuildFromMetadata(List<PropertyMetadataEntry> metadata, object target)
+    private static List<PropertyItem> BuildFromMetadata(IReadOnlyList<PropertyMetadataEntry> metadata, object target)
     {
         return metadata.Select(m => new PropertyItem(m, target)).ToList();
     }

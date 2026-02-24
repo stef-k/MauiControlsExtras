@@ -11,6 +11,24 @@ public class PropertyMetadataEntryTests
         public bool InStock { get; set; } = true;
     }
 
+    private class TestDimensions
+    {
+        public double Width { get; set; } = 100.0;
+        public double Height { get; set; } = 200.0;
+    }
+
+    private class TestProductWithDimensions
+    {
+        public string Name { get; set; } = "Widget";
+        public TestDimensions Size { get; set; } = new();
+    }
+
+    private class TestProductWithNullDimensions
+    {
+        public string Name { get; set; } = "Widget";
+        public TestDimensions? Size { get; set; }
+    }
+
     [Fact]
     public void RegisterMetadata_StoresEntries()
     {
@@ -33,8 +51,7 @@ public class PropertyMetadataEntryTests
         }
         finally
         {
-            // Cleanup: re-register empty to not pollute other tests
-            PropertyMetadataRegistry.Register(typeof(TestProduct));
+            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
         }
     }
 
@@ -48,14 +65,15 @@ public class PropertyMetadataEntryTests
                 {
                     Name = "Name",
                     PropertyType = typeof(string),
-                    GetValue = obj => ((TestProduct)obj).Name
+                    GetValue = obj => ((TestProduct)obj).Name,
+                    IsReadOnly = true
                 });
 
             Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
         }
         finally
         {
-            PropertyMetadataRegistry.Register(typeof(TestProduct));
+            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
         }
     }
 
@@ -69,14 +87,15 @@ public class PropertyMetadataEntryTests
                 {
                     Name = "Name",
                     PropertyType = typeof(string),
-                    GetValue = obj => ((TestProduct)obj).Name
+                    GetValue = obj => ((TestProduct)obj).Name,
+                    IsReadOnly = true
                 });
 
             Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
         }
         finally
         {
-            PropertyMetadataRegistry.Register(typeof(TestProduct));
+            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
         }
     }
 
@@ -84,6 +103,23 @@ public class PropertyMetadataEntryTests
     public void HasMetadata_ReturnsFalseForUnregistered()
     {
         Assert.False(PropertyMetadataRegistry.HasMetadata(typeof(string)));
+    }
+
+    [Fact]
+    public void HasMetadata_ReturnsFalse_AfterUnregister()
+    {
+        PropertyMetadataRegistry.Register<TestProduct>(
+            new PropertyMetadataEntry
+            {
+                Name = "Name",
+                PropertyType = typeof(string),
+                GetValue = obj => ((TestProduct)obj).Name,
+                IsReadOnly = true
+            });
+
+        PropertyMetadataRegistry.Unregister(typeof(TestProduct));
+
+        Assert.False(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
     }
 
     [Fact]
@@ -129,7 +165,8 @@ public class PropertyMetadataEntryTests
             {
                 funcCalled = true;
                 return ((TestProduct)obj).Name;
-            }
+            },
+            IsReadOnly = true
         };
 
         var target = new TestProduct { Name = "TestWidget" };
@@ -195,7 +232,8 @@ public class PropertyMetadataEntryTests
         {
             Name = "Name",
             PropertyType = typeof(string),
-            GetValue = obj => ((TestProduct)obj).Name
+            GetValue = obj => ((TestProduct)obj).Name,
+            IsReadOnly = true
         };
 
         var item = new PropertyItem(metadata, new TestProduct());
@@ -210,7 +248,8 @@ public class PropertyMetadataEntryTests
         {
             Name = "Name",
             PropertyType = typeof(string),
-            GetValue = obj => ((TestProduct)obj).Name
+            GetValue = obj => ((TestProduct)obj).Name,
+            IsReadOnly = true
         };
 
         var item = new PropertyItem(metadata, new TestProduct());
@@ -226,7 +265,8 @@ public class PropertyMetadataEntryTests
         {
             Name = "Name",
             PropertyType = typeof(string),
-            GetValue = obj => ((TestProduct)obj).Name
+            GetValue = obj => ((TestProduct)obj).Name,
+            IsReadOnly = true
         };
 
         var item = new PropertyItem(metadata, target);
@@ -236,5 +276,94 @@ public class PropertyMetadataEntryTests
         item.RefreshValue();
 
         Assert.Equal("Changed", item.Value);
+    }
+
+    [Fact]
+    public void PropertyItem_FromMetadata_SubProperties_UseCorrectTarget()
+    {
+        var target = new TestProductWithDimensions { Size = new TestDimensions { Width = 50.0, Height = 75.0 } };
+
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Size",
+            PropertyType = typeof(TestDimensions),
+            GetValue = obj => ((TestProductWithDimensions)obj).Size,
+            IsReadOnly = true,
+            SubProperties = new List<PropertyMetadataEntry>
+            {
+                new PropertyMetadataEntry
+                {
+                    Name = "Width",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((TestDimensions)obj).Width,
+                    SetValue = (obj, val) => ((TestDimensions)obj).Width = (double)val!
+                },
+                new PropertyMetadataEntry
+                {
+                    Name = "Height",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((TestDimensions)obj).Height,
+                    SetValue = (obj, val) => ((TestDimensions)obj).Height = (double)val!
+                }
+            }
+        };
+
+        var item = new PropertyItem(metadata, target);
+
+        Assert.True(item.IsExpandable);
+        Assert.Equal(2, item.SubProperties.Count);
+        Assert.Equal(50.0, item.SubProperties[0].Value);
+        Assert.Equal(75.0, item.SubProperties[1].Value);
+
+        // Write-through: sub-property setter targets the Size object, not root
+        item.SubProperties[0].Value = 999.0;
+        Assert.Equal(999.0, target.Size.Width);
+    }
+
+    [Fact]
+    public void PropertyItem_FromMetadata_Throws_WhenWritableButNoSetter()
+    {
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            IsReadOnly = false,
+            GetValue = obj => ((TestProduct)obj).Name,
+            SetValue = null
+        };
+
+        var target = new TestProduct();
+
+        var ex = Assert.Throws<ArgumentException>(() => new PropertyItem(metadata, target));
+        Assert.Contains("IsReadOnly=false but SetValue is null", ex.Message);
+    }
+
+    [Fact]
+    public void PropertyItem_FromMetadata_SubProperties_HandlesNullSubTarget()
+    {
+        var target = new TestProductWithNullDimensions { Size = null };
+
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Size",
+            PropertyType = typeof(TestDimensions),
+            GetValue = obj => ((TestProductWithNullDimensions)obj).Size,
+            IsReadOnly = true,
+            SubProperties = new List<PropertyMetadataEntry>
+            {
+                new PropertyMetadataEntry
+                {
+                    Name = "Width",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((TestDimensions)obj).Width,
+                    SetValue = (obj, val) => ((TestDimensions)obj).Width = (double)val!
+                }
+            }
+        };
+
+        var item = new PropertyItem(metadata, target);
+
+        Assert.False(item.IsExpandable);
+        Assert.Empty(item.SubProperties);
     }
 }

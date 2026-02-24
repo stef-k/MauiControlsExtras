@@ -19,6 +19,13 @@ public class PropertyAccessorTests
         public double Price { get; set; } = 9.99;
     }
 
+    private enum TestStatus { Active, Inactive, Pending }
+
+    private class EnumModel
+    {
+        public TestStatus Status { get; set; } = TestStatus.Active;
+    }
+
     [Fact]
     public void GetValue_ReturnsPropertyValue()
     {
@@ -79,6 +86,22 @@ public class PropertyAccessorTests
     }
 
     [Fact]
+    public void GetValue_ReturnsEnumValue()
+    {
+        var model = new EnumModel { Status = TestStatus.Pending };
+
+        var result = PropertyAccessor.GetValue(model, "Status");
+
+        Assert.Equal(TestStatus.Pending, result);
+    }
+
+    [Fact]
+    public void GetValue_ThrowsArgumentNull_WhenItemIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => PropertyAccessor.GetValue(null!, "Name"));
+    }
+
+    [Fact]
     public void SetValue_UpdatesProperty()
     {
         var model = new TestModel();
@@ -107,6 +130,34 @@ public class PropertyAccessorTests
         var result = PropertyAccessor.SetValue(model, "ReadOnly", "value");
 
         Assert.False(result);
+    }
+
+    [Fact]
+    public void SetValue_SetsEnumValue()
+    {
+        var model = new EnumModel();
+
+        var result = PropertyAccessor.SetValue(model, "Status", TestStatus.Inactive);
+
+        Assert.True(result);
+        Assert.Equal(TestStatus.Inactive, model.Status);
+    }
+
+    [Fact]
+    public void SetValue_ConvertsStringToInt()
+    {
+        var model = new TestModel();
+
+        var result = PropertyAccessor.SetValue(model, "Age", "42");
+
+        Assert.True(result);
+        Assert.Equal(42, model.Age);
+    }
+
+    [Fact]
+    public void SetValue_ThrowsArgumentNull_WhenItemIsNull()
+    {
+        Assert.Throws<ArgumentNullException>(() => PropertyAccessor.SetValue(null!, "Name", "value"));
     }
 
     [Theory]
@@ -154,6 +205,14 @@ public class PropertyAccessorTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public void GetDefaultValue_ReturnsFirstEnumValue()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(TestStatus));
+
+        Assert.Equal(TestStatus.Active, result);
+    }
+
     [Theory]
     [InlineData("42", typeof(int), 42)]
     [InlineData("3.14", typeof(double), 3.14)]
@@ -191,5 +250,29 @@ public class PropertyAccessorTests
         var result = PropertyAccessor.ConvertToType("", typeof(int?));
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public void ConvertToType_ConvertsStringToEnum()
+    {
+        var result = PropertyAccessor.ConvertToType("Pending", typeof(TestStatus));
+
+        Assert.Equal(TestStatus.Pending, result);
+    }
+
+    [Fact]
+    public void ConvertToType_ConvertsStringToEnum_CaseInsensitive()
+    {
+        var result = PropertyAccessor.ConvertToType("pending", typeof(TestStatus));
+
+        Assert.Equal(TestStatus.Pending, result);
+    }
+
+    [Fact]
+    public void ConvertToType_ConvertsStringToNullableInt()
+    {
+        var result = PropertyAccessor.ConvertToType("42", typeof(int?));
+
+        Assert.Equal(42, result);
     }
 }

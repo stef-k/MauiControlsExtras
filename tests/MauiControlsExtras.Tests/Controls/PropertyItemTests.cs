@@ -218,6 +218,28 @@ public class PropertyItemTests
         Assert.Equal("int", item.TypeName);
     }
 
+    [Fact]
+    public void Value_Set_OnReadOnlyItem_DoesNotChangeValue()
+    {
+        var target = new SampleObject { Name = "Original" };
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            IsReadOnly = true,
+            GetValue = obj => ((SampleObject)obj).Name
+        };
+
+        var item = new PropertyItem(metadata, target);
+        var changedFired = false;
+        item.ValueChanged += (_, _) => changedFired = true;
+
+        item.Value = "Attempted";
+
+        Assert.Equal("Original", item.Value);
+        Assert.False(changedFired);
+    }
+
     private static PropertyItem CreatePropertyItem(object target, string propertyName)
     {
         var propInfo = target.GetType().GetProperty(propertyName)!;

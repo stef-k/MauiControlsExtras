@@ -19,7 +19,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the property info (null when constructed from metadata).
     /// </summary>
-    public PropertyInfo? PropertyInfo { get; }
+    internal PropertyInfo? PropertyInfo { get; }
 
     /// <summary>
     /// Gets the target object that contains this property.
@@ -96,6 +96,9 @@ public class PropertyItem : INotifyPropertyChanged
         {
             if (!Equals(_value, value))
             {
+                if (IsReadOnly)
+                    return;
+
                 var oldValue = _value;
                 var changingArgs = new PropertyValueChangingEventArgs(this, oldValue, value);
                 ValueChanging?.Invoke(this, changingArgs);
@@ -120,7 +123,9 @@ public class PropertyItem : INotifyPropertyChanged
                             PropertyInfo.SetValue(Target, Convert.ChangeType(value, PropertyType));
                         }
                     }
-                    catch
+                    catch (Exception ex) when (ex is InvalidCastException or FormatException
+                        or OverflowException or ArgumentException or InvalidOperationException
+                        or TargetInvocationException)
                     {
                         // Revert on failure
                         _value = oldValue;
@@ -289,13 +294,28 @@ public class PropertyItem : INotifyPropertyChanged
         _getterFunc = metadata.GetValue;
         _setterFunc = metadata.SetValue;
 
+        if (!IsReadOnly && _setterFunc == null)
+            throw new ArgumentException(
+                $"PropertyMetadataEntry '{metadata.Name}' has IsReadOnly=false but SetValue is null. "
+                + "Provide a SetValue action or set IsReadOnly=true.",
+                nameof(metadata));
+
         // Build sub-properties from metadata
         if (metadata.SubProperties is { Count: > 0 })
         {
-            IsExpandable = true;
-            SubProperties = metadata.SubProperties
-                .Select(sub => new PropertyItem(sub, target))
-                .ToList();
+            var subTarget = _getterFunc(target);
+            if (subTarget != null)
+            {
+                IsExpandable = true;
+                SubProperties = metadata.SubProperties
+                    .Select(sub => new PropertyItem(sub, subTarget))
+                    .ToList();
+            }
+            else
+            {
+                IsExpandable = false;
+                SubProperties = Array.Empty<PropertyItem>();
+            }
         }
         else
         {

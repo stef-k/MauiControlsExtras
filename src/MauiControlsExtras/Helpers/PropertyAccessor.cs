@@ -5,7 +5,7 @@ using System.Reflection;
 namespace MauiControlsExtras.Helpers;
 
 /// <summary>
-/// Centralized, cached property accessor for string-based property paths.
+/// Centralized, cached property accessor for string-based property names.
 /// Provides AOT-annotated reflection helpers used as fallback when Func-based
 /// accessors are not configured.
 /// </summary>
@@ -14,29 +14,33 @@ internal static class PropertyAccessor
     private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> _cache = new();
 
     /// <summary>
-    /// Gets a property value from an object using a string property path.
+    /// Gets a property value from an object using a string property name.
     /// </summary>
     [RequiresUnreferencedCode("Use the corresponding *Func property for AOT/trimming compatibility.")]
-    internal static object? GetValue(object item, string propertyPath)
+    internal static object? GetValue(object item, string propertyName)
     {
-        if (string.IsNullOrEmpty(propertyPath))
+        ArgumentNullException.ThrowIfNull(item);
+
+        if (string.IsNullOrEmpty(propertyName))
             return null;
 
-        var property = GetPropertyInfo(item.GetType(), propertyPath);
+        var property = GetPropertyInfo(item.GetType(), propertyName);
         return property?.GetValue(item);
     }
 
     /// <summary>
-    /// Sets a property value on an object using a string property path.
+    /// Sets a property value on an object using a string property name.
     /// </summary>
     /// <returns>True if the property was found and set; false otherwise.</returns>
     [RequiresUnreferencedCode("Use the corresponding *Func property for AOT/trimming compatibility.")]
-    internal static bool SetValue(object item, string propertyPath, object? value)
+    internal static bool SetValue(object item, string propertyName, object? value)
     {
-        if (string.IsNullOrEmpty(propertyPath))
+        ArgumentNullException.ThrowIfNull(item);
+
+        if (string.IsNullOrEmpty(propertyName))
             return false;
 
-        var property = GetPropertyInfo(item.GetType(), propertyPath);
+        var property = GetPropertyInfo(item.GetType(), propertyName);
         if (property == null || !property.CanWrite)
             return false;
 
@@ -46,12 +50,12 @@ internal static class PropertyAccessor
     }
 
     /// <summary>
-    /// Gets the cached PropertyInfo for a type/property path combination.
+    /// Gets the cached PropertyInfo for a type/property name combination.
     /// </summary>
     [RequiresUnreferencedCode("Reflection-based property access may not work under AOT/trimming.")]
-    private static PropertyInfo? GetPropertyInfo(Type type, string propertyPath)
+    private static PropertyInfo? GetPropertyInfo(Type type, string propertyName)
     {
-        return _cache.GetOrAdd((type, propertyPath), key => key.Item1.GetProperty(key.Item2));
+        return _cache.GetOrAdd((type, propertyName), key => key.Item1.GetProperty(key.Item2));
     }
 
     /// <summary>
@@ -80,7 +84,11 @@ internal static class PropertyAccessor
         if (Nullable.GetUnderlyingType(targetType) != null)
             return null;
 
-        // Fallback for other value types (enums, custom structs)
+        // Enums: use Enum.ToObject to avoid Activator.CreateInstance under AOT
+        if (targetType.IsEnum)
+            return Enum.ToObject(targetType, 0);
+
+        // Fallback for other value types (custom structs)
         return Activator.CreateInstance(targetType);
     }
 
@@ -124,10 +132,19 @@ internal static class PropertyAccessor
             if (targetType == typeof(short)) return Convert.ToInt16(value);
             if (targetType == typeof(byte)) return Convert.ToByte(value);
 
+            // Enum conversion
+            if (targetType.IsEnum)
+            {
+                if (value is string enumStr)
+                    return Enum.Parse(targetType, enumStr, ignoreCase: true);
+                return Enum.ToObject(targetType, value);
+            }
+
             // General conversion
             return Convert.ChangeType(value, targetType);
         }
-        catch
+        catch (Exception ex) when (ex is FormatException or InvalidCastException
+            or OverflowException or ArgumentException)
         {
             return GetDefaultValue(targetType);
         }
