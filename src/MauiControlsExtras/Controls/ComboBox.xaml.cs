@@ -2061,6 +2061,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         return null;
     }
 
+    // Wrapper required: [UnconditionalSuppressMessage] is method-scoped and cannot suppress at call sites.
     [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
         Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc/ValueMemberFunc/IconMemberFunc for AOT compatibility.")]
     private static object? GetPropertyValueFallback(object item, string propertyPath)

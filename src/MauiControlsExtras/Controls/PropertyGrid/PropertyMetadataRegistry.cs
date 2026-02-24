@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
-namespace MauiControlsExtras.Controls;
+namespace MauiControlsExtras.Helpers;
 
 /// <summary>
 /// Static registry for AOT-safe property metadata. Register metadata for types that

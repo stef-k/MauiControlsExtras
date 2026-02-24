@@ -545,6 +545,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
         return item.ToString() ?? string.Empty;
     }
 
+    // Wrapper required: [UnconditionalSuppressMessage] is method-scoped and cannot suppress at call sites.
     [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
         Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
     private static object? GetPropertyValueFallback(object item, string propertyPath)
@@ -587,7 +588,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
             {
                 return _func(value) ?? string.Empty;
             }
-            catch
+            catch (Exception ex) when (ex is not OutOfMemoryException)
             {
                 return string.Empty;
             }

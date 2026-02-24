@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace MauiControlsExtras.Controls;
+namespace MauiControlsExtras.Helpers;
 
 /// <summary>
 /// Defines metadata for a single property, enabling AOT-safe property grid editing

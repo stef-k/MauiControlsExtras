@@ -13,7 +13,7 @@ namespace MauiControlsExtras.Helpers;
 internal static class PropertyAccessor
 {
     // App-lifetime cache with no eviction; acceptable for typical MAUI apps
-    // where the set of accessed types is bounded. Use ClearCache() if needed.
+    // where the set of accessed types is bounded. ClearCache() is available for testing and internal use.
     private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> _cache = new();
 
     /// <summary>
@@ -71,7 +71,7 @@ internal static class PropertyAccessor
     /// Returns the default value for a given type without using Activator.CreateInstance for known types.
     /// </summary>
     [UnconditionalSuppressMessage("AOT", "IL2067:DynamicallyAccessedMembers",
-        Justification = "Fallback for custom struct defaults. All common value types and enums are handled explicitly above.")]
+        Justification = "Fallback for custom struct defaults only. All common value types (int, long, double, float, decimal, bool, DateTime, TimeSpan, byte, short, char, Guid, DateTimeOffset), Nullable<T>, and enums are handled explicitly above without Activator.")]
     internal static object? GetDefaultValue(Type targetType)
     {
         if (!targetType.IsValueType)

@@ -109,9 +109,7 @@ public class PropertyItem : INotifyPropertyChanged
                     return;
                 }
 
-                _value = value;
-
-                // Update the actual property
+                // Update the actual property first; only commit _value on success
                 try
                 {
                     if (_setterFunc != null)
@@ -122,13 +120,13 @@ public class PropertyItem : INotifyPropertyChanged
                     {
                         SetValueViaReflection(value);
                     }
+
+                    _value = value;
                 }
                 catch (Exception ex) when (ex is InvalidCastException or FormatException
                     or OverflowException or ArgumentException or InvalidOperationException
                     or TargetInvocationException)
                 {
-                    // Revert on failure
-                    _value = oldValue;
                     return;
                 }
 
@@ -204,7 +202,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// Initializes a new instance of the <see cref="PropertyItem"/> class using reflection.
     /// </summary>
     [RequiresUnreferencedCode("Uses reflection to discover property attributes. Use PropertyItem(PropertyMetadataEntry, object) for AOT compatibility.")]
-    public PropertyItem(PropertyInfo propertyInfo, object target)
+    internal PropertyItem(PropertyInfo propertyInfo, object target)
     {
         PropertyInfo = propertyInfo;
         Target = target;
@@ -299,27 +297,28 @@ public class PropertyItem : INotifyPropertyChanged
                 + "Provide a SetValue action or set IsReadOnly=true.",
                 nameof(metadata));
 
+        // Read the initial value once and reuse for both sub-property resolution and _value
+        object? initialValue;
+        try
+        {
+            initialValue = _getterFunc(target);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            initialValue = null;
+        }
+
         // Build sub-properties from metadata
         // Value types (structs) are boxed copies — sub-property setters would
         // mutate the copy without propagating back to the parent field.
         // Skip expansion for value types to prevent silent data loss.
         if (metadata.SubProperties is { Count: > 0 })
         {
-            object? subTarget;
-            try
-            {
-                subTarget = _getterFunc(target);
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                subTarget = null;
-            }
-
-            if (subTarget != null && !metadata.PropertyType.IsValueType)
+            if (initialValue != null && !metadata.PropertyType.IsValueType)
             {
                 IsExpandable = true;
                 SubProperties = metadata.SubProperties
-                    .Select(sub => new PropertyItem(sub, subTarget))
+                    .Select(sub => new PropertyItem(sub, initialValue))
                     .ToList();
             }
             else
@@ -334,15 +333,7 @@ public class PropertyItem : INotifyPropertyChanged
             SubProperties = Array.Empty<PropertyItem>();
         }
 
-        // Get initial value via func
-        try
-        {
-            _value = _getterFunc(target);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            _value = null;
-        }
+        _value = initialValue;
     }
 
     /// <summary>

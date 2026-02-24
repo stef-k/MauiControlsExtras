@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
+using MauiControlsExtras.Helpers;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Controls;
@@ -28,6 +29,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     /// Registers AOT-safe property metadata for a type. When registered, PropertyGrid
     /// uses the metadata instead of reflection to discover and access properties.
     /// </summary>
+    /// <seealso cref="PropertyMetadataRegistry"/>
     public static void RegisterMetadata(Type type, params PropertyMetadataEntry[] entries)
     {
         PropertyMetadataRegistry.Register(type, entries);
@@ -36,6 +38,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     /// <summary>
     /// Registers AOT-safe property metadata for a type (generic variant).
     /// </summary>
+    /// <seealso cref="PropertyMetadataRegistry"/>
     public static void RegisterMetadata<T>(params PropertyMetadataEntry[] entries)
     {
         PropertyMetadataRegistry.Register<T>(entries);
@@ -44,6 +47,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     /// <summary>
     /// Returns true if metadata has been registered for the specified type.
     /// </summary>
+    /// <seealso cref="PropertyMetadataRegistry"/>
     public static bool HasMetadata(Type type) => PropertyMetadataRegistry.HasMetadata(type);
 
     #endregion

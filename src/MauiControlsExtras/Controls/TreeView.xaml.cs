@@ -1825,6 +1825,7 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         return value as IEnumerable;
     }
 
+    // Wrapper required: [UnconditionalSuppressMessage] is method-scoped and cannot suppress at call sites.
     [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
         Justification = "Reflection fallback for non-AOT scenarios. Use *Func properties for AOT compatibility.")]
     private static object? GetPropertyValueFallback(object item, string propertyPath)

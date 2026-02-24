@@ -3880,6 +3880,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _isUpdating = false;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "Reflection fallback for auto-generating columns. Define columns explicitly for AOT compatibility.")]
     private void GenerateColumns()
     {
         _columns.Clear();
@@ -5113,6 +5115,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         foreach (var ((rowIndex, colIndex), cellResult) in _cellValidationErrors)
         {
+            if (rowIndex >= _sortedItems.Count)
+                continue;
+
             var colHeader = colIndex < _columns.Count ? _columns[colIndex].Header : $"Column {colIndex}";
             foreach (var error in cellResult.Errors)
             {
@@ -6464,8 +6469,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             // Clear undo history when data source changes
             grid.ClearUndoHistory();
 
-            grid.BuildGrid();
             grid._cellValidationErrors.Clear();
+            grid.BuildGrid();
             grid.UpdateGridValidationState();
         }
     }

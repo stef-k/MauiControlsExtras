@@ -318,4 +318,46 @@ public class PropertyAccessorTests
 
         Assert.Equal("Test", result);
     }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsZero_ForByte()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(byte));
+        Assert.Equal((byte)0, result);
+    }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsZero_ForShort()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(short));
+        Assert.Equal((short)0, result);
+    }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsNullChar_ForChar()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(char));
+        Assert.Equal('\0', result);
+    }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsEmpty_ForGuid()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(Guid));
+        Assert.Equal(Guid.Empty, result);
+    }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsDefault_ForDateTimeOffset()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(DateTimeOffset));
+        Assert.Equal(default(DateTimeOffset), result);
+    }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsDefault_ForTimeSpan()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(TimeSpan));
+        Assert.Equal(default(TimeSpan), result);
+    }
 }

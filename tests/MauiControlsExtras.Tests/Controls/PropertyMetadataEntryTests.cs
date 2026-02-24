@@ -1,4 +1,5 @@
 using MauiControlsExtras.Controls;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Tests.Controls;
 
