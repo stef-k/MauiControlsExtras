@@ -130,7 +130,7 @@ public class PropertyItem : INotifyPropertyChanged
                     System.Diagnostics.Debug.WriteLine($"PropertyItem '{Name}': failed to set value: {ex.Message}");
                     // Re-sync _value with the actual state of the target
                     try { _value = _getterFunc != null ? _getterFunc(Target) : PropertyInfo?.GetValue(Target); }
-                    catch { /* best-effort resync */ }
+                    catch (Exception resyncEx) when (resyncEx is not OutOfMemoryException) { /* best-effort resync */ }
                     return;
                 }
 

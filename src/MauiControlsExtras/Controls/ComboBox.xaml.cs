@@ -1738,7 +1738,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 Placeholder,
                 IsSearchVisible,
                 PopupPlacement,
-                DisplayMemberFunc);
+                DisplayMemberFunc,
+                ValueMemberFunc,
+                IconMemberFunc);
 
             // Raise event for external handlers (e.g., DataGridView)
             PopupRequested?.Invoke(this, args);
@@ -1828,11 +1830,11 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
         var popup = new ComboBoxPopupContent
         {
-            ItemsSource = args.ItemsSource,
             DisplayMemberPath = args.DisplayMemberPath,
             DisplayMemberFunc = args.DisplayMemberFunc,
+            IsSearchVisible = args.IsSearchVisible,
             SelectedItem = args.SelectedItem,
-            IsSearchVisible = args.IsSearchVisible
+            ItemsSource = args.ItemsSource,  // must come last — triggers filtering that reads DisplayMemberFunc
         };
 
         popup.ItemSelected += OnSelfHostedPopupItemSelected;
@@ -1971,7 +1973,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             {
                 var displayValue = DisplayMemberFunc != null
                     ? DisplayMemberFunc(item)
-                    : GetPropertyValueFallback(item, DisplayMemberPath!);
+                    : PropertyAccessor.GetValueSuppressed(item, DisplayMemberPath!);
                 if (Equals(displayValue, DefaultValue))
                 {
                     SelectItem(item);
@@ -2059,7 +2061,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
         if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            var value = GetPropertyValueFallback(item, DisplayMemberPath);
+            var value = PropertyAccessor.GetValueSuppressed(item, DisplayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
 
@@ -2072,7 +2074,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             return ValueMemberFunc(item);
 
         if (!string.IsNullOrEmpty(ValueMemberPath))
-            return GetPropertyValueFallback(item, ValueMemberPath);
+            return PropertyAccessor.GetValueSuppressed(item, ValueMemberPath);
 
         return item;
     }
@@ -2083,18 +2085,12 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             return IconMemberFunc(item);
 
         if (!string.IsNullOrEmpty(IconMemberPath))
-            return GetPropertyValueFallback(item, IconMemberPath)?.ToString();
+            return PropertyAccessor.GetValueSuppressed(item, IconMemberPath)?.ToString();
 
         return null;
     }
 
-    // Wrapper required: [UnconditionalSuppressMessage] is method-scoped and cannot suppress at call sites.
-    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
-        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc/ValueMemberFunc/IconMemberFunc for AOT compatibility.")]
-    private static object? GetPropertyValueFallback(object item, string propertyPath)
-    {
-        return PropertyAccessor.GetValue(item, propertyPath);
-    }
+
 
     #endregion
 

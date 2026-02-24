@@ -15,8 +15,18 @@ internal static class PropertyAccessor
 {
     // App-lifetime cache: entries are never evicted. This is acceptable for typical
     // MAUI apps where the set of (Type, propertyName) combinations is bounded by the
-    // data model. For dynamic/plugin scenarios, call ClearCache() periodically.
+    // data model. ClearCache() is available for testing and internal use.
     private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> _cache = new();
+
+    /// <summary>
+    /// Gets a property value with the AOT/trimming warning suppressed.
+    /// Use this when the caller already provides a Func-based alternative and the
+    /// reflection path is only a fallback for non-AOT scenarios.
+    /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use *Func properties for AOT compatibility.")]
+    internal static object? GetValueSuppressed(object item, string propertyName)
+        => GetValue(item, propertyName);
 
     /// <summary>
     /// Gets a property value from an object using a string property name.

@@ -624,7 +624,9 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
         if (string.IsNullOrEmpty(PropertyPath))
             return;
 
-        PropertyAccessor.SetValue(item, PropertyPath, value);
+        if (!PropertyAccessor.SetValue(item, PropertyPath, value))
+            System.Diagnostics.Debug.WriteLine(
+                $"[DataGridColumn] SetCellValue: property '{PropertyPath}' not found or not writable on {item.GetType().Name}");
     }
 
     /// <summary>

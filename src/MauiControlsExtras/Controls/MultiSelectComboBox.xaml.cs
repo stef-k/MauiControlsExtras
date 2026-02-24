@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -1542,20 +1541,14 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
         if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            var value = GetPropertyValueFallback(item, DisplayMemberPath);
+            var value = PropertyAccessor.GetValueSuppressed(item, DisplayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
     }
 
-    // Wrapper required: [UnconditionalSuppressMessage] is method-scoped and cannot suppress at call sites.
-    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
-        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
-    private static object? GetPropertyValueFallback(object item, string propertyPath)
-    {
-        return PropertyAccessor.GetValue(item, propertyPath);
-    }
+
 
     private void RaiseSelectionChanged()
     {

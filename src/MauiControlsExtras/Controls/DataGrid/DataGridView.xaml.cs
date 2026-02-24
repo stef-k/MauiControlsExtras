@@ -3332,7 +3332,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             return PropertyAccessor.ConvertToType(value, targetType);
         }
         catch (Exception ex) when (ex is FormatException or InvalidCastException
-            or OverflowException or ArgumentException)
+            or OverflowException or ArgumentException or InvalidOperationException)
         {
             return currentValue;
         }

@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.ObjectModel;
-using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Helpers;
 
@@ -537,20 +536,14 @@ public partial class ComboBoxPopupContent : StyledControlBase
 
         if (!string.IsNullOrEmpty(_displayMemberPath))
         {
-            var value = GetPropertyValueFallback(item, _displayMemberPath);
+            var value = PropertyAccessor.GetValueSuppressed(item, _displayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
     }
 
-    // Wrapper required: [UnconditionalSuppressMessage] is method-scoped and cannot suppress at call sites.
-    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
-        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
-    private static object? GetPropertyValueFallback(object item, string propertyPath)
-    {
-        return PropertyAccessor.GetValue(item, propertyPath);
-    }
+
 
     private void UpdateHighlightVisual()
     {
