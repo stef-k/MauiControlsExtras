@@ -262,8 +262,8 @@ public class DataGridComboBoxColumn : DataGridColumn
         if (value == null)
             return string.Empty;
 
-        // If we have a display member path, find the matching item and get its display text
-        if (!string.IsNullOrEmpty(DisplayMemberPath) && ItemsSource != null)
+        // If we have a display member func/path, find the matching item and get its display text
+        if ((DisplayMemberFunc != null || !string.IsNullOrEmpty(DisplayMemberPath)) && ItemsSource != null)
         {
             foreach (var sourceItem in ItemsSource)
             {

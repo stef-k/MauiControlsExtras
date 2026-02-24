@@ -45,6 +45,14 @@ public static class PropertyMetadataRegistry
     }
 
     /// <summary>
+    /// Removes registered metadata for the specified type (generic variant).
+    /// </summary>
+    public static void Unregister<T>()
+    {
+        Unregister(typeof(T));
+    }
+
+    /// <summary>
     /// Removes all registered metadata. Intended for testing.
     /// </summary>
     internal static void Clear()

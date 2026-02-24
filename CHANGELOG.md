@@ -7,9 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **AOT/Trimming**: Enabled `IsTrimmable`, `IsAotCompatible`, and `EnableTrimAnalyzer` in the library project
+- **ComboBox**: `DisplayMemberFunc`, `ValueMemberFunc`, `IconMemberFunc` — AOT-safe alternatives to string-based property paths
+- **MultiSelectComboBox**: `DisplayMemberFunc` — AOT-safe alternative to `DisplayMemberPath`
+- **TreeView**: `DisplayMemberFunc`, `ChildrenFunc`, `IconMemberFunc`, `IsExpandedFunc`, `HasChildrenFunc` — AOT-safe alternatives to string-based property paths
+- **DataGridColumn**: `CellValueFunc`, `CellValueSetter` — AOT-safe alternatives to reflection via `PropertyPath`
+- **DataGridComboBoxColumn**: `DisplayMemberFunc`, `SelectedValueFunc` — AOT-safe alternatives to string-based property paths
+- **PropertyGrid**: `RegisterMetadata<T>()` / `RegisterMetadata(Type, ...)` for AOT-safe property discovery via `PropertyMetadataRegistry`
+- **Helpers**: `PropertyAccessor` — centralized, cached reflection helper with `[RequiresUnreferencedCode]` annotations (replaces scattered `GetPropertyValue()` methods)
+- **Helpers**: `PropertyMetadataRegistry` / `PropertyMetadataEntry` for registering AOT-safe property metadata
+
 ### Changed
 
 - **PropertyGrid**: `PropertyItem.PropertyInfo` changed from `public` to `internal` — use the `GetValue`/`SetValue` methods or register metadata via `PropertyMetadataRegistry` instead
+- **PropertyGrid**: `PropertyItem` constructors changed to `internal` — use `PropertyMetadataRegistry` for AOT-safe property item creation
 
 ## [2.1.8] - 2026-02-24
 
