@@ -74,21 +74,10 @@ Per-column filtering can be controlled via `DataGridColumn.CanUserFilter`. When 
     Header="Name"
     Binding="Name"
     Width="200"
-    IsReadOnly="False"
-    MaxLength="100" />
+    IsReadOnly="False" />
 ```
 
-### DataGridNumericColumn
-
-```xml
-<extras:DataGridNumericColumn
-    Header="Price"
-    Binding="Price"
-    Format="C2"
-    Minimum="0"
-    Maximum="10000"
-    Increment="0.01" />
-```
+> **Note:** For numeric columns, use `DataGridTextColumn` with the `Format` property (e.g., `Format="C2"` for currency). There is no separate `DataGridNumericColumn` type.
 
 ### DataGridCheckBoxColumn
 

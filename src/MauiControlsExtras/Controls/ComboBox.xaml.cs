@@ -135,7 +135,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
         nameof(DisplayMemberFunc),
         typeof(Func<object, string?>),
-        typeof(ComboBox));
+        typeof(ComboBox),
+        propertyChanged: OnDisplayMemberFuncChanged);
 
     /// <summary>
     /// Identifies the <see cref="ValueMemberFunc"/> bindable property.
@@ -151,7 +152,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     public static readonly BindableProperty IconMemberFuncProperty = BindableProperty.Create(
         nameof(IconMemberFunc),
         typeof(Func<object, string?>),
-        typeof(ComboBox));
+        typeof(ComboBox),
+        propertyChanged: OnIconMemberFuncChanged);
 
     /// <summary>
     /// Identifies the <see cref="SelectedValue"/> bindable property.
@@ -1308,7 +1310,23 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         }
     }
 
+    private static void OnDisplayMemberFuncChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is ComboBox comboBox)
+        {
+            comboBox.SetupItemTemplate();
+        }
+    }
+
     private static void OnIconMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is ComboBox comboBox)
+        {
+            comboBox.SetupItemTemplate();
+        }
+    }
+
+    private static void OnIconMemberFuncChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is ComboBox comboBox)
         {
@@ -1592,8 +1610,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
         // Otherwise, create default template based on DisplayMemberPath/IconMemberPath
         var displayMemberPath = DisplayMemberPath;
+        var displayMemberFunc = DisplayMemberFunc;
         var iconMemberPath = IconMemberPath;
-        var hasIcon = !string.IsNullOrEmpty(iconMemberPath);
+        var iconMemberFunc = IconMemberFunc;
+        var hasIcon = iconMemberFunc != null || !string.IsNullOrEmpty(iconMemberPath);
 
         itemsList.ItemTemplate = new DataTemplate(() =>
         {
@@ -1623,7 +1643,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                     VerticalOptions = LayoutOptions.Center,
                     Aspect = Aspect.AspectFit
                 };
-                image.SetBinding(Image.SourceProperty, new Binding(iconMemberPath, converter: new MauiAssetImageConverter()));
+                if (iconMemberFunc != null)
+                    image.SetBinding(Image.SourceProperty, new Binding(".") { Converter = new Helpers.FuncDisplayConverter(iconMemberFunc) });
+                else
+                    image.SetBinding(Image.SourceProperty, new Binding(iconMemberPath, converter: new MauiAssetImageConverter()));
                 Grid.SetColumn(image, 0);
                 grid.Add(image);
             }
@@ -1637,7 +1660,11 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 Color.FromArgb("#212121"),
                 Colors.White);
 
-            if (!string.IsNullOrEmpty(displayMemberPath))
+            if (displayMemberFunc != null)
+            {
+                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new Helpers.FuncDisplayConverter(displayMemberFunc) });
+            }
+            else if (!string.IsNullOrEmpty(displayMemberPath))
             {
                 label.SetBinding(Label.TextProperty, new Binding(displayMemberPath));
             }

@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **PropertyGrid**: `PropertyItem.PropertyInfo` changed from `public` to `internal` — use the `GetValue`/`SetValue` methods or register metadata via `PropertyMetadataRegistry` instead
-- **PropertyGrid**: `PropertyItem` constructors changed to `internal` — use `PropertyMetadataRegistry` for AOT-safe property item creation
+- **Breaking:** **PropertyGrid**: `PropertyItem.PropertyInfo` changed from `public` to `internal` — use the `GetValue`/`SetValue` methods or register metadata via `PropertyMetadataRegistry` instead
+- **Breaking:** **PropertyGrid**: `PropertyItem` constructors changed to `internal` — use `PropertyMetadataRegistry` for AOT-safe property item creation
 
 ## [2.1.8] - 2026-02-24
 

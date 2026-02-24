@@ -5,6 +5,8 @@ namespace MauiControlsExtras.Tests.Controls;
 
 public class PropertyMetadataEntryTests : IDisposable
 {
+    public PropertyMetadataEntryTests() { PropertyMetadataRegistry.Clear(); }
+
     public void Dispose()
     {
         PropertyMetadataRegistry.Clear();
@@ -470,6 +472,44 @@ public class PropertyMetadataEntryTests : IDisposable
         var item = new PropertyItem(metadata, target);
 
         Assert.Null(item.Value);
+    }
+
+    [Fact]
+    public void TryGetMetadata_ReturnsRegisteredEntries()
+    {
+        var entry = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            GetValue = obj => ((TestProduct)obj).Name,
+            IsReadOnly = true
+        };
+
+        PropertyMetadataRegistry.Register<TestProduct>(entry);
+
+        var found = PropertyMetadataRegistry.TryGetMetadata(typeof(TestProduct), out var metadata);
+
+        Assert.True(found);
+        Assert.NotNull(metadata);
+        Assert.Single(metadata);
+        Assert.Equal("Name", metadata[0].Name);
+    }
+
+    [Fact]
+    public void Register_WhitespaceName_ThrowsArgumentException()
+    {
+        var entry = new PropertyMetadataEntry
+        {
+            Name = "  ",
+            PropertyType = typeof(string),
+            GetValue = obj => null,
+            IsReadOnly = true
+        };
+
+        var ex = Assert.Throws<ArgumentException>(() =>
+            PropertyMetadataRegistry.Register<TestProduct>(entry));
+
+        Assert.Contains("must not be null or whitespace", ex.Message);
     }
 
     [Fact]

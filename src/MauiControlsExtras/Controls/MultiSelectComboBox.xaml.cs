@@ -62,7 +62,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
         nameof(DisplayMemberFunc),
         typeof(Func<object, string?>),
-        typeof(MultiSelectComboBox));
+        typeof(MultiSelectComboBox),
+        propertyChanged: OnDisplayMemberFuncChanged);
 
     public static readonly BindableProperty ValueMemberPathProperty = BindableProperty.Create(
         nameof(ValueMemberPath),
@@ -868,6 +869,15 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         }
     }
 
+    private static void OnDisplayMemberFuncChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.SetupItemTemplate();
+            control.UpdateChipsDisplay();
+        }
+    }
+
     private static void OnIconMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is MultiSelectComboBox control)
@@ -1285,6 +1295,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
         // Default template based on DisplayMemberPath/IconMemberPath
         var displayMemberPath = DisplayMemberPath;
+        var displayMemberFunc = DisplayMemberFunc;
         var iconMemberPath = IconMemberPath;
         var hasIcon = !string.IsNullOrEmpty(iconMemberPath);
 
@@ -1355,7 +1366,11 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             };
             label.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#212121"), Colors.White);
 
-            if (!string.IsNullOrEmpty(displayMemberPath))
+            if (displayMemberFunc != null)
+            {
+                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new Helpers.FuncDisplayConverter(displayMemberFunc) });
+            }
+            else if (!string.IsNullOrEmpty(displayMemberPath))
             {
                 label.SetBinding(Label.TextProperty, new Binding(displayMemberPath));
             }

@@ -6372,6 +6372,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         // Configure the popup content
         comboBoxPopup.DisplayMemberPath = e.DisplayMemberPath;
+        comboBoxPopup.DisplayMemberFunc = e.DisplayMemberFunc;
         comboBoxPopup.ItemsSource = e.ItemsSource;  // This populates filtered items
         comboBoxPopup.SelectedItem = e.SelectedItem;
 

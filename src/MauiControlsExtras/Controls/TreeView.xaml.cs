@@ -585,7 +585,8 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
         nameof(DisplayMemberFunc),
         typeof(Func<object, string?>),
-        typeof(TreeView));
+        typeof(TreeView),
+        propertyChanged: OnFuncPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="ChildrenFunc"/> bindable property.
@@ -593,15 +594,19 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     public static readonly BindableProperty ChildrenFuncProperty = BindableProperty.Create(
         nameof(ChildrenFunc),
         typeof(Func<object, IEnumerable?>),
-        typeof(TreeView));
+        typeof(TreeView),
+        propertyChanged: OnFuncPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="IconMemberFunc"/> bindable property.
+    /// Returns <c>object?</c> (not <c>string?</c>) because TreeView icons support both
+    /// <see cref="ImageSource"/> instances and string file paths.
     /// </summary>
     public static readonly BindableProperty IconMemberFuncProperty = BindableProperty.Create(
         nameof(IconMemberFunc),
         typeof(Func<object, object?>),
-        typeof(TreeView));
+        typeof(TreeView),
+        propertyChanged: OnFuncPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="IsExpandedFunc"/> bindable property.
@@ -2197,6 +2202,14 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         if (bindable is TreeView treeView)
         {
             // Rebuild to apply new template
+            treeView.BuildTree();
+        }
+    }
+
+    private static void OnFuncPropertyChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is TreeView treeView)
+        {
             treeView.BuildTree();
         }
     }

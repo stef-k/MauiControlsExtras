@@ -21,7 +21,7 @@ A hierarchical tree control for displaying parent-child relationships.
 ```xml
 <extras:TreeView ItemsSource="{Binding RootNodes}">
     <extras:TreeView.ItemTemplate>
-        <DataTemplate>
+        <DataTemplate x:DataType="models:TreeNode">
             <Label Text="{Binding Name}" />
         </DataTemplate>
     </extras:TreeView.ItemTemplate>

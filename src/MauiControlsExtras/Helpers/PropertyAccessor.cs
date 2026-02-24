@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace MauiControlsExtras.Helpers;
 
@@ -12,8 +13,9 @@ namespace MauiControlsExtras.Helpers;
 /// </summary>
 internal static class PropertyAccessor
 {
-    // App-lifetime cache with no eviction; acceptable for typical MAUI apps
-    // where the set of accessed types is bounded. ClearCache() is available for testing and internal use.
+    // App-lifetime cache: entries are never evicted. This is acceptable for typical
+    // MAUI apps where the set of (Type, propertyName) combinations is bounded by the
+    // data model. For dynamic/plugin scenarios, call ClearCache() periodically.
     private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> _cache = new();
 
     /// <summary>
@@ -70,8 +72,6 @@ internal static class PropertyAccessor
     /// <summary>
     /// Returns the default value for a given type without using Activator.CreateInstance for known types.
     /// </summary>
-    [UnconditionalSuppressMessage("AOT", "IL2067:DynamicallyAccessedMembers",
-        Justification = "Fallback for custom struct defaults only. All common value types (int, long, double, float, decimal, bool, DateTime, TimeSpan, byte, short, char, Guid, DateTimeOffset), Nullable<T>, and enums are handled explicitly above without Activator.")]
     internal static object? GetDefaultValue(Type targetType)
     {
         if (!targetType.IsValueType)
@@ -99,8 +99,8 @@ internal static class PropertyAccessor
         if (targetType.IsEnum)
             return Enum.ToObject(targetType, 0);
 
-        // Fallback for other value types (custom structs)
-        return Activator.CreateInstance(targetType);
+        // Fallback for other value types (custom structs) — zeroed without constructor, AOT-safe
+        return RuntimeHelpers.GetUninitializedObject(targetType);
     }
 
     /// <summary>
@@ -116,48 +116,52 @@ internal static class PropertyAccessor
         if (targetType.IsAssignableFrom(valueType))
             return value;
 
-        // Handle nullable types
-        var underlyingType = Nullable.GetUnderlyingType(targetType);
-        if (underlyingType != null)
+        // Handle nullable types — use a local to avoid mutating the parameter
+        var effectiveType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        if (effectiveType != targetType) // was nullable
         {
             if (value is string s && string.IsNullOrWhiteSpace(s))
                 return null;
-            targetType = underlyingType;
         }
 
         // Handle empty string for value types
         if (value is string str && string.IsNullOrWhiteSpace(str))
-            return GetDefaultValue(targetType);
+            return GetDefaultValue(effectiveType);
 
         try
         {
             // Direct casts for common types (avoids Convert.ChangeType reflection)
-            if (targetType == typeof(decimal)) return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(double)) return Convert.ToDouble(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(float)) return Convert.ToSingle(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(int)) return Convert.ToInt32(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(long)) return Convert.ToInt64(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(bool)) return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(DateTime)) return Convert.ToDateTime(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(string)) return value.ToString();
-            if (targetType == typeof(short)) return Convert.ToInt16(value, CultureInfo.InvariantCulture);
-            if (targetType == typeof(byte)) return Convert.ToByte(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(decimal)) return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(double)) return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(float)) return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(int)) return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(long)) return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(bool)) return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(DateTime)) return Convert.ToDateTime(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(string)) return value.ToString();
+            if (effectiveType == typeof(short)) return Convert.ToInt16(value, CultureInfo.InvariantCulture);
+            if (effectiveType == typeof(byte)) return Convert.ToByte(value, CultureInfo.InvariantCulture);
 
             // Enum conversion
-            if (targetType.IsEnum)
+            if (effectiveType.IsEnum)
             {
                 if (value is string enumStr)
-                    return Enum.Parse(targetType, enumStr, ignoreCase: true);
-                return Enum.ToObject(targetType, value);
+                {
+                    var parsed = Enum.Parse(effectiveType, enumStr, ignoreCase: true);
+                    if (!effectiveType.IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(effectiveType, parsed))
+                        return GetDefaultValue(effectiveType);
+                    return parsed;
+                }
+                return Enum.ToObject(effectiveType, value);
             }
 
             // General conversion
-            return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+            return Convert.ChangeType(value, effectiveType, CultureInfo.InvariantCulture);
         }
         catch (Exception ex) when (ex is FormatException or InvalidCastException
             or OverflowException or ArgumentException)
         {
-            return GetDefaultValue(targetType);
+            return GetDefaultValue(effectiveType);
         }
     }
 }

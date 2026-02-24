@@ -127,6 +127,10 @@ public class PropertyItem : INotifyPropertyChanged
                     or OverflowException or ArgumentException or InvalidOperationException
                     or TargetInvocationException)
                 {
+                    System.Diagnostics.Debug.WriteLine($"PropertyItem '{Name}': failed to set value: {ex.Message}");
+                    // Re-sync _value with the actual state of the target
+                    try { _value = _getterFunc != null ? _getterFunc(Target) : PropertyInfo?.GetValue(Target); }
+                    catch { /* best-effort resync */ }
                     return;
                 }
 
@@ -308,7 +312,11 @@ public class PropertyItem : INotifyPropertyChanged
             initialValue = null;
         }
 
-        // Build sub-properties from metadata
+        // Build sub-properties from metadata.
+        // Note: Sub-property targets are captured at construction time. If the parent
+        // property value is replaced, sub-properties will reference the old object.
+        // The PropertyGrid rebuilds items on SelectedObject change, so this is
+        // only relevant if the parent value is replaced externally without re-binding.
         // Value types (structs) are boxed copies — sub-property setters would
         // mutate the copy without propagating back to the parent field.
         // Skip expansion for value types to prevent silent data loss.

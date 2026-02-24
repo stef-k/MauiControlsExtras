@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Helpers;
 
@@ -251,7 +250,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
 
             if (func != null)
             {
-                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new FuncDisplayConverter(func) });
+                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new Helpers.FuncDisplayConverter(func) });
             }
             else if (!string.IsNullOrEmpty(displayMemberPath))
             {
@@ -576,24 +575,4 @@ public partial class ComboBoxPopupContent : StyledControlBase
         }
     }
 
-    private sealed class FuncDisplayConverter : IValueConverter
-    {
-        private readonly Func<object, string?> _func;
-        public FuncDisplayConverter(Func<object, string?> func) => _func = func;
-        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        {
-            if (value == null)
-                return string.Empty;
-            try
-            {
-                return _func(value) ?? string.Empty;
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                return string.Empty;
-            }
-        }
-        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-            => throw new NotSupportedException();
-    }
 }

@@ -311,6 +311,22 @@ public class DataGridColumnTests
         Assert.False(col.IsFiltered);
     }
 
+    [Fact]
+    public void GetCellValue_NullItem_ThrowsArgumentNullException()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        Assert.Throws<ArgumentNullException>(() => col.GetCellValue(null!));
+    }
+
+    [Fact]
+    public void SetCellValue_NullItem_ThrowsArgumentNullException()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        Assert.Throws<ArgumentNullException>(() => col.SetCellValue(null!, "value"));
+    }
+
     #region CellValueFunc / CellValueSetter PropertyChanged Tests
 
     [Fact]

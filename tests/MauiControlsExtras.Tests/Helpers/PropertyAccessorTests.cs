@@ -2,8 +2,11 @@ using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Tests.Helpers;
 
-public class PropertyAccessorTests
+public class PropertyAccessorTests : IDisposable
 {
+    public PropertyAccessorTests() { PropertyAccessor.ClearCache(); }
+    public void Dispose() { PropertyAccessor.ClearCache(); }
+
     private struct CustomPoint
     {
         public double X { get; set; }
@@ -317,6 +320,22 @@ public class PropertyAccessorTests
         var result = PropertyAccessor.GetValue(model, "Name");
 
         Assert.Equal("Test", result);
+    }
+
+    [Fact]
+    public void ConvertToType_InvalidString_ReturnsDefault()
+    {
+        var result = PropertyAccessor.ConvertToType("not-a-number", typeof(int));
+
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public void ConvertToType_OverflowValue_ReturnsDefault()
+    {
+        var result = PropertyAccessor.ConvertToType("99999999999999999999", typeof(int));
+
+        Assert.Equal(0, result);
     }
 
     [Fact]
