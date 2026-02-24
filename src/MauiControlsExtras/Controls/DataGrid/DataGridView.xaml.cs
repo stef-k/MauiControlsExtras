@@ -2344,6 +2344,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     #endregion
 
+    #region Theme Support
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+
+        if (_columns.Count > 0)
+        {
+            BuildHeader();
+        }
+    }
+
+    #endregion
+
     #region Public Methods - Editing
 
     /// <summary>
