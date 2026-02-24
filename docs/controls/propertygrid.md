@@ -219,6 +219,46 @@ var changes = propertyGrid.GetModifiedProperties();
 | Enum | ComboBox (dropdown) |
 | Collection | CollectionEditor |
 
+## AOT / NativeAOT Support
+
+PropertyGrid uses reflection extensively to discover and access properties. For AOT/trimming scenarios, register metadata at startup:
+
+### Use RegisterMetadata (recommended)
+
+```csharp
+// Register metadata at startup (AOT-safe)
+PropertyGrid.RegisterMetadata<Product>(
+    new PropertyMetadataEntry
+    {
+        Name = "Name",
+        DisplayName = "Product Name",
+        Category = "General",
+        PropertyType = typeof(string),
+        GetValue = obj => ((Product)obj).Name,
+        SetValue = (obj, val) => ((Product)obj).Name = (string)val!
+    },
+    new PropertyMetadataEntry
+    {
+        Name = "Price",
+        DisplayName = "Price",
+        Category = "Pricing",
+        PropertyType = typeof(decimal),
+        Minimum = 0m,
+        Maximum = 10000m,
+        GetValue = obj => ((Product)obj).Price,
+        SetValue = (obj, val) => ((Product)obj).Price = (decimal)val!
+    }
+);
+```
+
+You can also use the standalone registry directly:
+
+```csharp
+PropertyMetadataRegistry.Register<Product>(...);
+```
+
+When metadata is registered for a type, `PropertyGrid` uses it instead of reflection — no property information is lost under trimming.
+
 ## PropertySortMode Enum
 
 | Value | Description |

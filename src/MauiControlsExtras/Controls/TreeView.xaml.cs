@@ -2,10 +2,12 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.ContextMenu;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -577,6 +579,46 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         typeof(TreeView),
         null);
 
+    /// <summary>
+    /// Identifies the <see cref="DisplayMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
+        nameof(DisplayMemberFunc),
+        typeof(Func<object, string?>),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the <see cref="ChildrenFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ChildrenFuncProperty = BindableProperty.Create(
+        nameof(ChildrenFunc),
+        typeof(Func<object, IEnumerable?>),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the <see cref="IconMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IconMemberFuncProperty = BindableProperty.Create(
+        nameof(IconMemberFunc),
+        typeof(Func<object, object?>),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the <see cref="IsExpandedFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IsExpandedFuncProperty = BindableProperty.Create(
+        nameof(IsExpandedFunc),
+        typeof(Func<object, bool?>),
+        typeof(TreeView));
+
+    /// <summary>
+    /// Identifies the <see cref="HasChildrenFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty HasChildrenFuncProperty = BindableProperty.Create(
+        nameof(HasChildrenFunc),
+        typeof(Func<object, bool?>),
+        typeof(TreeView));
+
     #endregion
 
     #region Command Bindable Properties
@@ -827,6 +869,56 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
     {
         get => (string?)GetValue(HasChildrenPathProperty);
         set => SetValue(HasChildrenPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract display text from items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => (Func<object, string?>?)GetValue(DisplayMemberFuncProperty);
+        set => SetValue(DisplayMemberFuncProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to get child items.
+    /// When set, takes priority over <see cref="ChildrenPath"/>.
+    /// </summary>
+    public Func<object, IEnumerable?>? ChildrenFunc
+    {
+        get => (Func<object, IEnumerable?>?)GetValue(ChildrenFuncProperty);
+        set => SetValue(ChildrenFuncProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the icon from items.
+    /// When set, takes priority over <see cref="IconMemberPath"/>.
+    /// </summary>
+    public Func<object, object?>? IconMemberFunc
+    {
+        get => (Func<object, object?>?)GetValue(IconMemberFuncProperty);
+        set => SetValue(IconMemberFuncProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to get the expanded state of items.
+    /// When set, takes priority over <see cref="IsExpandedPath"/>.
+    /// </summary>
+    public Func<object, bool?>? IsExpandedFunc
+    {
+        get => (Func<object, bool?>?)GetValue(IsExpandedFuncProperty);
+        set => SetValue(IsExpandedFuncProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to determine if items have children (for lazy loading).
+    /// When set, takes priority over <see cref="HasChildrenPath"/>.
+    /// </summary>
+    public Func<object, bool?>? HasChildrenFunc
+    {
+        get => (Func<object, bool?>?)GetValue(HasChildrenFuncProperty);
+        set => SetValue(HasChildrenFuncProperty, value);
     }
 
     #endregion
@@ -1639,9 +1731,11 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         node.ItemTemplate = ItemTemplate;
 
         // Set up icon
-        if (!string.IsNullOrEmpty(IconMemberPath))
+        if (IconMemberFunc != null || !string.IsNullOrEmpty(IconMemberPath))
         {
-            var iconValue = GetPropertyValue(item, IconMemberPath);
+            var iconValue = IconMemberFunc != null
+                ? IconMemberFunc(item)
+                : GetPropertyValueFallback(item, IconMemberPath!);
             if (iconValue is ImageSource imageSource)
             {
                 node.Icon = imageSource;
@@ -1653,9 +1747,15 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         }
 
         // Check for initial expanded state
-        if (!string.IsNullOrEmpty(IsExpandedPath))
+        if (IsExpandedFunc != null)
         {
-            var expandedValue = GetPropertyValue(item, IsExpandedPath);
+            var isExpanded = IsExpandedFunc(item);
+            if (isExpanded.HasValue)
+                node.IsExpanded = isExpanded.Value;
+        }
+        else if (!string.IsNullOrEmpty(IsExpandedPath))
+        {
+            var expandedValue = GetPropertyValueFallback(item, IsExpandedPath);
             if (expandedValue is bool isExpanded)
             {
                 node.IsExpanded = isExpanded;
@@ -1663,9 +1763,18 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
         }
 
         // Check for potential children (lazy loading)
-        if (!string.IsNullOrEmpty(HasChildrenPath))
+        if (HasChildrenFunc != null)
         {
-            var hasChildrenValue = GetPropertyValue(item, HasChildrenPath);
+            var hasChildren = HasChildrenFunc(item);
+            if (hasChildren.HasValue)
+            {
+                node.HasPotentialChildren = hasChildren.Value;
+                node.ChildrenLoaded = false;
+            }
+        }
+        else if (!string.IsNullOrEmpty(HasChildrenPath))
+        {
+            var hasChildrenValue = GetPropertyValueFallback(item, HasChildrenPath);
             if (hasChildrenValue is bool hasChildren)
             {
                 node.HasPotentialChildren = hasChildren;
@@ -1693,9 +1802,12 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
     private string GetDisplayText(object item)
     {
+        if (DisplayMemberFunc != null)
+            return DisplayMemberFunc(item) ?? string.Empty;
+
         if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            var value = GetPropertyValue(item, DisplayMemberPath);
+            var value = GetPropertyValueFallback(item, DisplayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
         return item.ToString() ?? string.Empty;
@@ -1703,18 +1815,21 @@ public partial class TreeView : Base.ListStyledControlBase, Base.IKeyboardNaviga
 
     private IEnumerable? GetChildren(object item)
     {
+        if (ChildrenFunc != null)
+            return ChildrenFunc(item);
+
         if (string.IsNullOrEmpty(ChildrenPath))
             return null;
 
-        var value = GetPropertyValue(item, ChildrenPath);
+        var value = GetPropertyValueFallback(item, ChildrenPath);
         return value as IEnumerable;
     }
 
-    private static object? GetPropertyValue(object item, string propertyPath)
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use *Func properties for AOT compatibility.")]
+    private static object? GetPropertyValueFallback(object item, string propertyPath)
     {
-        var type = item.GetType();
-        var property = type.GetProperty(propertyPath);
-        return property?.GetValue(item);
+        return PropertyAccessor.GetValue(item, propertyPath);
     }
 
     private void AddNodeToFlatList(TreeViewNode node)

@@ -409,6 +409,45 @@ var result = comboBox.Validate();
 |-------|-------------|
 | ValidationChanged | Fired when IsValid state changes |
 
+## AOT / NativeAOT Support
+
+When publishing with `PublishAot=true` or trimming enabled, string-based property paths (`DisplayMemberPath`, `ValueMemberPath`, `IconMemberPath`) use reflection that may be removed by the trimmer.
+
+### Option 1: Use Func-based properties (recommended)
+
+```csharp
+// In code-behind or ViewModel setup:
+myComboBox.DisplayMemberFunc = item => ((Country)item).Name;
+myComboBox.ValueMemberFunc = item => ((Country)item).Id;
+myComboBox.IconMemberFunc = item => ((Country)item).FlagPath;
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `DisplayMemberFunc` | `Func<object, string?>` | AOT-safe alternative to `DisplayMemberPath`. When set, takes priority over the string path. |
+| `ValueMemberFunc` | `Func<object, object?>` | AOT-safe alternative to `ValueMemberPath`. When set, takes priority over the string path. |
+| `IconMemberFunc` | `Func<object, string?>` | AOT-safe alternative to `IconMemberPath`. When set, takes priority over the string path. |
+
+### Option 2: Use ItemTemplate with compiled bindings
+
+```xml
+<extras:ComboBox ItemsSource="{Binding Countries}">
+    <extras:ComboBox.ItemTemplate>
+        <DataTemplate x:DataType="models:Country">
+            <Label Text="{Binding Name}" />
+        </DataTemplate>
+    </extras:ComboBox.ItemTemplate>
+</extras:ComboBox>
+```
+
+### Option 3: Preserve model types
+
+If you prefer `DisplayMemberPath`, ensure your model types are preserved:
+
+```csharp
+[DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Country))]
+```
+
 ## Best Practices
 
 1. **Use DisplayMemberPath** for complex objects instead of overriding ToString()

@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -78,6 +80,18 @@ public class DataGridComboBoxColumn : DataGridColumn
             }
         }
     }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the display text from combo items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc { get; set; }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the value from combo items.
+    /// When set, takes priority over <see cref="SelectedValuePath"/>.
+    /// </summary>
+    public Func<object, object?>? SelectedValueFunc { get; set; }
 
     /// <summary>
     /// Gets or sets the placeholder text shown when no item is selected.
@@ -242,21 +256,29 @@ public class DataGridComboBoxColumn : DataGridColumn
         return value.ToString() ?? string.Empty;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use SelectedValueFunc for AOT compatibility.")]
     private object? GetItemValue(object item)
     {
+        if (SelectedValueFunc != null)
+            return SelectedValueFunc(item);
+
         if (string.IsNullOrEmpty(SelectedValuePath))
             return item;
 
-        var property = item.GetType().GetProperty(SelectedValuePath);
-        return property?.GetValue(item);
+        return PropertyAccessor.GetValue(item, SelectedValuePath);
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
     private string GetDisplayValue(object item)
     {
+        if (DisplayMemberFunc != null)
+            return DisplayMemberFunc(item) ?? string.Empty;
+
         if (string.IsNullOrEmpty(DisplayMemberPath))
             return item.ToString() ?? string.Empty;
 
-        var property = item.GetType().GetProperty(DisplayMemberPath);
-        return property?.GetValue(item)?.ToString() ?? string.Empty;
+        return PropertyAccessor.GetValue(item, DisplayMemberPath)?.ToString() ?? string.Empty;
     }
 }

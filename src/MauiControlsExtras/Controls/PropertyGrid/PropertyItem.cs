@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace MauiControlsExtras.Controls;
@@ -12,11 +13,13 @@ public class PropertyItem : INotifyPropertyChanged
     private object? _value;
     private bool _isExpanded;
     private bool _isSelected;
+    private readonly Func<object, object?>? _getterFunc;
+    private readonly Action<object, object?>? _setterFunc;
 
     /// <summary>
-    /// Gets the property info.
+    /// Gets the property info (null when constructed from metadata).
     /// </summary>
-    public PropertyInfo PropertyInfo { get; }
+    public PropertyInfo? PropertyInfo { get; }
 
     /// <summary>
     /// Gets the target object that contains this property.
@@ -26,7 +29,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the property name (programmatic).
     /// </summary>
-    public string Name => PropertyInfo.Name;
+    public string Name { get; }
 
     /// <summary>
     /// Gets the display name (from DisplayNameAttribute or property name).
@@ -46,7 +49,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the property type.
     /// </summary>
-    public Type PropertyType => PropertyInfo.PropertyType;
+    public Type PropertyType { get; }
 
     /// <summary>
     /// Gets the property type name for display.
@@ -104,11 +107,18 @@ public class PropertyItem : INotifyPropertyChanged
                 _value = value;
 
                 // Update the actual property
-                if (!IsReadOnly && PropertyInfo.CanWrite)
+                if (!IsReadOnly)
                 {
                     try
                     {
-                        PropertyInfo.SetValue(Target, Convert.ChangeType(value, PropertyType));
+                        if (_setterFunc != null)
+                        {
+                            _setterFunc(Target, value);
+                        }
+                        else if (PropertyInfo is { CanWrite: true })
+                        {
+                            PropertyInfo.SetValue(Target, Convert.ChangeType(value, PropertyType));
+                        }
                     }
                     catch
                     {
@@ -187,12 +197,15 @@ public class PropertyItem : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="PropertyItem"/> class.
+    /// Initializes a new instance of the <see cref="PropertyItem"/> class using reflection.
     /// </summary>
+    [RequiresUnreferencedCode("Uses reflection to discover property attributes. Use PropertyItem(PropertyMetadataEntry, object) for AOT compatibility.")]
     public PropertyItem(PropertyInfo propertyInfo, object target)
     {
         PropertyInfo = propertyInfo;
         Target = target;
+        Name = propertyInfo.Name;
+        PropertyType = propertyInfo.PropertyType;
 
         // Get display name
         var displayNameAttr = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
@@ -259,11 +272,49 @@ public class PropertyItem : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="PropertyItem"/> class from registered metadata (AOT-safe).
+    /// </summary>
+    internal PropertyItem(PropertyMetadataEntry metadata, object target)
+    {
+        Target = target;
+        Name = metadata.Name;
+        DisplayName = metadata.DisplayName ?? metadata.Name;
+        Description = metadata.Description;
+        Category = metadata.Category ?? "Misc";
+        IsReadOnly = metadata.IsReadOnly;
+        PropertyType = metadata.PropertyType;
+        Minimum = metadata.Minimum;
+        Maximum = metadata.Maximum;
+        EditorType = metadata.EditorType;
+        _getterFunc = metadata.GetValue;
+        _setterFunc = metadata.SetValue;
+
+        // Build sub-properties from metadata
+        if (metadata.SubProperties is { Count: > 0 })
+        {
+            IsExpandable = true;
+            SubProperties = metadata.SubProperties
+                .Select(sub => new PropertyItem(sub, target))
+                .ToList();
+        }
+        else
+        {
+            IsExpandable = false;
+            SubProperties = Array.Empty<PropertyItem>();
+        }
+
+        // Get initial value via func
+        _value = _getterFunc(target);
+    }
+
+    /// <summary>
     /// Refreshes the value from the target object.
     /// </summary>
     public void RefreshValue()
     {
-        var newValue = PropertyInfo.GetValue(Target);
+        var newValue = _getterFunc != null
+            ? _getterFunc(Target)
+            : PropertyInfo?.GetValue(Target);
         if (!Equals(_value, newValue))
         {
             _value = newValue;

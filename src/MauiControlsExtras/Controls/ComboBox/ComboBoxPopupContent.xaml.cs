@@ -1,6 +1,8 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Base;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -13,6 +15,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
     private readonly ObservableCollection<object> _filteredItems = new();
     private List<object>? _allItems;
     private string? _displayMemberPath;
+    private Func<object, string?>? _displayMemberFunc;
     private object? _selectedItem;
     private int _highlightedIndex = -1;
     private bool _isUpdatingHighlight;
@@ -58,6 +61,16 @@ public partial class ComboBoxPopupContent : StyledControlBase
                 SetupItemTemplate();
             }
         }
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract display text from items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => _displayMemberFunc;
+        set => _displayMemberFunc = value;
     }
 
     private bool _isSearchVisible = true;
@@ -507,14 +520,23 @@ public partial class ComboBoxPopupContent : StyledControlBase
         if (item == null)
             return string.Empty;
 
+        if (_displayMemberFunc != null)
+            return _displayMemberFunc(item) ?? string.Empty;
+
         if (!string.IsNullOrEmpty(_displayMemberPath))
         {
-            var property = item.GetType().GetProperty(_displayMemberPath);
-            var value = property?.GetValue(item);
+            var value = GetPropertyValueFallback(item, _displayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
+    private static object? GetPropertyValueFallback(object item, string propertyPath)
+    {
+        return PropertyAccessor.GetValue(item, propertyPath);
     }
 
     private void UpdateHighlightVisual()

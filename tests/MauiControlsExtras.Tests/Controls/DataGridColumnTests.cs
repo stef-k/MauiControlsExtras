@@ -310,4 +310,60 @@ public class DataGridColumnTests
         col.FilterText = "";
         Assert.False(col.IsFiltered);
     }
+
+    #region CellValueFunc / CellValueSetter Tests
+
+    private class TestRowItem
+    {
+        public string Name { get; set; } = "Test";
+        public int Age { get; set; } = 25;
+    }
+
+    [Fact]
+    public void GetCellValue_UsesCellValueFunc_WhenSet()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+        col.CellValueFunc = item => "FuncValue";
+
+        var item = new TestRowItem { Name = "ReflectionValue" };
+        var result = col.GetCellValue(item);
+
+        Assert.Equal("FuncValue", result);
+    }
+
+    [Fact]
+    public void GetCellValue_FallsBackToReflection_WhenNoFunc()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        var item = new TestRowItem { Name = "ReflectedValue" };
+        var result = col.GetCellValue(item);
+
+        Assert.Equal("ReflectedValue", result);
+    }
+
+    [Fact]
+    public void SetCellValue_UsesCellValueSetter_WhenSet()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+        col.CellValueSetter = (item, value) => ((TestRowItem)item).Name = (string)value!;
+
+        var item = new TestRowItem { Name = "Original" };
+        col.SetCellValue(item, "SetterValue");
+
+        Assert.Equal("SetterValue", item.Name);
+    }
+
+    [Fact]
+    public void SetCellValue_FallsBackToReflection_WhenNoSetter()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        var item = new TestRowItem { Name = "Original" };
+        col.SetCellValue(item, "ReflectedSet");
+
+        Assert.Equal("ReflectedSet", item.Name);
+    }
+
+    #endregion
 }

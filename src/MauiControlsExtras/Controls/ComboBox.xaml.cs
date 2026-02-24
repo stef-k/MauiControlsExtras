@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -127,6 +128,30 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         typeof(string),
         typeof(ComboBox),
         default(string));
+
+    /// <summary>
+    /// Identifies the <see cref="DisplayMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
+        nameof(DisplayMemberFunc),
+        typeof(Func<object, string?>),
+        typeof(ComboBox));
+
+    /// <summary>
+    /// Identifies the <see cref="ValueMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty ValueMemberFuncProperty = BindableProperty.Create(
+        nameof(ValueMemberFunc),
+        typeof(Func<object, object?>),
+        typeof(ComboBox));
+
+    /// <summary>
+    /// Identifies the <see cref="IconMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty IconMemberFuncProperty = BindableProperty.Create(
+        nameof(IconMemberFunc),
+        typeof(Func<object, string?>),
+        typeof(ComboBox));
 
     /// <summary>
     /// Identifies the <see cref="SelectedValue"/> bindable property.
@@ -487,6 +512,36 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         get => (string?)GetValue(ValueMemberPathProperty);
         set => SetValue(ValueMemberPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract display text from items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => (Func<object, string?>?)GetValue(DisplayMemberFuncProperty);
+        set => SetValue(DisplayMemberFuncProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the value from items.
+    /// When set, takes priority over <see cref="ValueMemberPath"/>.
+    /// </summary>
+    public Func<object, object?>? ValueMemberFunc
+    {
+        get => (Func<object, object?>?)GetValue(ValueMemberFuncProperty);
+        set => SetValue(ValueMemberFuncProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the icon path from items.
+    /// When set, takes priority over <see cref="IconMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? IconMemberFunc
+    {
+        get => (Func<object, string?>?)GetValue(IconMemberFuncProperty);
+        set => SetValue(IconMemberFuncProperty, value);
     }
 
     /// <summary>
@@ -1277,9 +1332,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         _isUpdatingFromSelection = true;
         try
         {
-            if (!string.IsNullOrEmpty(ValueMemberPath) && newValue != null)
+            if ((ValueMemberFunc != null || !string.IsNullOrEmpty(ValueMemberPath)) && newValue != null)
             {
-                SelectedValue = GetPropertyValue(newValue, ValueMemberPath);
+                SelectedValue = GetValueMember(newValue);
             }
             else if (newValue == null)
             {
@@ -1655,7 +1710,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 SelectedItem,
                 Placeholder,
                 IsSearchVisible,
-                PopupPlacement);
+                PopupPlacement,
+                DisplayMemberFunc);
 
             // Raise event for external handlers (e.g., DataGridView)
             PopupRequested?.Invoke(this, args);
@@ -1747,6 +1803,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             ItemsSource = args.ItemsSource,
             DisplayMemberPath = args.DisplayMemberPath,
+            DisplayMemberFunc = args.DisplayMemberFunc,
             SelectedItem = args.SelectedItem,
             IsSearchVisible = args.IsSearchVisible
         };
@@ -1815,9 +1872,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             SelectedItem = item;
 
-            if (!string.IsNullOrEmpty(ValueMemberPath))
+            if (ValueMemberFunc != null || !string.IsNullOrEmpty(ValueMemberPath))
             {
-                SelectedValue = GetPropertyValue(item, ValueMemberPath);
+                SelectedValue = GetValueMember(item);
             }
 
             UpdateDisplayState();
@@ -1843,8 +1900,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             if (item == null) continue;
 
-            var itemValue = !string.IsNullOrEmpty(ValueMemberPath)
-                ? GetPropertyValue(item, ValueMemberPath)
+            var itemValue = (ValueMemberFunc != null || !string.IsNullOrEmpty(ValueMemberPath))
+                ? GetValueMember(item)
                 : item;
 
             if (Equals(itemValue, value))
@@ -1873,9 +1930,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             if (item == null) continue;
 
-            if (!string.IsNullOrEmpty(ValueMemberPath))
+            if (ValueMemberFunc != null || !string.IsNullOrEmpty(ValueMemberPath))
             {
-                var itemValue = GetPropertyValue(item, ValueMemberPath);
+                var itemValue = GetValueMember(item);
                 if (Equals(itemValue, DefaultValue))
                 {
                     SelectItem(item);
@@ -1883,9 +1940,11 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 }
             }
 
-            if (!string.IsNullOrEmpty(DisplayMemberPath))
+            if (DisplayMemberFunc != null || !string.IsNullOrEmpty(DisplayMemberPath))
             {
-                var displayValue = GetPropertyValue(item, DisplayMemberPath);
+                var displayValue = DisplayMemberFunc != null
+                    ? DisplayMemberFunc(item)
+                    : GetPropertyValueFallback(item, DisplayMemberPath!);
                 if (Equals(displayValue, DefaultValue))
                 {
                     SelectItem(item);
@@ -1911,9 +1970,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 ? Colors.White
                 : Color.FromArgb("#1F1F1F");
 
-            if (!string.IsNullOrEmpty(IconMemberPath))
+            if (IconMemberFunc != null || !string.IsNullOrEmpty(IconMemberPath))
             {
-                SelectedIconSource = GetPropertyValue(SelectedItem, IconMemberPath)?.ToString();
+                SelectedIconSource = GetIconMember(SelectedItem);
                 HasSelectedIcon = !string.IsNullOrEmpty(SelectedIconSource);
             }
             else
@@ -1968,19 +2027,45 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         if (item == null)
             return string.Empty;
 
+        if (DisplayMemberFunc != null)
+            return DisplayMemberFunc(item) ?? string.Empty;
+
         if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            var value = GetPropertyValue(item, DisplayMemberPath);
+            var value = GetPropertyValueFallback(item, DisplayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
     }
 
-    private static object? GetPropertyValue(object item, string propertyPath)
+    private object? GetValueMember(object item)
     {
-        var property = item.GetType().GetProperty(propertyPath);
-        return property?.GetValue(item);
+        if (ValueMemberFunc != null)
+            return ValueMemberFunc(item);
+
+        if (!string.IsNullOrEmpty(ValueMemberPath))
+            return GetPropertyValueFallback(item, ValueMemberPath);
+
+        return item;
+    }
+
+    private string? GetIconMember(object item)
+    {
+        if (IconMemberFunc != null)
+            return IconMemberFunc(item);
+
+        if (!string.IsNullOrEmpty(IconMemberPath))
+            return GetPropertyValueFallback(item, IconMemberPath)?.ToString();
+
+        return null;
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc/ValueMemberFunc/IconMemberFunc for AOT compatibility.")]
+    private static object? GetPropertyValueFallback(object item, string propertyPath)
+    {
+        return PropertyAccessor.GetValue(item, propertyPath);
     }
 
     #endregion

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -54,6 +55,14 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         typeof(MultiSelectComboBox),
         default(string),
         propertyChanged: OnDisplayMemberPathChanged);
+
+    /// <summary>
+    /// Identifies the <see cref="DisplayMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
+        nameof(DisplayMemberFunc),
+        typeof(Func<object, string?>),
+        typeof(MultiSelectComboBox));
 
     public static readonly BindableProperty ValueMemberPathProperty = BindableProperty.Create(
         nameof(ValueMemberPath),
@@ -240,6 +249,16 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         get => (string?)GetValue(DisplayMemberPathProperty);
         set => SetValue(DisplayMemberPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract display text from items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => (Func<object, string?>?)GetValue(DisplayMemberFuncProperty);
+        set => SetValue(DisplayMemberFuncProperty, value);
     }
 
     /// <summary>
@@ -1503,13 +1522,23 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         if (item == null) return string.Empty;
 
+        if (DisplayMemberFunc != null)
+            return DisplayMemberFunc(item) ?? string.Empty;
+
         if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            var property = item.GetType().GetProperty(DisplayMemberPath);
-            return property?.GetValue(item)?.ToString() ?? string.Empty;
+            var value = GetPropertyValueFallback(item, DisplayMemberPath);
+            return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
+    private static object? GetPropertyValueFallback(object item, string propertyPath)
+    {
+        return PropertyAccessor.GetValue(item, propertyPath);
     }
 
     private void RaiseSelectionChanged()
