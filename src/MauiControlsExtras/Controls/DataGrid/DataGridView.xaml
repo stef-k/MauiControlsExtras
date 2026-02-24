@@ -113,7 +113,7 @@
                   Grid.Row="3"
                   IsVisible="{Binding EnablePagination, Source={x:Reference thisControl}}"
                   Padding="8"
-                  ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto,Auto">
+                  ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto,Auto,Auto">
 
                 <Label x:Name="pageInfoLabel"
                        Grid.Column="0"
@@ -127,7 +127,7 @@
 
                 <Picker x:Name="pageSizePicker"
                         Grid.Column="2"
-                        HorizontalOptions="Start"
+                        HorizontalOptions="Center"
                         WidthRequest="80"
                         SelectedIndexChanged="OnPageSizeChanged">
                     <Picker.ItemsSource>

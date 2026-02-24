@@ -2344,6 +2344,67 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     #endregion
 
+    #region Theme Support
+
+    /// <inheritdoc />
+    public override void OnThemeChanged(AppTheme theme)
+    {
+        base.OnThemeChanged(theme);
+
+        if (_columns.Count > 0)
+        {
+            BuildHeader();
+        }
+
+        RefreshDataCellTextColors();
+    }
+
+    /// <summary>
+    /// Re-applies text colors to all visible data cells after a theme change,
+    /// so that non-selected cells pick up the correct default text color.
+    /// </summary>
+    private void RefreshDataCellTextColors()
+    {
+        var defaultColor = GetDefaultTextColor();
+
+        RefreshGridTextColors(frozenDataGrid, defaultColor);
+        RefreshGridTextColors(dataGrid, defaultColor);
+
+        if (_virtualizingPanel != null)
+        {
+            foreach (var child in _virtualizingPanel.Children)
+            {
+                if (child is Grid rowGrid)
+                {
+                    RefreshGridTextColors(rowGrid, defaultColor);
+                }
+            }
+        }
+    }
+
+    private void RefreshGridTextColors(Layout grid, Color defaultColor)
+    {
+        foreach (var child in grid.Children)
+        {
+            if (child is Grid cellGrid)
+            {
+                foreach (var cellChild in cellGrid.Children)
+                {
+                    if (cellChild is Label label)
+                    {
+                        // Preserve SelectedTextColor for selected/focused cells
+                        if (label.TextColor == SelectedTextColor)
+                            continue;
+
+                        label.TextColor = defaultColor;
+                    }
+                }
+            }
+        }
+    }
+
+    #endregion
+
     #region Public Methods - Editing
 
     /// <summary>
