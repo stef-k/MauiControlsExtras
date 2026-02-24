@@ -181,7 +181,6 @@ var result = multiSelectComboBox.Validate();
 | DisplayMode | DisplayMode | How to show selections |
 | IsSearchable | bool | Enable filtering |
 | MaxDropdownHeight | double | Max dropdown height |
-| DisplayMemberFunc | Func\<object, string?\> | AOT-safe alternative to DisplayMemberPath. When set, takes priority. |
 
 ## AOT / NativeAOT Support
 
@@ -192,6 +191,10 @@ When publishing with `PublishAot=true` or trimming enabled, `DisplayMemberPath` 
 ```csharp
 myMultiSelect.DisplayMemberFunc = item => ((Country)item).Name;
 ```
+
+| Property | Type | Description |
+|---|---|---|
+| `DisplayMemberFunc` | `Func<object, string?>` | AOT-safe alternative to `DisplayMemberPath`. When set, takes priority over the string path. |
 
 ### Option 2: Use ItemTemplate with compiled bindings
 

@@ -11,6 +11,8 @@ namespace MauiControlsExtras.Helpers;
 /// </summary>
 internal static class PropertyAccessor
 {
+    // App-lifetime cache with no eviction; acceptable for typical MAUI apps
+    // where the set of accessed types is bounded. Use ClearCache() if needed.
     private static readonly ConcurrentDictionary<(Type, string), PropertyInfo?> _cache = new();
 
     /// <summary>

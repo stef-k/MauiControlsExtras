@@ -112,27 +112,24 @@ public class PropertyItem : INotifyPropertyChanged
                 _value = value;
 
                 // Update the actual property
-                if (!IsReadOnly)
+                try
                 {
-                    try
+                    if (_setterFunc != null)
                     {
-                        if (_setterFunc != null)
-                        {
-                            _setterFunc(Target, value);
-                        }
-                        else if (PropertyInfo is { CanWrite: true })
-                        {
-                            SetValueViaReflection(value);
-                        }
+                        _setterFunc(Target, value);
                     }
-                    catch (Exception ex) when (ex is InvalidCastException or FormatException
-                        or OverflowException or ArgumentException or InvalidOperationException
-                        or TargetInvocationException)
+                    else if (PropertyInfo is { CanWrite: true })
                     {
-                        // Revert on failure
-                        _value = oldValue;
-                        return;
+                        SetValueViaReflection(value);
                     }
+                }
+                catch (Exception ex) when (ex is InvalidCastException or FormatException
+                    or OverflowException or ArgumentException or InvalidOperationException
+                    or TargetInvocationException)
+                {
+                    // Revert on failure
+                    _value = oldValue;
+                    return;
                 }
 
                 OnPropertyChanged(nameof(Value));
@@ -313,7 +310,7 @@ public class PropertyItem : INotifyPropertyChanged
             {
                 subTarget = _getterFunc(target);
             }
-            catch
+            catch (Exception)
             {
                 subTarget = null;
             }
@@ -342,7 +339,7 @@ public class PropertyItem : INotifyPropertyChanged
         {
             _value = _getterFunc(target);
         }
-        catch
+        catch (Exception)
         {
             _value = null;
         }

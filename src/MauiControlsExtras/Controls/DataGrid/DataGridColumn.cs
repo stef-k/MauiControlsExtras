@@ -548,7 +548,7 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     /// Gets or sets an AOT-safe function to get the cell value from a row item.
     /// When set, takes priority over reflection via <see cref="PropertyPath"/>.
     /// </summary>
-    public virtual Func<object, object?>? CellValueFunc
+    public Func<object, object?>? CellValueFunc
     {
         get => _cellValueFunc;
         set
@@ -565,7 +565,7 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     /// Gets or sets an AOT-safe action to set the cell value on a row item.
     /// When set, takes priority over reflection via <see cref="PropertyPath"/>.
     /// </summary>
-    public virtual Action<object, object?>? CellValueSetter
+    public Action<object, object?>? CellValueSetter
     {
         get => _cellValueSetter;
         set

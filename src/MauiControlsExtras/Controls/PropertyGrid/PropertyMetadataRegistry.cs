@@ -53,16 +53,17 @@ public static class PropertyMetadataRegistry
 
     /// <summary>
     /// Returns true if metadata has been registered for the specified type.
+    /// Registration always guarantees at least one entry.
     /// </summary>
     public static bool HasMetadata(Type type) =>
-        _registry.TryGetValue(type, out var entries) && entries.Count > 0;
+        _registry.ContainsKey(type);
 
     /// <summary>
     /// Tries to get registered metadata for the specified type.
     /// </summary>
     internal static bool TryGetMetadata(Type type, out IReadOnlyList<PropertyMetadataEntry>? metadata)
     {
-        if (_registry.TryGetValue(type, out var entries) && entries.Count > 0)
+        if (_registry.TryGetValue(type, out var entries))
         {
             metadata = entries;
             return true;

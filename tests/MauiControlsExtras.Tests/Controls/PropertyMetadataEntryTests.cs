@@ -2,8 +2,13 @@ using MauiControlsExtras.Controls;
 
 namespace MauiControlsExtras.Tests.Controls;
 
-public class PropertyMetadataEntryTests
+public class PropertyMetadataEntryTests : IDisposable
 {
+    public void Dispose()
+    {
+        PropertyMetadataRegistry.Clear();
+    }
+
     private class TestProduct
     {
         public string Name { get; set; } = "Widget";
@@ -44,71 +49,50 @@ public class PropertyMetadataEntryTests
     [Fact]
     public void RegisterMetadata_StoresEntries()
     {
-        try
+        var entries = new[]
         {
-            var entries = new[]
+            new PropertyMetadataEntry
             {
-                new PropertyMetadataEntry
-                {
-                    Name = "Name",
-                    PropertyType = typeof(string),
-                    GetValue = obj => ((TestProduct)obj).Name,
-                    SetValue = (obj, val) => ((TestProduct)obj).Name = (string)val!
-                }
-            };
+                Name = "Name",
+                PropertyType = typeof(string),
+                GetValue = obj => ((TestProduct)obj).Name,
+                SetValue = (obj, val) => ((TestProduct)obj).Name = (string)val!
+            }
+        };
 
-            PropertyMetadataRegistry.Register(typeof(TestProduct), entries);
+        PropertyMetadataRegistry.Register(typeof(TestProduct), entries);
 
-            Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
-        }
-        finally
-        {
-            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
-        }
+        Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
     }
 
     [Fact]
     public void RegisterMetadata_Generic_StoresEntries()
     {
-        try
-        {
-            PropertyMetadataRegistry.Register<TestProduct>(
-                new PropertyMetadataEntry
-                {
-                    Name = "Name",
-                    PropertyType = typeof(string),
-                    GetValue = obj => ((TestProduct)obj).Name,
-                    IsReadOnly = true
-                });
+        PropertyMetadataRegistry.Register<TestProduct>(
+            new PropertyMetadataEntry
+            {
+                Name = "Name",
+                PropertyType = typeof(string),
+                GetValue = obj => ((TestProduct)obj).Name,
+                IsReadOnly = true
+            });
 
-            Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
-        }
-        finally
-        {
-            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
-        }
+        Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
     }
 
     [Fact]
     public void HasMetadata_ReturnsTrueForRegistered()
     {
-        try
-        {
-            PropertyMetadataRegistry.Register<TestProduct>(
-                new PropertyMetadataEntry
-                {
-                    Name = "Name",
-                    PropertyType = typeof(string),
-                    GetValue = obj => ((TestProduct)obj).Name,
-                    IsReadOnly = true
-                });
+        PropertyMetadataRegistry.Register<TestProduct>(
+            new PropertyMetadataEntry
+            {
+                Name = "Name",
+                PropertyType = typeof(string),
+                GetValue = obj => ((TestProduct)obj).Name,
+                IsReadOnly = true
+            });
 
-            Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
-        }
-        finally
-        {
-            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
-        }
+        Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
     }
 
     [Fact]
@@ -436,27 +420,20 @@ public class PropertyMetadataEntryTests
     [Fact]
     public void Register_DuplicateType_ThrowsInvalidOperationException()
     {
-        try
+        var entry = new PropertyMetadataEntry
         {
-            var entry = new PropertyMetadataEntry
-            {
-                Name = "Name",
-                PropertyType = typeof(string),
-                GetValue = obj => ((TestProduct)obj).Name,
-                IsReadOnly = true
-            };
+            Name = "Name",
+            PropertyType = typeof(string),
+            GetValue = obj => ((TestProduct)obj).Name,
+            IsReadOnly = true
+        };
 
-            PropertyMetadataRegistry.Register(typeof(TestProduct), entry);
+        PropertyMetadataRegistry.Register(typeof(TestProduct), entry);
 
-            var ex = Assert.Throws<InvalidOperationException>(() =>
-                PropertyMetadataRegistry.Register(typeof(TestProduct), entry));
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            PropertyMetadataRegistry.Register(typeof(TestProduct), entry));
 
-            Assert.Contains("already registered", ex.Message);
-        }
-        finally
-        {
-            PropertyMetadataRegistry.Unregister(typeof(TestProduct));
-        }
+        Assert.Contains("already registered", ex.Message);
     }
 
     [Fact]
@@ -475,7 +452,6 @@ public class PropertyMetadataEntryTests
         PropertyMetadataRegistry.Register(typeof(TestProduct), entry);
 
         Assert.True(PropertyMetadataRegistry.HasMetadata(typeof(TestProduct)));
-        PropertyMetadataRegistry.Unregister(typeof(TestProduct));
     }
 
     [Fact]
