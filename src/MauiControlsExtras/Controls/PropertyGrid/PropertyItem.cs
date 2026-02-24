@@ -84,6 +84,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the custom editor type (from EditorAttribute).
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type? EditorType { get; }
 
     /// <summary>
@@ -120,7 +121,7 @@ public class PropertyItem : INotifyPropertyChanged
                         }
                         else if (PropertyInfo is { CanWrite: true })
                         {
-                            PropertyInfo.SetValue(Target, Convert.ChangeType(value, PropertyType));
+                            SetValueViaReflection(value);
                         }
                     }
                     catch (Exception ex) when (ex is InvalidCastException or FormatException
@@ -301,10 +302,13 @@ public class PropertyItem : INotifyPropertyChanged
                 nameof(metadata));
 
         // Build sub-properties from metadata
+        // Value types (structs) are boxed copies — sub-property setters would
+        // mutate the copy without propagating back to the parent field.
+        // Skip expansion for value types to prevent silent data loss.
         if (metadata.SubProperties is { Count: > 0 })
         {
             var subTarget = _getterFunc(target);
-            if (subTarget != null)
+            if (subTarget != null && !metadata.PropertyType.IsValueType)
             {
                 IsExpandable = true;
                 SubProperties = metadata.SubProperties
@@ -341,6 +345,13 @@ public class PropertyItem : INotifyPropertyChanged
             OnPropertyChanged(nameof(Value));
             OnPropertyChanged(nameof(DisplayValue));
         }
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for PropertyInfo-based items. Metadata-based items use _setterFunc.")]
+    private void SetValueViaReflection(object? value)
+    {
+        PropertyInfo!.SetValue(Target, Convert.ChangeType(value, PropertyType));
     }
 
     private void OnPropertyChanged(string propertyName)

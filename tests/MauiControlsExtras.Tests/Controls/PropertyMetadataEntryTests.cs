@@ -23,6 +23,18 @@ public class PropertyMetadataEntryTests
         public TestDimensions Size { get; set; } = new();
     }
 
+    private struct TestStructDimensions
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
+    }
+
+    private class TestProductWithStructDimensions
+    {
+        public string Name { get; set; } = "Widget";
+        public TestStructDimensions Size { get; set; } = new() { Width = 10, Height = 20 };
+    }
+
     private class TestProductWithNullDimensions
     {
         public string Name { get; set; } = "Widget";
@@ -336,6 +348,42 @@ public class PropertyMetadataEntryTests
 
         var ex = Assert.Throws<ArgumentException>(() => new PropertyItem(metadata, target));
         Assert.Contains("IsReadOnly=false but SetValue is null", ex.Message);
+    }
+
+    [Fact]
+    public void PropertyItem_FromMetadata_StructSubProperties_NotExpandable()
+    {
+        var target = new TestProductWithStructDimensions { Size = new TestStructDimensions { Width = 50.0, Height = 75.0 } };
+
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Size",
+            PropertyType = typeof(TestStructDimensions),
+            GetValue = obj => ((TestProductWithStructDimensions)obj).Size,
+            IsReadOnly = true,
+            SubProperties = new List<PropertyMetadataEntry>
+            {
+                new PropertyMetadataEntry
+                {
+                    Name = "Width",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((TestStructDimensions)obj).Width,
+                    SetValue = (obj, val) => { /* cannot propagate back to parent struct */ }
+                },
+                new PropertyMetadataEntry
+                {
+                    Name = "Height",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((TestStructDimensions)obj).Height,
+                    SetValue = (obj, val) => { /* cannot propagate back to parent struct */ }
+                }
+            }
+        };
+
+        var item = new PropertyItem(metadata, target);
+
+        Assert.False(item.IsExpandable);
+        Assert.Empty(item.SubProperties);
     }
 
     [Fact]

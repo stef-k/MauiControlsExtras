@@ -850,6 +850,8 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         return container;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2067:DynamicallyAccessedMembers",
+        Justification = "EditorType is annotated with [DynamicallyAccessedMembers(PublicParameterlessConstructor)].")]
     private View CreateEditor(PropertyItem property)
     {
         var isReadOnly = property.IsReadOnly || IsReadOnly;

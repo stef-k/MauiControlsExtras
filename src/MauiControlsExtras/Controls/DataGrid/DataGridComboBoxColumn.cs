@@ -155,6 +155,7 @@ public class DataGridComboBoxColumn : DataGridColumn
         {
             ItemsSource = items,
             DisplayMemberPath = DisplayMemberPath,
+            DisplayMemberFunc = DisplayMemberFunc,
             SelectedItem = FindSelectedItem(currentValue, items),
             PopupMode = true,
             Placeholder = Placeholder ?? "Search...",
@@ -163,11 +164,11 @@ public class DataGridComboBoxColumn : DataGridColumn
             HorizontalOptions = LayoutOptions.Fill
         };
 
-        // Set SelectedValuePath if specified
         if (!string.IsNullOrEmpty(SelectedValuePath))
-        {
             comboBox.ValueMemberPath = SelectedValuePath;
-        }
+
+        if (SelectedValueFunc != null)
+            comboBox.ValueMemberFunc = SelectedValueFunc;
 
         return comboBox;
     }

@@ -8,7 +8,7 @@ namespace MauiControlsExtras.Controls;
 /// </summary>
 public static class PropertyMetadataRegistry
 {
-    private static readonly ConcurrentDictionary<Type, List<PropertyMetadataEntry>> _registry = new();
+    private static readonly ConcurrentDictionary<Type, IReadOnlyList<PropertyMetadataEntry>> _registry = new();
 
     /// <summary>
     /// Registers AOT-safe property metadata for a type.
@@ -16,7 +16,7 @@ public static class PropertyMetadataRegistry
     public static void Register(Type type, params PropertyMetadataEntry[] entries)
     {
         ArgumentNullException.ThrowIfNull(type);
-        _registry[type] = new List<PropertyMetadataEntry>(entries);
+        _registry[type] = entries.ToArray();
     }
 
     /// <summary>

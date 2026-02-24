@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
@@ -49,6 +51,7 @@ public class PropertyMetadataEntry
     /// <summary>
     /// Gets the custom editor type, if any.
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type? EditorType { get; init; }
 
     /// <summary>

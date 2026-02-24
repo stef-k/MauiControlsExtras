@@ -61,6 +61,8 @@ internal static class PropertyAccessor
     /// <summary>
     /// Returns the default value for a given type without using Activator.CreateInstance for known types.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL2067:DynamicallyAccessedMembers",
+        Justification = "Fallback for custom struct defaults. All common value types and enums are handled explicitly above.")]
     internal static object? GetDefaultValue(Type targetType)
     {
         if (!targetType.IsValueType)

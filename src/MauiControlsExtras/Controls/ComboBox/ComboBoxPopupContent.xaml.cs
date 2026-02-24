@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Helpers;
 
@@ -70,7 +71,14 @@ public partial class ComboBoxPopupContent : StyledControlBase
     public Func<object, string?>? DisplayMemberFunc
     {
         get => _displayMemberFunc;
-        set => _displayMemberFunc = value;
+        set
+        {
+            if (_displayMemberFunc != value)
+            {
+                _displayMemberFunc = value;
+                SetupItemTemplate();
+            }
+        }
     }
 
     private bool _isSearchVisible = true;
@@ -218,6 +226,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
     private void SetupItemTemplate()
     {
         var displayMemberPath = _displayMemberPath;
+        var func = _displayMemberFunc;
 
         itemsList.ItemTemplate = new DataTemplate(() =>
         {
@@ -240,7 +249,11 @@ public partial class ComboBoxPopupContent : StyledControlBase
                 Color.FromArgb("#212121"),
                 Colors.White);
 
-            if (!string.IsNullOrEmpty(displayMemberPath))
+            if (func != null)
+            {
+                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new FuncDisplayConverter(func) });
+            }
+            else if (!string.IsNullOrEmpty(displayMemberPath))
             {
                 label.SetBinding(Label.TextProperty, new Binding(displayMemberPath));
             }
@@ -560,5 +573,15 @@ public partial class ComboBoxPopupContent : StyledControlBase
         {
             _isUpdatingHighlight = false;
         }
+    }
+
+    private sealed class FuncDisplayConverter : IValueConverter
+    {
+        private readonly Func<object, string?> _func;
+        public FuncDisplayConverter(Func<object, string?> func) => _func = func;
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+            => value != null ? _func(value) ?? string.Empty : string.Empty;
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+            => throw new NotSupportedException();
     }
 }

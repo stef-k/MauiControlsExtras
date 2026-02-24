@@ -4,6 +4,12 @@ namespace MauiControlsExtras.Tests.Helpers;
 
 public class PropertyAccessorTests
 {
+    private struct CustomPoint
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+
     private class TestModel
     {
         public string Name { get; set; } = "Test";
@@ -274,5 +280,16 @@ public class PropertyAccessorTests
         var result = PropertyAccessor.ConvertToType("42", typeof(int?));
 
         Assert.Equal(42, result);
+    }
+
+    [Fact]
+    public void GetDefaultValue_ReturnsZeroedStruct_ForCustomValueType()
+    {
+        var result = PropertyAccessor.GetDefaultValue(typeof(CustomPoint));
+
+        Assert.NotNull(result);
+        var point = (CustomPoint)result;
+        Assert.Equal(0.0, point.X);
+        Assert.Equal(0.0, point.Y);
     }
 }
