@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.0.0] - 2026-02-25
 
 ### Added
 
@@ -322,6 +322,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.0.0 | 2026-02-25 | AOT/trimming safety for all controls, Func-based property accessors, PropertyMetadataRegistry (#232, #233) |
 | 2.1.8 | 2026-02-24 | DataGrid theme-reactive headers, pagination layout, picker centering, cell text colors (#231) |
 | 2.1.7 | 2026-02-23 | DataGrid filter popup null-value checkbox preservation (#217) |
 | 2.1.6 | 2026-02-23 | DataGrid context menu native long-press on all platforms (#223) |
