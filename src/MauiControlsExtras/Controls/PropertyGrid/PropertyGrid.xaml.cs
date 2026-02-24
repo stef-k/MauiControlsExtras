@@ -648,7 +648,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         var type = SelectedObject.GetType();
         List<PropertyItem> properties;
 
-        if (PropertyMetadataRegistry.TryGetMetadata(type, out var metadata) && metadata != null)
+        if (PropertyMetadataRegistry.TryGetMetadata(type, out var metadata))
         {
             // AOT path: build PropertyItems from registered metadata
             properties = BuildFromMetadata(metadata, SelectedObject);

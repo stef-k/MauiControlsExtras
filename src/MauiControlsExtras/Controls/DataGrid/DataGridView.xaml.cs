@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -10,6 +11,7 @@ using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
 using MauiControlsExtras.Behaviors;
 using MauiControlsExtras.ContextMenu;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -3302,6 +3304,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Fallback for unknown types; common types use TryParse branches above.")]
     private static object? ConvertPastedValue(string value, DataGridColumn column, object item)
     {
         var currentValue = column.GetCellValue(item);
@@ -3325,7 +3329,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (targetType == typeof(DateTime))
                 return DateTime.TryParse(value, out var dt) ? dt : currentValue;
 
-            return Convert.ChangeType(value, targetType);
+            return PropertyAccessor.ConvertToType(value, targetType);
         }
         catch
         {

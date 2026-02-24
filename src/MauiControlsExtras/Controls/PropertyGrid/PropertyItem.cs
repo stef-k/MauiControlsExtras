@@ -310,7 +310,7 @@ public class PropertyItem : INotifyPropertyChanged
             {
                 subTarget = _getterFunc(target);
             }
-            catch (Exception)
+            catch (Exception ex) when (ex is not OutOfMemoryException)
             {
                 subTarget = null;
             }
@@ -339,7 +339,7 @@ public class PropertyItem : INotifyPropertyChanged
         {
             _value = _getterFunc(target);
         }
-        catch (Exception)
+        catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             _value = null;
         }

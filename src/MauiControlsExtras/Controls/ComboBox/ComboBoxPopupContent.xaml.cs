@@ -580,7 +580,18 @@ public partial class ComboBoxPopupContent : StyledControlBase
         private readonly Func<object, string?> _func;
         public FuncDisplayConverter(Func<object, string?> func) => _func = func;
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-            => value != null ? _func(value) ?? string.Empty : string.Empty;
+        {
+            if (value == null)
+                return string.Empty;
+            try
+            {
+                return _func(value) ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
             => throw new NotSupportedException();
     }

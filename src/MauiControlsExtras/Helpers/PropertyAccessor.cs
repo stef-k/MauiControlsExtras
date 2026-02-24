@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Reflection;
 
 namespace MauiControlsExtras.Helpers;
@@ -131,16 +132,16 @@ internal static class PropertyAccessor
         try
         {
             // Direct casts for common types (avoids Convert.ChangeType reflection)
-            if (targetType == typeof(decimal)) return Convert.ToDecimal(value);
-            if (targetType == typeof(double)) return Convert.ToDouble(value);
-            if (targetType == typeof(float)) return Convert.ToSingle(value);
-            if (targetType == typeof(int)) return Convert.ToInt32(value);
-            if (targetType == typeof(long)) return Convert.ToInt64(value);
-            if (targetType == typeof(bool)) return Convert.ToBoolean(value);
-            if (targetType == typeof(DateTime)) return Convert.ToDateTime(value);
+            if (targetType == typeof(decimal)) return Convert.ToDecimal(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(double)) return Convert.ToDouble(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(float)) return Convert.ToSingle(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(int)) return Convert.ToInt32(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(long)) return Convert.ToInt64(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(bool)) return Convert.ToBoolean(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(DateTime)) return Convert.ToDateTime(value, CultureInfo.InvariantCulture);
             if (targetType == typeof(string)) return value.ToString();
-            if (targetType == typeof(short)) return Convert.ToInt16(value);
-            if (targetType == typeof(byte)) return Convert.ToByte(value);
+            if (targetType == typeof(short)) return Convert.ToInt16(value, CultureInfo.InvariantCulture);
+            if (targetType == typeof(byte)) return Convert.ToByte(value, CultureInfo.InvariantCulture);
 
             // Enum conversion
             if (targetType.IsEnum)
@@ -151,7 +152,7 @@ internal static class PropertyAccessor
             }
 
             // General conversion
-            return Convert.ChangeType(value, targetType);
+            return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
         }
         catch (Exception ex) when (ex is FormatException or InvalidCastException
             or OverflowException or ArgumentException)

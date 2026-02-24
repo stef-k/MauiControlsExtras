@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MauiControlsExtras.Controls;
 
@@ -61,7 +62,7 @@ public static class PropertyMetadataRegistry
     /// <summary>
     /// Tries to get registered metadata for the specified type.
     /// </summary>
-    internal static bool TryGetMetadata(Type type, out IReadOnlyList<PropertyMetadataEntry>? metadata)
+    internal static bool TryGetMetadata(Type type, [NotNullWhen(true)] out IReadOnlyList<PropertyMetadataEntry>? metadata)
     {
         if (_registry.TryGetValue(type, out var entries))
         {

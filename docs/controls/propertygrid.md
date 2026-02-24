@@ -136,6 +136,8 @@ PropertyGrid.RegisterEditor<MyCustomType, MyCustomEditor>();
 public Color BackgroundColor { get; set; }
 ```
 
+> **AOT note:** Under NativeAOT/trimming, custom editor types referenced via `[TypeEditor]` or `RegisterEditor<T, TEditor>()` must be preserved. Add `[DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(MyCustomEditor))]` to your startup code or use `[DynamicDependency]` attributes to ensure the editor type is not trimmed.
+
 ## Expand/Collapse Categories
 
 ```xml
@@ -258,6 +260,8 @@ PropertyMetadataRegistry.Register<Product>(...);
 ```
 
 When metadata is registered for a type, `PropertyGrid` uses it instead of reflection — no property information is lost under trimming.
+
+> **Note:** Metadata matching is exact-type only. If you have a base class `Animal` and a derived class `Dog`, registering metadata for `Animal` does **not** cover `Dog`. Register metadata separately for each concrete type that will be set as `SelectedObject`.
 
 ## PropertySortMode Enum
 

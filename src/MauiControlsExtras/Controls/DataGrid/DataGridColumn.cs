@@ -595,6 +595,8 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
         Justification = "Reflection fallback for non-AOT scenarios. Use CellValueFunc for AOT compatibility.")]
     public virtual object? GetCellValue(object item)
     {
+        ArgumentNullException.ThrowIfNull(item);
+
         if (CellValueFunc != null)
             return CellValueFunc(item);
 
@@ -611,6 +613,8 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
         Justification = "Reflection fallback for non-AOT scenarios. Use CellValueSetter for AOT compatibility.")]
     public virtual void SetCellValue(object item, object? value)
     {
+        ArgumentNullException.ThrowIfNull(item);
+
         if (CellValueSetter != null)
         {
             CellValueSetter(item, value);
