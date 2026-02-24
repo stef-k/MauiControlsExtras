@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using MauiControlsExtras.Controls;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Tests.Controls;
 
@@ -218,6 +219,107 @@ public class PropertyItemTests
         Assert.Equal("int", item.TypeName);
     }
 
+    [Fact]
+    public void Value_Set_OnReadOnlyItem_DoesNotChangeValue()
+    {
+        var target = new SampleObject { Name = "Original" };
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            IsReadOnly = true,
+            GetValue = obj => ((SampleObject)obj).Name
+        };
+
+        var item = new PropertyItem(metadata, target);
+        var changedFired = false;
+        item.ValueChanged += (_, _) => changedFired = true;
+
+        item.Value = "Attempted";
+
+        Assert.Equal("Original", item.Value);
+        Assert.False(changedFired);
+    }
+
+    [Fact]
+    public void Value_Set_Null_OnValueTypeProperty_SetsDefault()
+    {
+        var target = new SampleObject { RangeProp = 42 };
+        var item = CreatePropertyItem(target, nameof(SampleObject.RangeProp));
+
+        // Should not throw (Convert.ChangeType(null, int) would throw; ConvertToType handles it)
+        item.Value = null;
+
+        Assert.Equal(0, target.RangeProp);
+        Assert.Null(item.Value); // raw value stored in PropertyItem
+    }
+
+    [Fact]
+    public void Value_Set_StringOnIntProperty_Converts()
+    {
+        var target = new SampleObject { RangeProp = 0 };
+        var item = CreatePropertyItem(target, nameof(SampleObject.RangeProp));
+
+        item.Value = "50";
+
+        Assert.Equal(50, target.RangeProp);
+    }
+
+    [Fact]
+    public void Value_Set_RemainsUnchanged_WhenSetterThrowsUnfilteredException()
+    {
+        var target = new SampleObject { Name = "Original" };
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Name",
+            PropertyType = typeof(string),
+            GetValue = obj => ((SampleObject)obj).Name,
+            SetValue = (_, _) => throw new InvalidOperationException("Setter failed")
+        };
+
+        var item = new PropertyItem(metadata, target);
+        Assert.Equal("Original", item.Value);
+
+        // InvalidOperationException is in the catch filter — value should NOT change
+        item.Value = "Attempted";
+
+        Assert.Equal("Original", item.Value);
+    }
+
+    [Fact]
+    public void MetadataConstructor_CallsGetterOnce_WhenSubPropertiesPresent()
+    {
+        var callCount = 0;
+        var dimensions = new SampleDimensions { Width = 10.0, Height = 20.0 };
+
+        var metadata = new PropertyMetadataEntry
+        {
+            Name = "Size",
+            PropertyType = typeof(SampleDimensions),
+            GetValue = obj =>
+            {
+                callCount++;
+                return dimensions;
+            },
+            IsReadOnly = true,
+            SubProperties = new List<PropertyMetadataEntry>
+            {
+                new PropertyMetadataEntry
+                {
+                    Name = "Width",
+                    PropertyType = typeof(double),
+                    GetValue = obj => ((SampleDimensions)obj).Width,
+                    SetValue = (obj, val) => ((SampleDimensions)obj).Width = (double)val!
+                }
+            }
+        };
+
+        var target = new SampleObject();
+        _ = new PropertyItem(metadata, target);
+
+        Assert.Equal(1, callCount);
+    }
+
     private static PropertyItem CreatePropertyItem(object target, string propertyName)
     {
         var propInfo = target.GetType().GetProperty(propertyName)!;
@@ -240,5 +342,11 @@ public class PropertyItemTests
 
         [Range(0, 100)]
         public int RangeProp { get; set; }
+    }
+
+    private class SampleDimensions
+    {
+        public double Width { get; set; }
+        public double Height { get; set; }
     }
 }

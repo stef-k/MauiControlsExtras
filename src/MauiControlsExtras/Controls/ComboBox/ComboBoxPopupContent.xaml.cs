@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using MauiControlsExtras.Base;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -13,6 +14,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
     private readonly ObservableCollection<object> _filteredItems = new();
     private List<object>? _allItems;
     private string? _displayMemberPath;
+    private Func<object, string?>? _displayMemberFunc;
     private object? _selectedItem;
     private int _highlightedIndex = -1;
     private bool _isUpdatingHighlight;
@@ -55,6 +57,23 @@ public partial class ComboBoxPopupContent : StyledControlBase
             if (_displayMemberPath != value)
             {
                 _displayMemberPath = value;
+                SetupItemTemplate();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract display text from items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => _displayMemberFunc;
+        set
+        {
+            if (_displayMemberFunc != value)
+            {
+                _displayMemberFunc = value;
                 SetupItemTemplate();
             }
         }
@@ -205,6 +224,7 @@ public partial class ComboBoxPopupContent : StyledControlBase
     private void SetupItemTemplate()
     {
         var displayMemberPath = _displayMemberPath;
+        var func = _displayMemberFunc;
 
         itemsList.ItemTemplate = new DataTemplate(() =>
         {
@@ -227,7 +247,11 @@ public partial class ComboBoxPopupContent : StyledControlBase
                 Color.FromArgb("#212121"),
                 Colors.White);
 
-            if (!string.IsNullOrEmpty(displayMemberPath))
+            if (func != null)
+            {
+                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new Helpers.FuncDisplayConverter(func) });
+            }
+            else if (!string.IsNullOrEmpty(displayMemberPath))
             {
                 label.SetBinding(Label.TextProperty, new Binding(displayMemberPath));
             }
@@ -507,15 +531,19 @@ public partial class ComboBoxPopupContent : StyledControlBase
         if (item == null)
             return string.Empty;
 
+        if (_displayMemberFunc != null)
+            return _displayMemberFunc(item) ?? string.Empty;
+
         if (!string.IsNullOrEmpty(_displayMemberPath))
         {
-            var property = item.GetType().GetProperty(_displayMemberPath);
-            var value = property?.GetValue(item);
+            var value = PropertyAccessor.GetValueSuppressed(item, _displayMemberPath);
             return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
     }
+
+
 
     private void UpdateHighlightVisual()
     {
@@ -539,4 +567,5 @@ public partial class ComboBoxPopupContent : StyledControlBase
             _isUpdatingHighlight = false;
         }
     }
+
 }

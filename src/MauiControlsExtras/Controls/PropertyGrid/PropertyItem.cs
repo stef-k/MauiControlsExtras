@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -12,11 +14,13 @@ public class PropertyItem : INotifyPropertyChanged
     private object? _value;
     private bool _isExpanded;
     private bool _isSelected;
+    private readonly Func<object, object?>? _getterFunc;
+    private readonly Action<object, object?>? _setterFunc;
 
     /// <summary>
-    /// Gets the property info.
+    /// Gets the property info (null when constructed from metadata).
     /// </summary>
-    public PropertyInfo PropertyInfo { get; }
+    internal PropertyInfo? PropertyInfo { get; }
 
     /// <summary>
     /// Gets the target object that contains this property.
@@ -26,7 +30,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the property name (programmatic).
     /// </summary>
-    public string Name => PropertyInfo.Name;
+    public string Name { get; }
 
     /// <summary>
     /// Gets the display name (from DisplayNameAttribute or property name).
@@ -46,7 +50,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the property type.
     /// </summary>
-    public Type PropertyType => PropertyInfo.PropertyType;
+    public Type PropertyType { get; }
 
     /// <summary>
     /// Gets the property type name for display.
@@ -81,6 +85,7 @@ public class PropertyItem : INotifyPropertyChanged
     /// <summary>
     /// Gets the custom editor type (from EditorAttribute).
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
     public Type? EditorType { get; }
 
     /// <summary>
@@ -93,6 +98,9 @@ public class PropertyItem : INotifyPropertyChanged
         {
             if (!Equals(_value, value))
             {
+                if (IsReadOnly)
+                    return;
+
                 var oldValue = _value;
                 var changingArgs = new PropertyValueChangingEventArgs(this, oldValue, value);
                 ValueChanging?.Invoke(this, changingArgs);
@@ -101,21 +109,29 @@ public class PropertyItem : INotifyPropertyChanged
                     return;
                 }
 
-                _value = value;
-
-                // Update the actual property
-                if (!IsReadOnly && PropertyInfo.CanWrite)
+                // Update the actual property first; only commit _value on success
+                try
                 {
-                    try
+                    if (_setterFunc != null)
                     {
-                        PropertyInfo.SetValue(Target, Convert.ChangeType(value, PropertyType));
+                        _setterFunc(Target, value);
                     }
-                    catch
+                    else if (PropertyInfo is { CanWrite: true })
                     {
-                        // Revert on failure
-                        _value = oldValue;
-                        return;
+                        SetValueViaReflection(value);
                     }
+
+                    _value = value;
+                }
+                catch (Exception ex) when (ex is InvalidCastException or FormatException
+                    or OverflowException or ArgumentException or InvalidOperationException
+                    or TargetInvocationException)
+                {
+                    System.Diagnostics.Debug.WriteLine($"PropertyItem '{Name}': failed to set value: {ex.Message}");
+                    // Re-sync _value with the actual state of the target
+                    try { _value = _getterFunc != null ? _getterFunc(Target) : PropertyInfo?.GetValue(Target); }
+                    catch (Exception resyncEx) when (resyncEx is not OutOfMemoryException) { /* best-effort resync */ }
+                    return;
                 }
 
                 OnPropertyChanged(nameof(Value));
@@ -187,12 +203,15 @@ public class PropertyItem : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="PropertyItem"/> class.
+    /// Initializes a new instance of the <see cref="PropertyItem"/> class using reflection.
     /// </summary>
-    public PropertyItem(PropertyInfo propertyInfo, object target)
+    [RequiresUnreferencedCode("Uses reflection to discover property attributes. Use PropertyItem(PropertyMetadataEntry, object) for AOT compatibility.")]
+    internal PropertyItem(PropertyInfo propertyInfo, object target)
     {
         PropertyInfo = propertyInfo;
         Target = target;
+        Name = propertyInfo.Name;
+        PropertyType = propertyInfo.PropertyType;
 
         // Get display name
         var displayNameAttr = propertyInfo.GetCustomAttribute<DisplayNameAttribute>();
@@ -259,17 +278,93 @@ public class PropertyItem : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="PropertyItem"/> class from registered metadata (AOT-safe).
+    /// </summary>
+    internal PropertyItem(PropertyMetadataEntry metadata, object target)
+    {
+        Target = target;
+        Name = metadata.Name;
+        DisplayName = metadata.DisplayName ?? metadata.Name;
+        Description = metadata.Description;
+        Category = metadata.Category ?? "Misc";
+        IsReadOnly = metadata.IsReadOnly;
+        PropertyType = metadata.PropertyType;
+        Minimum = metadata.Minimum;
+        Maximum = metadata.Maximum;
+        EditorType = metadata.EditorType;
+        _getterFunc = metadata.GetValue;
+        _setterFunc = metadata.SetValue;
+
+        if (!IsReadOnly && _setterFunc == null)
+            throw new ArgumentException(
+                $"PropertyMetadataEntry '{metadata.Name}' has IsReadOnly=false but SetValue is null. "
+                + "Provide a SetValue action or set IsReadOnly=true.",
+                nameof(metadata));
+
+        // Read the initial value once and reuse for both sub-property resolution and _value
+        object? initialValue;
+        try
+        {
+            initialValue = _getterFunc(target);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            initialValue = null;
+        }
+
+        // Build sub-properties from metadata.
+        // Note: Sub-property targets are captured at construction time. If the parent
+        // property value is replaced, sub-properties will reference the old object.
+        // The PropertyGrid rebuilds items on SelectedObject change, so this is
+        // only relevant if the parent value is replaced externally without re-binding.
+        // Value types (structs) are boxed copies — sub-property setters would
+        // mutate the copy without propagating back to the parent field.
+        // Skip expansion for value types to prevent silent data loss.
+        if (metadata.SubProperties is { Count: > 0 })
+        {
+            if (initialValue != null && !metadata.PropertyType.IsValueType)
+            {
+                IsExpandable = true;
+                SubProperties = metadata.SubProperties
+                    .Select(sub => new PropertyItem(sub, initialValue))
+                    .ToList();
+            }
+            else
+            {
+                IsExpandable = false;
+                SubProperties = Array.Empty<PropertyItem>();
+            }
+        }
+        else
+        {
+            IsExpandable = false;
+            SubProperties = Array.Empty<PropertyItem>();
+        }
+
+        _value = initialValue;
+    }
+
+    /// <summary>
     /// Refreshes the value from the target object.
     /// </summary>
     public void RefreshValue()
     {
-        var newValue = PropertyInfo.GetValue(Target);
+        var newValue = _getterFunc != null
+            ? _getterFunc(Target)
+            : PropertyInfo?.GetValue(Target);
         if (!Equals(_value, newValue))
         {
             _value = newValue;
             OnPropertyChanged(nameof(Value));
             OnPropertyChanged(nameof(DisplayValue));
         }
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for PropertyInfo-based items. Metadata-based items use _setterFunc.")]
+    private void SetValueViaReflection(object? value)
+    {
+        PropertyInfo!.SetValue(Target, PropertyAccessor.ConvertToType(value, PropertyType));
     }
 
     private void OnPropertyChanged(string propertyName)

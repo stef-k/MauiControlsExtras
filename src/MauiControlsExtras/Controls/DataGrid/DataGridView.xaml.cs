@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -10,6 +11,7 @@ using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
 using MauiControlsExtras.Behaviors;
 using MauiControlsExtras.ContextMenu;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -3302,6 +3304,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Fallback for unknown types; common types use TryParse branches above.")]
     private static object? ConvertPastedValue(string value, DataGridColumn column, object item)
     {
         var currentValue = column.GetCellValue(item);
@@ -3325,9 +3329,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (targetType == typeof(DateTime))
                 return DateTime.TryParse(value, out var dt) ? dt : currentValue;
 
-            return Convert.ChangeType(value, targetType);
+            return PropertyAccessor.ConvertToType(value, targetType);
         }
-        catch
+        catch (Exception ex) when (ex is FormatException or InvalidCastException
+            or OverflowException or ArgumentException or InvalidOperationException)
         {
             return currentValue;
         }
@@ -3876,6 +3881,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _isUpdating = false;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2070:UnrecognizedReflectionPattern",
+        Justification = "Reflection fallback for auto-generating columns. Define columns explicitly for AOT compatibility.")]
     private void GenerateColumns()
     {
         _columns.Clear();
@@ -5109,6 +5116,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         foreach (var ((rowIndex, colIndex), cellResult) in _cellValidationErrors)
         {
+            if (rowIndex >= _sortedItems.Count)
+                continue;
+
             var colHeader = colIndex < _columns.Count ? _columns[colIndex].Header : $"Column {colIndex}";
             foreach (var error in cellResult.Errors)
             {
@@ -6362,6 +6372,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         // Configure the popup content
         comboBoxPopup.DisplayMemberPath = e.DisplayMemberPath;
+        comboBoxPopup.DisplayMemberFunc = e.DisplayMemberFunc;
         comboBoxPopup.ItemsSource = e.ItemsSource;  // This populates filtered items
         comboBoxPopup.SelectedItem = e.SelectedItem;
 
@@ -6460,8 +6471,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             // Clear undo history when data source changes
             grid.ClearUndoHistory();
 
-            grid.BuildGrid();
             grid._cellValidationErrors.Clear();
+            grid.BuildGrid();
             grid.UpdateGridValidationState();
         }
     }

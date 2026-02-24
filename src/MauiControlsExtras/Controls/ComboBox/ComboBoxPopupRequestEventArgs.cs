@@ -48,6 +48,21 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
     public PopupPlacement PreferredPlacement { get; }
 
     /// <summary>
+    /// Gets the AOT-safe display member function, if set on the source ComboBox.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc { get; }
+
+    /// <summary>
+    /// Gets the AOT-safe value member function, if set on the source ComboBox.
+    /// </summary>
+    public Func<object, object?>? ValueMemberFunc { get; }
+
+    /// <summary>
+    /// Gets the AOT-safe icon member function, if set on the source ComboBox.
+    /// </summary>
+    public Func<object, string?>? IconMemberFunc { get; }
+
+    /// <summary>
     /// Initializes a new instance of ComboBoxPopupRequestEventArgs.
     /// </summary>
     public ComboBoxPopupRequestEventArgs(
@@ -58,7 +73,10 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
         object? selectedItem,
         string? placeholder,
         bool isSearchVisible = true,
-        PopupPlacement preferredPlacement = PopupPlacement.Auto)
+        PopupPlacement preferredPlacement = PopupPlacement.Auto,
+        Func<object, string?>? displayMemberFunc = null,
+        Func<object, object?>? valueMemberFunc = null,
+        Func<object, string?>? iconMemberFunc = null)
     {
         Source = source;
         AnchorBounds = anchorBounds;
@@ -68,5 +86,8 @@ public class ComboBoxPopupRequestEventArgs : EventArgs
         Placeholder = placeholder;
         IsSearchVisible = isSearchVisible;
         PreferredPlacement = preferredPlacement;
+        DisplayMemberFunc = displayMemberFunc;
+        ValueMemberFunc = valueMemberFunc;
+        IconMemberFunc = iconMemberFunc;
     }
 }

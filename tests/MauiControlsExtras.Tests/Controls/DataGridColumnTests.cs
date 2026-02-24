@@ -310,4 +310,146 @@ public class DataGridColumnTests
         col.FilterText = "";
         Assert.False(col.IsFiltered);
     }
+
+    [Fact]
+    public void GetCellValue_NullItem_ThrowsArgumentNullException()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        Assert.Throws<ArgumentNullException>(() => col.GetCellValue(null!));
+    }
+
+    [Fact]
+    public void SetCellValue_NullItem_ThrowsArgumentNullException()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        Assert.Throws<ArgumentNullException>(() => col.SetCellValue(null!, "value"));
+    }
+
+    #region CellValueFunc / CellValueSetter PropertyChanged Tests
+
+    [Fact]
+    public void CellValueFunc_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueFunc)) raised = true;
+        };
+
+        col.CellValueFunc = item => "value";
+
+        Assert.True(raised);
+    }
+
+    [Fact]
+    public void CellValueFunc_SameValue_DoesNotRaisePropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        Func<object, object?> func = item => "value";
+        col.CellValueFunc = func;
+
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueFunc)) raised = true;
+        };
+
+        col.CellValueFunc = func; // same reference
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public void CellValueSetter_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueSetter)) raised = true;
+        };
+
+        col.CellValueSetter = (item, value) => { };
+
+        Assert.True(raised);
+    }
+
+    [Fact]
+    public void CellValueSetter_SameValue_DoesNotRaisePropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        Action<object, object?> setter = (item, value) => { };
+        col.CellValueSetter = setter;
+
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.CellValueSetter)) raised = true;
+        };
+
+        col.CellValueSetter = setter; // same reference
+
+        Assert.False(raised);
+    }
+
+    #endregion
+
+    #region CellValueFunc / CellValueSetter Tests
+
+    private class TestRowItem
+    {
+        public string Name { get; set; } = "Test";
+        public int Age { get; set; } = 25;
+    }
+
+    [Fact]
+    public void GetCellValue_UsesCellValueFunc_WhenSet()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+        col.CellValueFunc = item => "FuncValue";
+
+        var item = new TestRowItem { Name = "ReflectionValue" };
+        var result = col.GetCellValue(item);
+
+        Assert.Equal("FuncValue", result);
+    }
+
+    [Fact]
+    public void GetCellValue_FallsBackToReflection_WhenNoFunc()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        var item = new TestRowItem { Name = "ReflectedValue" };
+        var result = col.GetCellValue(item);
+
+        Assert.Equal("ReflectedValue", result);
+    }
+
+    [Fact]
+    public void SetCellValue_UsesCellValueSetter_WhenSet()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+        col.CellValueSetter = (item, value) => ((TestRowItem)item).Name = (string)value!;
+
+        var item = new TestRowItem { Name = "Original" };
+        col.SetCellValue(item, "SetterValue");
+
+        Assert.Equal("SetterValue", item.Name);
+    }
+
+    [Fact]
+    public void SetCellValue_FallsBackToReflection_WhenNoSetter()
+    {
+        var col = new DataGridTextColumn { Binding = "Name" };
+
+        var item = new TestRowItem { Name = "Original" };
+        col.SetCellValue(item, "ReflectedSet");
+
+        Assert.Equal("ReflectedSet", item.Name);
+    }
+
+    #endregion
 }

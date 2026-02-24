@@ -127,14 +127,21 @@ public class Settings
 
 ## Custom Type Editors
 
-```csharp
-// Register custom editor for a type
-PropertyGrid.RegisterEditor<MyCustomType, MyCustomEditor>();
+Custom editors can be specified per-property using `PropertyMetadataEntry.EditorType`:
 
-// Use TypeEditor attribute
-[TypeEditor(typeof(ColorPickerEditor))]
-public Color BackgroundColor { get; set; }
+```csharp
+PropertyMetadataRegistry.Register<AppSettings>(
+    new PropertyMetadataEntry
+    {
+        Name = "BackgroundColor",
+        PropertyType = typeof(Color),
+        EditorType = typeof(ColorPickerEditor),
+        GetValue = obj => ((AppSettings)obj).BackgroundColor,
+        SetValue = (obj, val) => ((AppSettings)obj).BackgroundColor = (Color)val!
+    });
 ```
+
+> **AOT note:** Under NativeAOT/trimming, custom editor types must be preserved. Add `[DynamicDependency(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor, typeof(MyCustomEditor))]` to your startup code to ensure the editor type is not trimmed.
 
 ## Expand/Collapse Categories
 
@@ -218,6 +225,48 @@ var changes = propertyGrid.GetModifiedProperties();
 | Color | ColorPicker |
 | Enum | ComboBox (dropdown) |
 | Collection | CollectionEditor |
+
+## AOT / NativeAOT Support
+
+PropertyGrid uses reflection extensively to discover and access properties. For AOT/trimming scenarios, register metadata at startup:
+
+### Use RegisterMetadata (recommended)
+
+```csharp
+// Register metadata at startup (AOT-safe)
+PropertyGrid.RegisterMetadata<Product>(
+    new PropertyMetadataEntry
+    {
+        Name = "Name",
+        DisplayName = "Product Name",
+        Category = "General",
+        PropertyType = typeof(string),
+        GetValue = obj => ((Product)obj).Name,
+        SetValue = (obj, val) => ((Product)obj).Name = (string)val!
+    },
+    new PropertyMetadataEntry
+    {
+        Name = "Price",
+        DisplayName = "Price",
+        Category = "Pricing",
+        PropertyType = typeof(decimal),
+        Minimum = 0m,
+        Maximum = 10000m,
+        GetValue = obj => ((Product)obj).Price,
+        SetValue = (obj, val) => ((Product)obj).Price = (decimal)val!
+    }
+);
+```
+
+You can also use the standalone registry directly:
+
+```csharp
+PropertyMetadataRegistry.Register<Product>(...);
+```
+
+When metadata is registered for a type, `PropertyGrid` uses it instead of reflection — no property information is lost under trimming.
+
+> **Note:** Metadata matching is exact-type only. If you have a base class `Animal` and a derived class `Dog`, registering metadata for `Animal` does **not** cover `Dog`. Register metadata separately for each concrete type that will be set as `SelectedObject`.
 
 ## PropertySortMode Enum
 

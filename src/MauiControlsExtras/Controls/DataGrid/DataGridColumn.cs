@@ -1,7 +1,9 @@
 using System.Collections;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using MauiControlsExtras.Base.Validation;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -73,6 +75,8 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     private string? _validationErrorMessage;
     private IEnumerable<object>? _filterValues;
     private string? _filterText;
+    private Func<object, object?>? _cellValueFunc;
+    private Action<object, object?>? _cellValueSetter;
 
     /// <summary>
     /// Gets or sets the column header text.
@@ -541,6 +545,40 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     public abstract string? PropertyPath { get; }
 
     /// <summary>
+    /// Gets or sets an AOT-safe function to get the cell value from a row item.
+    /// When set, takes priority over reflection via <see cref="PropertyPath"/>.
+    /// </summary>
+    public Func<object, object?>? CellValueFunc
+    {
+        get => _cellValueFunc;
+        set
+        {
+            if (_cellValueFunc != value)
+            {
+                _cellValueFunc = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe action to set the cell value on a row item.
+    /// When set, takes priority over reflection via <see cref="PropertyPath"/>.
+    /// </summary>
+    public Action<object, object?>? CellValueSetter
+    {
+        get => _cellValueSetter;
+        set
+        {
+            if (_cellValueSetter != value)
+            {
+                _cellValueSetter = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
     /// Creates the cell content for this column.
     /// </summary>
     public abstract View CreateCellContent(object item);
@@ -553,33 +591,42 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     /// <summary>
     /// Gets the cell value for sorting/filtering.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use CellValueFunc for AOT compatibility.")]
     public virtual object? GetCellValue(object item)
     {
+        ArgumentNullException.ThrowIfNull(item);
+
+        if (CellValueFunc != null)
+            return CellValueFunc(item);
+
         if (string.IsNullOrEmpty(PropertyPath))
             return null;
 
-        var type = item.GetType();
-        var property = type.GetProperty(PropertyPath);
-        return property?.GetValue(item);
+        return PropertyAccessor.GetValue(item, PropertyPath);
     }
 
     /// <summary>
     /// Sets the cell value after editing.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use CellValueSetter for AOT compatibility.")]
     public virtual void SetCellValue(object item, object? value)
     {
+        ArgumentNullException.ThrowIfNull(item);
+
+        if (CellValueSetter != null)
+        {
+            CellValueSetter(item, value);
+            return;
+        }
+
         if (string.IsNullOrEmpty(PropertyPath))
             return;
 
-        var type = item.GetType();
-        var property = type.GetProperty(PropertyPath);
-        if (property == null)
-            return;
-
-        // Convert value to target property type
-        var targetType = property.PropertyType;
-        var convertedValue = ConvertToType(value, targetType);
-        property.SetValue(item, convertedValue);
+        if (!PropertyAccessor.SetValue(item, PropertyPath, value))
+            System.Diagnostics.Debug.WriteLine(
+                $"[DataGridColumn] SetCellValue: property '{PropertyPath}' not found or not writable on {item.GetType().Name}");
     }
 
     /// <summary>
@@ -587,52 +634,7 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     /// </summary>
     protected static object? ConvertToType(object? value, Type targetType)
     {
-        if (value == null)
-            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
-
-        var valueType = value.GetType();
-        if (targetType.IsAssignableFrom(valueType))
-            return value;
-
-        // Handle nullable types
-        var underlyingType = Nullable.GetUnderlyingType(targetType);
-        if (underlyingType != null)
-        {
-            if (value is string s && string.IsNullOrWhiteSpace(s))
-                return null;
-            targetType = underlyingType;
-        }
-
-        // Handle empty string for value types
-        if (value is string str && string.IsNullOrWhiteSpace(str))
-            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
-
-        try
-        {
-            // Special handling for common types
-            if (targetType == typeof(decimal))
-                return Convert.ToDecimal(value);
-            if (targetType == typeof(double))
-                return Convert.ToDouble(value);
-            if (targetType == typeof(float))
-                return Convert.ToSingle(value);
-            if (targetType == typeof(int))
-                return Convert.ToInt32(value);
-            if (targetType == typeof(long))
-                return Convert.ToInt64(value);
-            if (targetType == typeof(bool))
-                return Convert.ToBoolean(value);
-            if (targetType == typeof(DateTime))
-                return Convert.ToDateTime(value);
-
-            // General conversion
-            return Convert.ChangeType(value, targetType);
-        }
-        catch
-        {
-            // Return default value if conversion fails
-            return targetType.IsValueType ? Activator.CreateInstance(targetType) : null;
-        }
+        return PropertyAccessor.ConvertToType(value, targetType);
     }
 
     /// <summary>

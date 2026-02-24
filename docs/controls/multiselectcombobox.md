@@ -182,3 +182,35 @@ var result = multiSelectComboBox.Validate();
 | IsSearchable | bool | Enable filtering |
 | MaxDropdownHeight | double | Max dropdown height |
 
+## AOT / NativeAOT Support
+
+When publishing with `PublishAot=true` or trimming enabled, `DisplayMemberPath` uses reflection that may be removed by the trimmer.
+
+### Option 1: Use Func-based properties (recommended)
+
+```csharp
+myMultiSelect.DisplayMemberFunc = item => ((Country)item).Name;
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `DisplayMemberFunc` | `Func<object, string?>` | AOT-safe alternative to `DisplayMemberPath`. When set, takes priority over the string path. |
+
+### Option 2: Use ItemTemplate with compiled bindings
+
+```xml
+<extras:MultiSelectComboBox ItemsSource="{Binding Countries}">
+    <extras:MultiSelectComboBox.ItemTemplate>
+        <DataTemplate x:DataType="models:Country">
+            <Label Text="{Binding Name}" />
+        </DataTemplate>
+    </extras:MultiSelectComboBox.ItemTemplate>
+</extras:MultiSelectComboBox>
+```
+
+### Option 3: Preserve model types
+
+```csharp
+[DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Country))]
+```
+

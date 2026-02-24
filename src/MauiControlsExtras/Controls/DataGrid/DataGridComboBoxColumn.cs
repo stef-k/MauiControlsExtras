@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using MauiControlsExtras.Helpers;
 
 namespace MauiControlsExtras.Controls;
 
@@ -14,6 +16,8 @@ public class DataGridComboBoxColumn : DataGridColumn
     private string? _selectedValuePath;
     private string? _placeholder;
     private int _visibleItemCount = 6;
+    private Func<object, string?>? _displayMemberFunc;
+    private Func<object, object?>? _selectedValueFunc;
 
     /// <summary>
     /// Gets or sets the property binding path for the selected value.
@@ -74,6 +78,40 @@ public class DataGridComboBoxColumn : DataGridColumn
             if (_selectedValuePath != value)
             {
                 _selectedValuePath = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the display text from combo items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => _displayMemberFunc;
+        set
+        {
+            if (_displayMemberFunc != value)
+            {
+                _displayMemberFunc = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract the value from combo items.
+    /// When set, takes priority over <see cref="SelectedValuePath"/>.
+    /// </summary>
+    public Func<object, object?>? SelectedValueFunc
+    {
+        get => _selectedValueFunc;
+        set
+        {
+            if (_selectedValueFunc != value)
+            {
+                _selectedValueFunc = value;
                 OnPropertyChanged();
             }
         }
@@ -141,6 +179,7 @@ public class DataGridComboBoxColumn : DataGridColumn
         {
             ItemsSource = items,
             DisplayMemberPath = DisplayMemberPath,
+            DisplayMemberFunc = DisplayMemberFunc,
             SelectedItem = FindSelectedItem(currentValue, items),
             PopupMode = true,
             Placeholder = Placeholder ?? "Search...",
@@ -149,11 +188,11 @@ public class DataGridComboBoxColumn : DataGridColumn
             HorizontalOptions = LayoutOptions.Fill
         };
 
-        // Set SelectedValuePath if specified
         if (!string.IsNullOrEmpty(SelectedValuePath))
-        {
             comboBox.ValueMemberPath = SelectedValuePath;
-        }
+
+        if (SelectedValueFunc != null)
+            comboBox.ValueMemberFunc = SelectedValueFunc;
 
         return comboBox;
     }
@@ -223,8 +262,8 @@ public class DataGridComboBoxColumn : DataGridColumn
         if (value == null)
             return string.Empty;
 
-        // If we have a display member path, find the matching item and get its display text
-        if (!string.IsNullOrEmpty(DisplayMemberPath) && ItemsSource != null)
+        // If we have a display member func/path, find the matching item and get its display text
+        if ((DisplayMemberFunc != null || !string.IsNullOrEmpty(DisplayMemberPath)) && ItemsSource != null)
         {
             foreach (var sourceItem in ItemsSource)
             {
@@ -242,21 +281,29 @@ public class DataGridComboBoxColumn : DataGridColumn
         return value.ToString() ?? string.Empty;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use SelectedValueFunc for AOT compatibility.")]
     private object? GetItemValue(object item)
     {
+        if (SelectedValueFunc != null)
+            return SelectedValueFunc(item);
+
         if (string.IsNullOrEmpty(SelectedValuePath))
             return item;
 
-        var property = item.GetType().GetProperty(SelectedValuePath);
-        return property?.GetValue(item);
+        return PropertyAccessor.GetValue(item, SelectedValuePath);
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
     private string GetDisplayValue(object item)
     {
+        if (DisplayMemberFunc != null)
+            return DisplayMemberFunc(item) ?? string.Empty;
+
         if (string.IsNullOrEmpty(DisplayMemberPath))
             return item.ToString() ?? string.Empty;
 
-        var property = item.GetType().GetProperty(DisplayMemberPath);
-        return property?.GetValue(item)?.ToString() ?? string.Empty;
+        return PropertyAccessor.GetValue(item, DisplayMemberPath)?.ToString() ?? string.Empty;
     }
 }

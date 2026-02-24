@@ -1,7 +1,9 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
+using MauiControlsExtras.Helpers;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Controls;
@@ -18,6 +20,35 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     private readonly List<PropertyItem> _flatProperties = new();
     private PropertyItem? _selectedProperty;
     private bool _hasKeyboardFocus;
+
+    #endregion
+
+    #region Metadata Registration
+
+    /// <summary>
+    /// Registers AOT-safe property metadata for a type. When registered, PropertyGrid
+    /// uses the metadata instead of reflection to discover and access properties.
+    /// </summary>
+    /// <seealso cref="PropertyMetadataRegistry"/>
+    public static void RegisterMetadata(Type type, params PropertyMetadataEntry[] entries)
+    {
+        PropertyMetadataRegistry.Register(type, entries);
+    }
+
+    /// <summary>
+    /// Registers AOT-safe property metadata for a type (generic variant).
+    /// </summary>
+    /// <seealso cref="PropertyMetadataRegistry"/>
+    public static void RegisterMetadata<T>(params PropertyMetadataEntry[] entries)
+    {
+        PropertyMetadataRegistry.Register<T>(entries);
+    }
+
+    /// <summary>
+    /// Returns true if metadata has been registered for the specified type.
+    /// </summary>
+    /// <seealso cref="PropertyMetadataRegistry"/>
+    public static bool HasMetadata(Type type) => PropertyMetadataRegistry.HasMetadata(type);
 
     #endregion
 
@@ -619,10 +650,18 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         propertiesContainer.IsVisible = true;
 
         var type = SelectedObject.GetType();
-        var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false)
-            .Select(p => new PropertyItem(p, SelectedObject))
-            .ToList();
+        List<PropertyItem> properties;
+
+        if (PropertyMetadataRegistry.TryGetMetadata(type, out var metadata))
+        {
+            // AOT path: build PropertyItems from registered metadata
+            properties = BuildFromMetadata(metadata, SelectedObject);
+        }
+        else
+        {
+            // Reflection path: existing logic
+            properties = BuildFromReflection(type, SelectedObject);
+        }
 
         // Filter by search text
         if (!string.IsNullOrWhiteSpace(SearchText))
@@ -672,6 +711,23 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         }
 
         RefreshUI();
+    }
+
+    private static List<PropertyItem> BuildFromMetadata(IReadOnlyList<PropertyMetadataEntry> metadata, object target)
+    {
+        return metadata.Select(m => new PropertyItem(m, target)).ToList();
+    }
+
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use RegisterMetadata() for AOT compatibility.")]
+    [UnconditionalSuppressMessage("AOT", "IL2070:DynamicallyAccessedMembers",
+        Justification = "Reflection fallback for non-AOT scenarios. Use RegisterMetadata() for AOT compatibility.")]
+    private static List<PropertyItem> BuildFromReflection(Type type, object target)
+    {
+        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false)
+            .Select(p => new PropertyItem(p, target))
+            .ToList();
     }
 
     #endregion
@@ -798,6 +854,8 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         return container;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2067:DynamicallyAccessedMembers",
+        Justification = "EditorType is annotated with [DynamicallyAccessedMembers(PublicParameterlessConstructor)].")]
     private View CreateEditor(PropertyItem property)
     {
         var isReadOnly = property.IsReadOnly || IsReadOnly;

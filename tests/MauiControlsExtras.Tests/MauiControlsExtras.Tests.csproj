@@ -108,6 +108,11 @@
 
     <!-- Helpers -->
     <Compile Include="..\..\src\MauiControlsExtras\Helpers\AndroidBackButtonHandler.cs" Link="Linked\Helpers\AndroidBackButtonHandler.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Helpers\PropertyAccessor.cs" Link="Linked\Helpers\PropertyAccessor.cs" />
+
+    <!-- PropertyGrid metadata -->
+    <Compile Include="..\..\src\MauiControlsExtras\Helpers\PropertyMetadataEntry.cs" Link="Linked\Helpers\PropertyMetadataEntry.cs" />
+    <Compile Include="..\..\src\MauiControlsExtras\Helpers\PropertyMetadataRegistry.cs" Link="Linked\Helpers\PropertyMetadataRegistry.cs" />
 
     <!-- ComboBox (testable types only) -->
     <Compile Include="..\..\src\MauiControlsExtras\Controls\ComboBox\PopupPlacement.cs" Link="Linked\Controls\ComboBox\PopupPlacement.cs" />

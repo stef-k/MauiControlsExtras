@@ -21,7 +21,7 @@ A hierarchical tree control for displaying parent-child relationships.
 ```xml
 <extras:TreeView ItemsSource="{Binding RootNodes}">
     <extras:TreeView.ItemTemplate>
-        <DataTemplate>
+        <DataTemplate x:DataType="models:TreeNode">
             <Label Text="{Binding Name}" />
         </DataTemplate>
     </extras:TreeView.ItemTemplate>
@@ -114,4 +114,29 @@ public class TreeNode
 | ShowCheckBoxes | bool | Show checkboxes |
 | CheckBoxMode | CheckBoxMode | Checkbox behavior: Independent, Cascade, or TriState |
 | SelectionMode | SelectionMode | Single or Multiple |
+| DisplayMemberFunc | Func\<object, string?\> | AOT-safe alternative to DisplayMemberPath |
+| ChildrenFunc | Func\<object, IEnumerable?\> | AOT-safe alternative to ChildrenPath |
+| IconMemberFunc | Func\<object, object?\> | AOT-safe alternative to IconMemberPath |
+| IsExpandedFunc | Func\<object, bool?\> | AOT-safe alternative to IsExpandedPath |
+| HasChildrenFunc | Func\<object, bool?\> | AOT-safe alternative to HasChildrenPath |
+
+## AOT / NativeAOT Support
+
+When publishing with `PublishAot=true` or trimming enabled, string-based property paths use reflection that may be removed by the trimmer.
+
+### Option 1: Use Func-based properties (recommended)
+
+```csharp
+myTreeView.DisplayMemberFunc = item => ((TreeNode)item).Name;
+myTreeView.ChildrenFunc = item => ((TreeNode)item).Children;
+myTreeView.IconMemberFunc = item => ((TreeNode)item).IconPath;
+myTreeView.IsExpandedFunc = item => ((TreeNode)item).IsExpanded;
+myTreeView.HasChildrenFunc = item => ((TreeNode)item).HasChildren;
+```
+
+### Option 2: Preserve model types
+
+```csharp
+[DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(TreeNode))]
+```
 

@@ -55,6 +55,15 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         default(string),
         propertyChanged: OnDisplayMemberPathChanged);
 
+    /// <summary>
+    /// Identifies the <see cref="DisplayMemberFunc"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty DisplayMemberFuncProperty = BindableProperty.Create(
+        nameof(DisplayMemberFunc),
+        typeof(Func<object, string?>),
+        typeof(MultiSelectComboBox),
+        propertyChanged: OnDisplayMemberFuncChanged);
+
     public static readonly BindableProperty ValueMemberPathProperty = BindableProperty.Create(
         nameof(ValueMemberPath),
         typeof(string),
@@ -240,6 +249,16 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         get => (string?)GetValue(DisplayMemberPathProperty);
         set => SetValue(DisplayMemberPathProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets an AOT-safe function to extract display text from items.
+    /// When set, takes priority over <see cref="DisplayMemberPath"/>.
+    /// </summary>
+    public Func<object, string?>? DisplayMemberFunc
+    {
+        get => (Func<object, string?>?)GetValue(DisplayMemberFuncProperty);
+        set => SetValue(DisplayMemberFuncProperty, value);
     }
 
     /// <summary>
@@ -849,6 +868,15 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         }
     }
 
+    private static void OnDisplayMemberFuncChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            control.SetupItemTemplate();
+            control.UpdateChipsDisplay();
+        }
+    }
+
     private static void OnIconMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is MultiSelectComboBox control)
@@ -1266,6 +1294,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
 
         // Default template based on DisplayMemberPath/IconMemberPath
         var displayMemberPath = DisplayMemberPath;
+        var displayMemberFunc = DisplayMemberFunc;
         var iconMemberPath = IconMemberPath;
         var hasIcon = !string.IsNullOrEmpty(iconMemberPath);
 
@@ -1336,7 +1365,11 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             };
             label.SetAppThemeColor(Label.TextColorProperty, Color.FromArgb("#212121"), Colors.White);
 
-            if (!string.IsNullOrEmpty(displayMemberPath))
+            if (displayMemberFunc != null)
+            {
+                label.SetBinding(Label.TextProperty, new Binding(".") { Converter = new Helpers.FuncDisplayConverter(displayMemberFunc) });
+            }
+            else if (!string.IsNullOrEmpty(displayMemberPath))
             {
                 label.SetBinding(Label.TextProperty, new Binding(displayMemberPath));
             }
@@ -1503,14 +1536,19 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         if (item == null) return string.Empty;
 
+        if (DisplayMemberFunc != null)
+            return DisplayMemberFunc(item) ?? string.Empty;
+
         if (!string.IsNullOrEmpty(DisplayMemberPath))
         {
-            var property = item.GetType().GetProperty(DisplayMemberPath);
-            return property?.GetValue(item)?.ToString() ?? string.Empty;
+            var value = PropertyAccessor.GetValueSuppressed(item, DisplayMemberPath);
+            return value?.ToString() ?? string.Empty;
         }
 
         return item.ToString() ?? string.Empty;
     }
+
+
 
     private void RaiseSelectionChanged()
     {

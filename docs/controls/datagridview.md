@@ -74,21 +74,10 @@ Per-column filtering can be controlled via `DataGridColumn.CanUserFilter`. When 
     Header="Name"
     Binding="Name"
     Width="200"
-    IsReadOnly="False"
-    MaxLength="100" />
+    IsReadOnly="False" />
 ```
 
-### DataGridNumericColumn
-
-```xml
-<extras:DataGridNumericColumn
-    Header="Price"
-    Binding="Price"
-    Format="C2"
-    Minimum="0"
-    Maximum="10000"
-    Increment="0.01" />
-```
+> **Note:** For numeric columns, use `DataGridTextColumn` with the `Format` property (e.g., `Format="C2"` for currency). There is no separate `DataGridNumericColumn` type.
 
 ### DataGridCheckBoxColumn
 
@@ -345,6 +334,40 @@ await myDataGrid.PrintAsync(new DataGridPrintOptions
 | CellEditEndedCommand | Execute when cell edit completes |
 | SortChangedCommand | Execute when sorting changes |
 | DeleteRowCommand | Execute when row is deleted |
+
+## AOT / NativeAOT Support
+
+When publishing with `PublishAot=true` or trimming enabled, column `PropertyPath` bindings use reflection that may be removed by the trimmer.
+
+### Option 1: Use Func-based properties on columns (recommended)
+
+```csharp
+var nameColumn = new DataGridTextColumn
+{
+    Header = "Name",
+    Binding = "Name",
+    CellValueFunc = item => ((Product)item).Name,
+    CellValueSetter = (item, value) => ((Product)item).Name = (string)value!
+};
+```
+
+| Property | Type | Description |
+|---|---|---|
+| `CellValueFunc` | `Func<object, object?>` | AOT-safe getter. When set, takes priority over reflection via `PropertyPath`. |
+| `CellValueSetter` | `Action<object, object?>` | AOT-safe setter. When set, takes priority over reflection via `PropertyPath`. |
+
+For `DataGridComboBoxColumn`:
+
+| Property | Type | Description |
+|---|---|---|
+| `DisplayMemberFunc` | `Func<object, string?>` | AOT-safe alternative to `DisplayMemberPath` |
+| `SelectedValueFunc` | `Func<object, object?>` | AOT-safe alternative to `SelectedValuePath` |
+
+### Option 2: Preserve model types
+
+```csharp
+[DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(Product))]
+```
 
 ## Properties Reference
 

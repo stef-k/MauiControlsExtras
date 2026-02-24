@@ -9,6 +9,11 @@
 		<Nullable>enable</Nullable>
 		<LangVersion>latest</LangVersion>
 
+		<!-- AOT/Trimming support -->
+		<IsTrimmable>true</IsTrimmable>
+		<IsAotCompatible>true</IsAotCompatible>
+		<EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">21.0</SupportedOSPlatformVersion>
@@ -17,7 +22,7 @@
 
 		<!-- NuGet Package Metadata -->
 		<PackageId>StefK.MauiControlsExtras</PackageId>
-		<Version>2.1.8</Version>
+		<Version>3.0.0</Version>
 		<Authors>stef-k</Authors>
 		<Company>stef-k</Company>
 		<Product>MAUI Controls Extras</Product>
