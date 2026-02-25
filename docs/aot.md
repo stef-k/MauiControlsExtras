@@ -18,12 +18,14 @@ The following controls offer string-based property paths that use reflection at 
 | | `ValueMemberPath` | `ValueMemberFunc` |
 | | `IconMemberPath` | `IconMemberFunc` |
 | [MultiSelectComboBox](controls/multiselectcombobox.md) | `DisplayMemberPath` | `DisplayMemberFunc` |
+| | `ValueMemberPath` | Use `ItemTemplate` or `[DynamicDependency]` |
+| | `IconMemberPath` | Use `ItemTemplate` or `[DynamicDependency]` |
 | [TreeView](controls/treeview.md) | `DisplayMemberPath` | `DisplayMemberFunc` |
 | | `ChildrenPath` | `ChildrenFunc` |
 | | `IconMemberPath` | `IconMemberFunc` |
 | | `IsExpandedPath` | `IsExpandedFunc` |
 | | `HasChildrenPath` | `HasChildrenFunc` |
-| [DataGridView](controls/datagridview.md) columns | `PropertyPath` | `CellValueFunc` / `CellValueSetter` |
+| [DataGridView](controls/datagridview.md) columns | `Binding` (via `PropertyPath`) | `CellValueFunc` / `CellValueSetter` |
 | [DataGridComboBoxColumn](controls/datagridview.md) | `DisplayMemberPath` | `DisplayMemberFunc` |
 | | `SelectedValuePath` | `SelectedValueFunc` |
 | [PropertyGrid](controls/propertygrid.md) | Reflection discovery | `RegisterMetadata<T>()` |
