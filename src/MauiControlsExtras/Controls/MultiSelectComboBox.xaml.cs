@@ -48,6 +48,17 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         BindingMode.TwoWay,
         propertyChanged: OnSelectedItemsChanged);
 
+    /// <summary>
+    /// Identifies the <see cref="SelectedIndices"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectedIndicesProperty = BindableProperty.Create(
+        nameof(SelectedIndices),
+        typeof(IList<int>),
+        typeof(MultiSelectComboBox),
+        default(IList<int>),
+        BindingMode.TwoWay,
+        propertyChanged: OnSelectedIndicesChanged);
+
     public static readonly BindableProperty DisplayMemberPathProperty = BindableProperty.Create(
         nameof(DisplayMemberPath),
         typeof(string),
@@ -240,6 +251,17 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     {
         get => (IList?)GetValue(SelectedItemsProperty);
         set => SetValue(SelectedItemsProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the indices of selected items in <see cref="ItemsSource"/>.
+    /// Indices refer to positions in the original <see cref="ItemsSource"/> collection, not the filtered list.
+    /// Out-of-range indices are silently ignored. Supports two-way binding and collection change notification.
+    /// </summary>
+    public IList<int>? SelectedIndices
+    {
+        get => (IList<int>?)GetValue(SelectedIndicesProperty);
+        set => SetValue(SelectedIndicesProperty, value);
     }
 
     /// <summary>
@@ -820,6 +842,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         {
             control.UpdateFilteredItems(string.Empty);
             control.SetupItemTemplate();
+            control.SyncSelectionAfterItemsSourceChanged();
         }
     }
 
@@ -844,6 +867,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             control.UpdateSelectAllState();
             control.OnPropertyChanged(nameof(SelectedCount));
             control.OnPropertyChanged(nameof(IsMaxReached));
+            control.SyncSelectedIndicesFromItems();
         }
     }
 
@@ -857,6 +881,34 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         OnPropertyChanged(nameof(SelectedCount));
         OnPropertyChanged(nameof(IsMaxReached));
         RaiseSelectionChanged();
+        SyncSelectedIndicesFromItems();
+    }
+
+    private static void OnSelectedIndicesChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is MultiSelectComboBox control)
+        {
+            if (oldValue is INotifyCollectionChanged oldCollection)
+            {
+                oldCollection.CollectionChanged -= control.OnSelectedIndicesCollectionChanged;
+            }
+
+            if (newValue is INotifyCollectionChanged newCollection)
+            {
+                newCollection.CollectionChanged += control.OnSelectedIndicesCollectionChanged;
+            }
+
+            if (!control._isUpdatingSelection)
+            {
+                control.SyncSelectedItemsFromIndices();
+            }
+        }
+    }
+
+    private void OnSelectedIndicesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (_isUpdatingSelection) return;
+        SyncSelectedItemsFromIndices();
     }
 
     private static void OnDisplayMemberPathChanged(BindableObject bindable, object oldValue, object newValue)
@@ -1018,6 +1070,19 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
                 }
             }
 
+            // Rebuild SelectedIndices from the updated SelectedItems
+            EnsureSelectedIndicesList();
+            SelectedIndices!.Clear();
+            if (SelectedItems != null)
+            {
+                foreach (var item in SelectedItems)
+                {
+                    var idx = FindIndexInItemsSource(item);
+                    if (idx >= 0)
+                        SelectedIndices!.Add(idx);
+                }
+            }
+
             UpdateChipsDisplay();
             UpdateCheckboxStates();
             UpdateSelectAllState();
@@ -1043,6 +1108,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         {
             var items = SelectedItems.Cast<object>().ToList();
             SelectedItems.Clear();
+            SelectedIndices?.Clear();
 
             foreach (var item in items)
             {
@@ -1077,6 +1143,12 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         try
         {
             SelectedItems!.Add(item);
+
+            EnsureSelectedIndicesList();
+            var idx = FindIndexInItemsSource(item);
+            if (idx >= 0)
+                SelectedIndices!.Add(idx);
+
             UpdateChipsDisplay();
             UpdateCheckboxStates();
             UpdateSelectAllState();
@@ -1103,6 +1175,13 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         try
         {
             SelectedItems.Remove(item);
+
+            if (SelectedIndices != null)
+            {
+                var idx = FindIndexInItemsSource(item);
+                if (idx >= 0)
+                    SelectedIndices.Remove(idx);
+            }
 
             // Immediately update the checkbox for this item if it's in the dictionary
             if (_itemCheckboxes.TryGetValue(item, out var checkBox))
@@ -1152,6 +1231,14 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         if (SelectedItems == null)
         {
             SelectedItems = new ObservableCollection<object>();
+        }
+    }
+
+    private void EnsureSelectedIndicesList()
+    {
+        if (SelectedIndices == null)
+        {
+            SelectedIndices = new ObservableCollection<int>();
         }
     }
 
@@ -1548,7 +1635,123 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         return item.ToString() ?? string.Empty;
     }
 
+    private int FindIndexInItemsSource(object? item)
+    {
+        if (item == null || ItemsSource == null) return -1;
 
+        if (ItemsSource is IList list)
+            return list.IndexOf(item);
+
+        var index = 0;
+        foreach (var element in ItemsSource)
+        {
+            if (Equals(element, item)) return index;
+            index++;
+        }
+        return -1;
+    }
+
+    private object? FindItemAtIndex(int index)
+    {
+        if (index < 0 || ItemsSource == null) return null;
+
+        if (ItemsSource is IList list)
+            return index < list.Count ? list[index] : null;
+
+        var i = 0;
+        foreach (var element in ItemsSource)
+        {
+            if (i == index) return element;
+            i++;
+        }
+        return null;
+    }
+
+    private void SyncSelectedIndicesFromItems()
+    {
+        var wasGuarded = _isUpdatingSelection;
+        _isUpdatingSelection = true;
+        try
+        {
+            EnsureSelectedIndicesList();
+            SelectedIndices!.Clear();
+
+            if (SelectedItems != null)
+            {
+                foreach (var item in SelectedItems)
+                {
+                    var idx = FindIndexInItemsSource(item);
+                    if (idx >= 0)
+                        SelectedIndices!.Add(idx);
+                }
+            }
+        }
+        finally
+        {
+            _isUpdatingSelection = wasGuarded;
+        }
+    }
+
+    private void SyncSelectedItemsFromIndices()
+    {
+        var wasGuarded = _isUpdatingSelection;
+        _isUpdatingSelection = true;
+        try
+        {
+            EnsureSelectedItemsList();
+            SelectedItems!.Clear();
+
+            if (SelectedIndices != null)
+            {
+                var maxToSelect = MaxSelections ?? int.MaxValue;
+                var count = 0;
+
+                foreach (var index in SelectedIndices)
+                {
+                    if (count >= maxToSelect) break;
+
+                    var item = FindItemAtIndex(index);
+                    if (item != null && !IsItemSelected(item))
+                    {
+                        SelectedItems!.Add(item);
+                        count++;
+                    }
+                }
+            }
+
+            UpdateChipsDisplay();
+            UpdateCheckboxStates();
+            UpdateSelectAllState();
+            OnPropertyChanged(nameof(SelectedCount));
+            OnPropertyChanged(nameof(IsMaxReached));
+            RaiseSelectionChanged();
+        }
+        finally
+        {
+            _isUpdatingSelection = wasGuarded;
+        }
+    }
+
+    private void SyncSelectionAfterItemsSourceChanged()
+    {
+        var wasGuarded = _isUpdatingSelection;
+        _isUpdatingSelection = true;
+        try
+        {
+            if (SelectedItems != null && SelectedItems.Count > 0)
+            {
+                SyncSelectedIndicesFromItems();
+            }
+            else if (SelectedIndices != null && SelectedIndices.Count > 0)
+            {
+                SyncSelectedItemsFromIndices();
+            }
+        }
+        finally
+        {
+            _isUpdatingSelection = wasGuarded;
+        }
+    }
 
     private void RaiseSelectionChanged()
     {

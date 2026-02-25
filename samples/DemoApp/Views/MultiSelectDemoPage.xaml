@@ -31,6 +31,22 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- Index-Based Selection -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Index-Based Selection" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Select departments by index via SelectedIndices binding." Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:MultiSelectComboBox ItemsSource="{Binding Departments}"
+                                                SelectedIndices="{Binding SelectedDepartmentIndices}"
+                                                Placeholder="Select by index..."
+                                                WidthRequest="350"
+                                                HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedDepartmentIndices.Count, StringFormat='Selected indices count: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
             <!-- Country Multi-Select with Icons -->
             <Frame Style="{StaticResource DemoCardStyle}">
                 <VerticalStackLayout Spacing="15">

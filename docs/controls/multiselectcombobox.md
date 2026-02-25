@@ -170,12 +170,40 @@ var result = multiSelectComboBox.Validate();
 | ValidationErrors | IReadOnlyList&lt;string&gt; | (read-only) | List of validation error messages |
 | ValidateCommand | ICommand | null | Command executed when validation occurs |
 
+## Selection Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| SelectedItems | IList | null | Selected item objects (two-way bindable) |
+| SelectedIndices | IList&lt;int&gt; | null | Selected item indices in `ItemsSource` (two-way bindable) |
+
+Both properties stay in sync automatically. Indices refer to positions in the original `ItemsSource`, not the filtered list. Out-of-range indices are silently ignored.
+
+## Selecting by Indices
+
+Use `SelectedIndices` for position-based multi-selection when you work with indices rather than object references:
+
+```xml
+<extras:MultiSelectComboBox
+    ItemsSource="{Binding Departments}"
+    SelectedIndices="{Binding SelectedDepartmentIndices}"
+    Placeholder="Select departments..." />
+```
+
+> **Notes:**
+> - Indices refer to positions in `ItemsSource`, not the filtered dropdown list.
+> - Out-of-range indices are silently ignored — no crash, no selection.
+> - `SelectedIndices` is auto-created as `ObservableCollection<int>` on demand if null.
+> - `MaxSelections` is respected when syncing items from indices.
+> - Setting `SelectedIndices` before `ItemsSource` is supported — selection resolves once `ItemsSource` arrives.
+
 ## Properties
 
 | Property | Type | Description |
 |----------|------|-------------|
 | ItemsSource | IEnumerable | Items to display |
 | SelectedItems | IList | Selected items |
+| SelectedIndices | IList&lt;int&gt; | Selected item indices in ItemsSource |
 | DisplayMemberPath | string | Property to display |
 | ShowSelectAll | bool | Show "Select All" option |
 | DisplayMode | DisplayMode | How to show selections |
