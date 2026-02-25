@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **ComboBox**: `SelectedIndex` bindable property for position-based selection (#243)
+- **MultiSelectComboBox**: `SelectedIndices` bindable property for position-based multi-selection (#244)
 
 ### Fixed
 

@@ -19,6 +19,9 @@ public partial class MultiSelectDemoViewModel : BaseViewModel
     private ObservableCollection<string> _selectedDepartments = [];
 
     [ObservableProperty]
+    private ObservableCollection<int> _selectedDepartmentIndices = [];
+
+    [ObservableProperty]
     private ObservableCollection<string> _skills = [];
 
     [ObservableProperty]
@@ -46,6 +49,12 @@ public partial class MultiSelectDemoViewModel : BaseViewModel
     {
         var names = string.Join(", ", value);
         UpdateStatus($"Selected departments: {(string.IsNullOrEmpty(names) ? "None" : names)}");
+    }
+
+    partial void OnSelectedDepartmentIndicesChanged(ObservableCollection<int> value)
+    {
+        var indices = string.Join(", ", value);
+        UpdateStatus($"Selected department indices: [{(string.IsNullOrEmpty(indices) ? "" : indices)}]");
     }
 
     partial void OnSelectedSkillsChanged(ObservableCollection<string> value)
