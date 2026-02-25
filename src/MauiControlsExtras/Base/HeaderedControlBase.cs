@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Base;
@@ -8,6 +9,15 @@ namespace MauiControlsExtras.Base;
 /// </summary>
 public abstract class HeaderedControlBase : StyledControlBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="HeaderedControlBase"/> class.
+    /// </summary>
+    [DynamicDependency(nameof(EffectiveHeaderBackgroundColor), typeof(HeaderedControlBase))]
+    [DynamicDependency(nameof(EffectiveHeaderTextColor), typeof(HeaderedControlBase))]
+    [DynamicDependency(nameof(EffectiveHeaderFontFamily), typeof(HeaderedControlBase))]
+    [DynamicDependency(nameof(EffectiveHeaderBorderColor), typeof(HeaderedControlBase))]
+    protected HeaderedControlBase() { }
+
     #region Bindable Properties
 
     /// <summary>

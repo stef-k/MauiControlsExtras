@@ -486,6 +486,10 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     /// Gets or sets the property path to use for display text when items are complex objects.
     /// </summary>
     /// <value>The property name to display, or null to use ToString().</value>
+    /// <remarks>
+    /// This property uses reflection and is not AOT-safe. For AOT/trimmed builds,
+    /// use <see cref="DisplayMemberFunc"/> or a custom <see cref="ItemTemplate"/> instead.
+    /// </remarks>
     /// <example>
     /// For a list of Country objects with a Name property:
     /// <code>DisplayMemberPath="Name"</code>
@@ -501,6 +505,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     /// </summary>
     /// <value>The property name containing the image path, or null for no icons.</value>
     /// <remarks>
+    /// This property uses reflection and is not AOT-safe. For AOT/trimmed builds,
+    /// use <see cref="IconMemberFunc"/> or a custom <see cref="ItemTemplate"/> instead.
     /// The property should return a path to an image in Resources/Raw.
     /// Images are loaded asynchronously and cached for performance.
     /// </remarks>

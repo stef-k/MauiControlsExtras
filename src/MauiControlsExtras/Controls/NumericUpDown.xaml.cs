@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
@@ -46,6 +47,7 @@ public partial class NumericUpDown : TextStyledControlBase, IValidatable, Base.I
 
     #region Constructors
 
+    [DynamicDependency(nameof(CurrentBorderColor), typeof(NumericUpDown))]
     public NumericUpDown()
     {
         InitializeComponent();

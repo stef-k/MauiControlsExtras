@@ -267,6 +267,10 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     /// <summary>
     /// Gets or sets the property path for display text.
     /// </summary>
+    /// <remarks>
+    /// This property uses reflection and is not AOT-safe. For AOT/trimmed builds,
+    /// use <see cref="DisplayMemberFunc"/> or a custom <see cref="ItemTemplate"/> instead.
+    /// </remarks>
     public string? DisplayMemberPath
     {
         get => (string?)GetValue(DisplayMemberPathProperty);
@@ -295,6 +299,10 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     /// <summary>
     /// Gets or sets the property path for item icons.
     /// </summary>
+    /// <remarks>
+    /// This property uses reflection and is not AOT-safe. For AOT/trimmed builds,
+    /// use a custom <see cref="ItemTemplate"/> instead.
+    /// </remarks>
     public string? IconMemberPath
     {
         get => (string?)GetValue(IconMemberPathProperty);

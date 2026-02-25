@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Theming;
@@ -873,6 +874,7 @@ public partial class Breadcrumb : StyledControlBase, IKeyboardNavigable, ISelect
     /// <summary>
     /// Initializes a new instance of the <see cref="Breadcrumb"/> class.
     /// </summary>
+    [DynamicDependency(nameof(CurrentBorderColor), typeof(Breadcrumb))]
     public Breadcrumb()
     {
         InitializeComponent();

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Microsoft.Maui.Controls.Internals;
 
 namespace MauiControlsExtras.Helpers;
 
@@ -6,6 +7,7 @@ namespace MauiControlsExtras.Helpers;
 /// IValueConverter that uses a <see cref="Func{T, TResult}"/> to convert items to display strings.
 /// Shared by ComboBox, MultiSelectComboBox, and ComboBoxPopupContent for Func-based display bindings.
 /// </summary>
+[Preserve(AllMembers = true)]
 internal sealed class FuncDisplayConverter : IValueConverter
 {
     private readonly Func<object, string?> _func;

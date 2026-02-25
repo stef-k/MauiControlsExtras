@@ -250,20 +250,9 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
             {
                 _sortDirection = value;
                 OnPropertyChanged();
-                OnPropertyChanged(nameof(SortIndicator));
             }
         }
     }
-
-    /// <summary>
-    /// Gets the sort indicator text.
-    /// </summary>
-    public string SortIndicator => SortDirection switch
-    {
-        Controls.SortDirection.Ascending => "▲",
-        Controls.SortDirection.Descending => "▼",
-        _ => string.Empty
-    };
 
     /// <summary>
     /// Gets or sets the actual calculated width.

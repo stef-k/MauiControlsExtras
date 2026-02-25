@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
@@ -34,6 +36,7 @@ public abstract class PropertyEditorBase : IPropertyEditor
     /// <summary>
     /// Creates a binding to the property value.
     /// </summary>
+    [DynamicDependency(nameof(PropertyItem.Value), typeof(PropertyItem))]
     protected Binding CreateValueBinding(PropertyItem property, BindingMode mode = BindingMode.TwoWay)
     {
         return new Binding(nameof(PropertyItem.Value), mode, source: property);

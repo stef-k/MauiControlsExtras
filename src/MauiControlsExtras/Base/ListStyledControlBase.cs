@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Base;
@@ -8,6 +9,15 @@ namespace MauiControlsExtras.Base;
 /// </summary>
 public abstract class ListStyledControlBase : StyledControlBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ListStyledControlBase"/> class.
+    /// </summary>
+    [DynamicDependency(nameof(EffectiveSelectedItemBackgroundColor), typeof(ListStyledControlBase))]
+    [DynamicDependency(nameof(EffectiveSelectedItemTextColor), typeof(ListStyledControlBase))]
+    [DynamicDependency(nameof(EffectiveHoverColor), typeof(ListStyledControlBase))]
+    [DynamicDependency(nameof(EffectiveSeparatorColor), typeof(ListStyledControlBase))]
+    protected ListStyledControlBase() { }
+
     #region Bindable Properties
 
     /// <summary>
