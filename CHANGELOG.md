@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-02-26
+
 ### Added
 
 - **ComboBox**: `SelectedIndex` bindable property for position-based selection (#243)
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGrid**: Header text color now reacts to `ForegroundColor` property changes without requiring a full refresh (#238)
 - **ComboBox**: Selected item now displays correctly when `DisplayMemberPath`/`DisplayMemberFunc` is set after `SelectedItem` (#235)
 - **ComboBox**: Dropdown now highlights the currently selected item when opened instead of always highlighting the first item (#236)
+- **ComboBox**: `SelectItemByIndex(-1)` no longer triggers `ClearCommand` and popup close as side effects (#246)
 
 ## [3.0.0] - 2026-02-25
 
@@ -350,6 +353,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.1.0 | 2026-02-26 | SelectedIndex/SelectedIndices features, AOT/trimming fixes, DataGrid virtualization crash fix, ComboBox selection fixes |
 | 3.0.0 | 2026-02-25 | AOT/trimming safety for all controls, Func-based property accessors, PropertyMetadataRegistry (#232, #233) |
 | 2.1.8 | 2026-02-24 | DataGrid theme-reactive headers, pagination layout, picker centering, cell text colors (#231) |
 | 2.1.7 | 2026-02-23 | DataGrid filter popup null-value checkbox preservation (#217) |
