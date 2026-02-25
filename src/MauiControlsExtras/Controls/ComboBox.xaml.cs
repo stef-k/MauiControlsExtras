@@ -1785,7 +1785,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             collapsedBorder.StrokeShape = new RoundRectangle { CornerRadius = new CornerRadius(EffectiveCornerRadius, EffectiveCornerRadius, 0, 0) };
             collapsedBorder.Stroke = EffectiveFocusBorderColor;
             expandedBorder.Stroke = EffectiveFocusBorderColor;
-            _highlightedIndex = FilteredItems.Count > 0 ? 0 : -1;
+            _highlightedIndex = SelectedItem != null ? FilteredItems.IndexOf(SelectedItem) : -1;
+            if (_highlightedIndex < 0 && FilteredItems.Count > 0)
+                _highlightedIndex = 0;
             UpdateHighlightVisual();
             RaiseOpened();
 #if ANDROID
@@ -2254,8 +2256,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         if (!_isExpanded)
         {
             Open();
-            _highlightedIndex = FilteredItems.IndexOf(SelectedItem ?? new object());
-            if (_highlightedIndex < 0) _highlightedIndex = 0;
+            _highlightedIndex = SelectedItem != null ? FilteredItems.IndexOf(SelectedItem) : -1;
+            if (_highlightedIndex < 0 && FilteredItems.Count > 0)
+                _highlightedIndex = 0;
             return true;
         }
 
