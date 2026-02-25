@@ -202,8 +202,6 @@ Use `SelectedIndices` for position-based multi-selection when you work with indi
 | Property | Type | Description |
 |----------|------|-------------|
 | ItemsSource | IEnumerable | Items to display |
-| SelectedItems | IList | Selected items |
-| SelectedIndices | IList&lt;int&gt; | Selected item indices in ItemsSource |
 | DisplayMemberPath | string | Property to display |
 | ShowSelectAll | bool | Show "Select All" option |
 | DisplayMode | DisplayMode | How to show selections |

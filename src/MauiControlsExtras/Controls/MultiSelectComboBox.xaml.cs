@@ -867,7 +867,11 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             control.UpdateSelectAllState();
             control.OnPropertyChanged(nameof(SelectedCount));
             control.OnPropertyChanged(nameof(IsMaxReached));
-            control.SyncSelectedIndicesFromItems();
+
+            if (!control._isUpdatingSelection)
+            {
+                control.SyncSelectedIndicesFromItems();
+            }
         }
     }
 
@@ -1070,18 +1074,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
                 }
             }
 
-            // Rebuild SelectedIndices from the updated SelectedItems
-            EnsureSelectedIndicesList();
-            SelectedIndices!.Clear();
-            if (SelectedItems != null)
-            {
-                foreach (var item in SelectedItems)
-                {
-                    var idx = FindIndexInItemsSource(item);
-                    if (idx >= 0)
-                        SelectedIndices!.Add(idx);
-                }
-            }
+            SyncSelectedIndicesFromItems();
 
             UpdateChipsDisplay();
             UpdateCheckboxStates();
@@ -1101,7 +1094,13 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
     /// </summary>
     public void ClearSelection()
     {
-        if (SelectedItems == null || SelectedItems.Count == 0) return;
+        if (SelectedItems == null || SelectedItems.Count == 0)
+        {
+            // Still clear indices even if items are already empty
+            if (SelectedIndices is { Count: > 0 })
+                SelectedIndices.Clear();
+            return;
+        }
 
         _isUpdatingSelection = true;
         try
@@ -1705,13 +1704,15 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             {
                 var maxToSelect = MaxSelections ?? int.MaxValue;
                 var count = 0;
+                var seen = new HashSet<int>();
 
                 foreach (var index in SelectedIndices)
                 {
+                    if (!seen.Add(index)) continue; // skip duplicate indices
                     if (count >= maxToSelect) break;
 
                     var item = FindItemAtIndex(index);
-                    if (item != null && !IsItemSelected(item))
+                    if (item != null)
                     {
                         SelectedItems!.Add(item);
                         count++;
