@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGrid**: Page size picker text is now horizontally centered (#239)
 - **DataGrid**: Header text color now reacts to `ForegroundColor` property changes without requiring a full refresh (#238)
 - **ComboBox**: Selected item now displays correctly when `DisplayMemberPath`/`DisplayMemberFunc` is set after `SelectedItem` (#235)
+- **ComboBox**: Dropdown now highlights the currently selected item when opened instead of always highlighting the first item (#236)
 
 ## [3.0.0] - 2026-02-25
 
