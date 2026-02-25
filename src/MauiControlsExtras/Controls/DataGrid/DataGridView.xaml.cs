@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -111,6 +112,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private readonly HashSet<object> _selectedItems = new();
     private readonly Dictionary<DataGridColumn, DataGridColumnFilter> _activeFilters = new();
     private readonly List<DataGridSortDescription> _sortDescriptions = new();
+    private readonly List<(DataGridColumn column, PropertyChangedEventHandler handler)> _sortHandlers = new();
     private readonly List<DataGridColumn> _editedColumnsInRow = new();
     private readonly Dictionary<(int, int), ValidationResult> _cellValidationErrors = new();
     private readonly List<string> _gridValidationErrors = new();
@@ -4017,6 +4019,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void BuildHeader()
     {
+        // Unsubscribe stale sort-indicator handlers before clearing header cells
+        foreach (var (col, handler) in _sortHandlers)
+            col.PropertyChanged -= handler;
+        _sortHandlers.Clear();
+
         // Clear existing headers
         headerGrid.Children.Clear();
         headerGrid.ColumnDefinitions.Clear();
@@ -4127,7 +4134,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 TextColor = column.SortDirection != null ? EffectiveAccentColor : Colors.Gray,
                 Margin = new Thickness(4, 0, 0, 0)
             };
-            column.PropertyChanged += (s, e) =>
+            PropertyChangedEventHandler sortHandler = (s, e) =>
             {
                 if (e.PropertyName == nameof(DataGridColumn.SortDirection))
                 {
@@ -4135,6 +4142,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     sortLabel.TextColor = column.SortDirection != null ? EffectiveAccentColor : Colors.Gray;
                 }
             };
+            column.PropertyChanged += sortHandler;
+            _sortHandlers.Add((column, sortHandler));
             contentGrid.Children.Add(sortLabel);
             Grid.SetColumn(sortLabel, 2);
         }
