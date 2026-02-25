@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ComboBox**: `SelectedIndex` bindable property for position-based selection (#243)
 - **MultiSelectComboBox**: `SelectedIndices` bindable property for position-based multi-selection (#244)
 
+### Removed
+
+- **DataGrid**: Removed `DataGridColumn.SortIndicator` public property — sort indicator is now managed internally (#252)
+
 ### Fixed
 
 - **AOT/Trimming**: Replaced DataGrid sort indicator `SetBinding` + `SortIndicatorConverter` with direct `PropertyChanged` subscription to eliminate CLR-property binding hazard (#240)
@@ -21,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AOT/Trimming**: Added `[Preserve(AllMembers = true)]` on `InvertedBoolConverter`, `MauiAssetImageConverter`, and `FuncDisplayConverter` to protect against trimming (#240)
 - **AOT/Trimming**: Added `x:DataType="x:String"` to TokenEntry suggestion `DataTemplate` for compiled bindings (#240)
 - **AOT/Trimming**: Added XML doc `<remarks>` warnings on `DisplayMemberPath` and `IconMemberPath` (ComboBox, MultiSelectComboBox) advising AOT-safe alternatives (#240)
+- **AOT/Trimming**: Added `[DynamicDependency]` annotations for CLR properties on RangeSlider, DataGridView, BindingNavigator, RichTextEditor, and PropertyGrid (#251)
+- **Breadcrumb**: Removed dead `EffectiveBackgroundColor` binding targeting a non-existent property (#253)
 - **DataGrid**: Fixed virtualization crash on Windows debug builds caused by async handler re-attachment race during row recycling (#237)
 - **DataGrid**: Page size picker text is now horizontally centered (#239)
 - **DataGrid**: Header text color now reacts to `ForegroundColor` property changes without requiring a full refresh (#238)

@@ -8,7 +8,6 @@
 
     <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
             Stroke="{Binding CurrentBorderColor, Source={x:Reference thisControl}}"
-            BackgroundColor="{Binding EffectiveBackgroundColor, Source={x:Reference thisControl}}"
             Padding="{Binding Padding, Source={x:Reference thisControl}}">
         <Border.StrokeShape>
             <RoundRectangle CornerRadius="{Binding EffectiveCornerRadius, Source={x:Reference thisControl}}" />
