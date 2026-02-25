@@ -1334,7 +1334,20 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         if (index < 0)
         {
-            ClearSelection();
+            var wasGuarded = _isUpdatingFromSelection;
+            _isUpdatingFromSelection = true;
+            try
+            {
+                SelectedItem = null;
+                SelectedValue = null;
+                UpdateDisplayState();
+            }
+            finally
+            {
+                _isUpdatingFromSelection = wasGuarded;
+            }
+
+            RaiseSelectionChanged(null);
             return;
         }
 
@@ -1345,6 +1358,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         if (item == null)
             return;
 
+        var alreadyGuarded = _isUpdatingFromSelection;
         _isUpdatingFromSelection = true;
         try
         {
@@ -1359,7 +1373,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         }
         finally
         {
-            _isUpdatingFromSelection = false;
+            _isUpdatingFromSelection = alreadyGuarded;
         }
 
         RaiseSelectionChanged(item);
