@@ -4382,7 +4382,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // different row, force-detach it now instead of crashing (#237).
         if (rowGrid.Children.Count > 0)
         {
-            foreach (var c in rowGrid.Children.OfType<Grid>())
+            foreach (var c in rowGrid.Children.OfType<Grid>().ToList())
             {
                 if (_cellContextMenuStates.TryGetValue(c, out var s) && s.IsAttached && s.RowIndex != rowIndex)
                 {
