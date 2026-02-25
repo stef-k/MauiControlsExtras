@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -469,6 +470,7 @@ public partial class Rating : StyledControlBase, IValidatable, Base.IKeyboardNav
     /// <summary>
     /// Initializes a new instance of the Rating control.
     /// </summary>
+    [DynamicDependency(nameof(CurrentBorderColor), typeof(Rating))]
     public Rating()
     {
         InitializeComponent();

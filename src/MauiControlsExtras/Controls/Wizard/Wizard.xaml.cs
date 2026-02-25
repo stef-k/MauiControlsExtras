@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Theming;
@@ -984,6 +985,8 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
     /// <summary>
     /// Initializes a new instance of the <see cref="Wizard"/> class.
     /// </summary>
+    [DynamicDependency(nameof(CurrentBorderColor), typeof(Wizard))]
+    [DynamicDependency(nameof(EffectiveStepIndicatorBackgroundColor), typeof(Wizard))]
     public Wizard()
     {
         InitializeComponent();

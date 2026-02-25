@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **AOT/Trimming**: Replaced DataGrid sort indicator `SetBinding` + `SortIndicatorConverter` with direct `PropertyChanged` subscription to eliminate CLR-property binding hazard (#240)
+- **AOT/Trimming**: Added `[DynamicDependency]` annotations on all base class `Effective*` CLR properties (`StyledControlBase`, `TextStyledControlBase`, `ListStyledControlBase`, `NavigationControlBase`, `HeaderedControlBase`, `AnimatedControlBase`) to prevent getter trimming (#240)
+- **AOT/Trimming**: Added `[DynamicDependency]` annotations for `CurrentBorderColor` and `EffectiveStepIndicatorBackgroundColor` CLR properties on Accordion, Wizard, Breadcrumb, NumericUpDown, Rating, and TokenEntry (#240)
+- **AOT/Trimming**: Added `[DynamicDependency]` on `PropertyEditorBase.CreateValueBinding` for `PropertyItem.Value` binding (#240)
+- **AOT/Trimming**: Added `[Preserve(AllMembers = true)]` on `InvertedBoolConverter`, `MauiAssetImageConverter`, and `FuncDisplayConverter` to protect against trimming (#240)
+- **AOT/Trimming**: Added `x:DataType="x:String"` to TokenEntry suggestion `DataTemplate` for compiled bindings (#240)
+- **AOT/Trimming**: Added XML doc `<remarks>` warnings on `DisplayMemberPath` and `IconMemberPath` (ComboBox, MultiSelectComboBox) advising AOT-safe alternatives (#240)
 - **DataGrid**: Fixed virtualization crash on Windows debug builds caused by async handler re-attachment race during row recycling (#237)
 - **DataGrid**: Page size picker text is now horizontally centered (#239)
 - **DataGrid**: Header text color now reacts to `ForegroundColor` property changes without requiring a full refresh (#238)

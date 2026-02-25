@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Base;
@@ -8,6 +9,15 @@ namespace MauiControlsExtras.Base;
 /// </summary>
 public abstract class TextStyledControlBase : StyledControlBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TextStyledControlBase"/> class.
+    /// </summary>
+    [DynamicDependency(nameof(EffectiveFontFamily), typeof(TextStyledControlBase))]
+    [DynamicDependency(nameof(EffectiveFontSize), typeof(TextStyledControlBase))]
+    [DynamicDependency(nameof(EffectiveTextColor), typeof(TextStyledControlBase))]
+    [DynamicDependency(nameof(EffectivePlaceholderColor), typeof(TextStyledControlBase))]
+    protected TextStyledControlBase() { }
+
     #region Bindable Properties
 
     /// <summary>

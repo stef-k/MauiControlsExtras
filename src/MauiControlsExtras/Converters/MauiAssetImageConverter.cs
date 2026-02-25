@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using Microsoft.Maui.Controls.Internals;
 
 namespace MauiControlsExtras.Converters;
 
@@ -20,6 +21,7 @@ namespace MauiControlsExtras.Converters;
 /// </code>
 /// </example>
 /// </remarks>
+[Preserve(AllMembers = true)]
 public class MauiAssetImageConverter : IValueConverter
 {
     /// <summary>

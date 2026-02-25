@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Base;
@@ -8,6 +9,15 @@ namespace MauiControlsExtras.Base;
 /// </summary>
 public abstract class AnimatedControlBase : StyledControlBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AnimatedControlBase"/> class.
+    /// </summary>
+    [DynamicDependency(nameof(EffectiveAnimationDuration), typeof(AnimatedControlBase))]
+    [DynamicDependency(nameof(EffectiveAnimationTimeSpan), typeof(AnimatedControlBase))]
+    [DynamicDependency(nameof(EffectiveAnimationEasing), typeof(AnimatedControlBase))]
+    [DynamicDependency(nameof(EffectiveEnableAnimations), typeof(AnimatedControlBase))]
+    protected AnimatedControlBase() { }
+
     #region Bindable Properties
 
     /// <summary>

@@ -1,10 +1,12 @@
 using System.Globalization;
+using Microsoft.Maui.Controls.Internals;
 
 namespace MauiControlsExtras.Converters;
 
 /// <summary>
 /// Converts a boolean value to its inverse.
 /// </summary>
+[Preserve(AllMembers = true)]
 public class InvertedBoolConverter : IValueConverter
 {
     /// <summary>

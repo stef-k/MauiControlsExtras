@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -479,6 +480,7 @@ public partial class TokenEntry : TextStyledControlBase, IValidatable, Base.IKey
 
     #region Constructor
 
+    [DynamicDependency(nameof(CurrentBorderColor), typeof(TokenEntry))]
     public TokenEntry()
     {
         InitializeComponent();

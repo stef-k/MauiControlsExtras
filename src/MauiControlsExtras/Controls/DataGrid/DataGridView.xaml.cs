@@ -4127,7 +4127,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 TextColor = column.SortDirection != null ? EffectiveAccentColor : Colors.Gray,
                 Margin = new Thickness(4, 0, 0, 0)
             };
-            sortLabel.SetBinding(Label.TextProperty, new Binding(nameof(column.SortIndicator), source: column, converter: new SortIndicatorConverter()));
+            column.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(DataGridColumn.SortDirection))
+                {
+                    sortLabel.Text = GetSortIndicatorText(column);
+                    sortLabel.TextColor = column.SortDirection != null ? EffectiveAccentColor : Colors.Gray;
+                }
+            };
             contentGrid.Children.Add(sortLabel);
             Grid.SetColumn(sortLabel, 2);
         }
@@ -7458,22 +7465,4 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     #endregion
 
     #endregion
-}
-
-/// <summary>
-/// Converts empty sort indicator to a neutral sortable indicator.
-/// </summary>
-internal class SortIndicatorConverter : IValueConverter
-{
-    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        if (value is string s && !string.IsNullOrEmpty(s))
-            return s;
-        return "⇅"; // Neutral indicator showing column is sortable
-    }
-
-    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
 }

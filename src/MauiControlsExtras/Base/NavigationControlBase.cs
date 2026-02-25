@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Theming;
 
 namespace MauiControlsExtras.Base;
@@ -8,6 +9,17 @@ namespace MauiControlsExtras.Base;
 /// </summary>
 public abstract class NavigationControlBase : StyledControlBase
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NavigationControlBase"/> class.
+    /// </summary>
+    [DynamicDependency(nameof(EffectiveActiveColor), typeof(NavigationControlBase))]
+    [DynamicDependency(nameof(EffectiveInactiveColor), typeof(NavigationControlBase))]
+    [DynamicDependency(nameof(EffectiveVisitedColor), typeof(NavigationControlBase))]
+    [DynamicDependency(nameof(EffectiveDisabledNavigationColor), typeof(NavigationControlBase))]
+    [DynamicDependency(nameof(EffectiveActiveBackgroundColor), typeof(NavigationControlBase))]
+    [DynamicDependency(nameof(EffectiveNavigationIndicatorColor), typeof(NavigationControlBase))]
+    protected NavigationControlBase() { }
+
     #region Bindable Properties
 
     /// <summary>

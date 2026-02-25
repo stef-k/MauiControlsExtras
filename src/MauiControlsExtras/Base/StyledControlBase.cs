@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Behaviors;
 using MauiControlsExtras.Theming;
 
@@ -472,6 +473,19 @@ public abstract class StyledControlBase : ContentView, IThemeAware
     /// <summary>
     /// Initializes a new instance of the <see cref="StyledControlBase"/> class.
     /// </summary>
+    [DynamicDependency(nameof(EffectiveAccentColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveForegroundColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveDisabledColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveErrorColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveSuccessColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveWarningColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveCornerRadius), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveBorderColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveBorderThickness), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveFocusBorderColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveErrorBorderColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveDisabledBorderColor), typeof(StyledControlBase))]
+    [DynamicDependency(nameof(EffectiveShadowColor), typeof(StyledControlBase))]
     protected StyledControlBase()
     {
         EnsureThemeSubscription();
