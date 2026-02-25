@@ -524,8 +524,10 @@ public partial class ComboBoxPopupContent : StyledControlBase
             }
         }
 
-        // Reset highlight index
-        _highlightedIndex = _filteredItems.Count > 0 ? 0 : -1;
+        // Highlight selected item if present, otherwise first item
+        _highlightedIndex = _selectedItem != null ? _filteredItems.IndexOf(_selectedItem) : -1;
+        if (_highlightedIndex < 0 && _filteredItems.Count > 0)
+            _highlightedIndex = 0;
     }
 
     private string GetDisplayText(object item)

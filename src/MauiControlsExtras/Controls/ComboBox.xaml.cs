@@ -2256,8 +2256,9 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         if (!_isExpanded)
         {
             Open();
-            _highlightedIndex = FilteredItems.IndexOf(SelectedItem ?? new object());
-            if (_highlightedIndex < 0) _highlightedIndex = 0;
+            _highlightedIndex = SelectedItem != null ? FilteredItems.IndexOf(SelectedItem) : -1;
+            if (_highlightedIndex < 0 && FilteredItems.Count > 0)
+                _highlightedIndex = 0;
             return true;
         }
 
