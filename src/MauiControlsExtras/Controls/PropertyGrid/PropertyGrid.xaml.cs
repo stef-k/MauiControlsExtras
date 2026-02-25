@@ -625,6 +625,7 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
     /// <summary>
     /// Initializes a new instance of the <see cref="PropertyGrid"/> class.
     /// </summary>
+    [DynamicDependency(nameof(HasSearchText), typeof(PropertyGrid))]
     public PropertyGrid()
     {
         InitializeComponent();

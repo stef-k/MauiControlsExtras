@@ -2328,6 +2328,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// <summary>
     /// Initializes a new instance of the DataGridView control.
     /// </summary>
+    [DynamicDependency(nameof(HasFrozenColumns), typeof(DataGridView))]
+    [DynamicDependency(nameof(PageInfoText), typeof(DataGridView))]
+    [DynamicDependency(nameof(CurrentPageText), typeof(DataGridView))]
     public DataGridView()
     {
         InitializeComponent();

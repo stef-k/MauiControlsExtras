@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
@@ -1220,6 +1221,9 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <summary>
     /// Initializes a new instance of the <see cref="RichTextEditor"/> class.
     /// </summary>
+    [DynamicDependency(nameof(EffectiveEditorBackground), typeof(RichTextEditor))]
+    [DynamicDependency(nameof(ShowTopToolbar), typeof(RichTextEditor))]
+    [DynamicDependency(nameof(ShowBottomToolbar), typeof(RichTextEditor))]
     public RichTextEditor()
     {
         InitializeComponent();

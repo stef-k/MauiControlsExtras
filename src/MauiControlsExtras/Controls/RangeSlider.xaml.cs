@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -754,6 +755,25 @@ public partial class RangeSlider : StyledControlBase, IValidatable, Base.IKeyboa
     /// <summary>
     /// Initializes a new instance of the RangeSlider control.
     /// </summary>
+    [DynamicDependency(nameof(EffectiveTrackColor), typeof(RangeSlider))]
+    [DynamicDependency(nameof(EffectiveRangeColor), typeof(RangeSlider))]
+    [DynamicDependency(nameof(EffectiveThumbColor), typeof(RangeSlider))]
+    [DynamicDependency(nameof(TrackCornerRadius), typeof(RangeSlider))]
+    [DynamicDependency(nameof(TrackAreaHeight), typeof(RangeSlider))]
+    [DynamicDependency(nameof(IsHorizontal), typeof(RangeSlider))]
+    [DynamicDependency(nameof(IsVertical), typeof(RangeSlider))]
+    [DynamicDependency(nameof(LowerLabelText), typeof(RangeSlider))]
+    [DynamicDependency(nameof(UpperLabelText), typeof(RangeSlider))]
+    [DynamicDependency(nameof(MinLabelText), typeof(RangeSlider))]
+    [DynamicDependency(nameof(MaxLabelText), typeof(RangeSlider))]
+    [DynamicDependency(nameof(LowerThumbPosition), typeof(RangeSlider))]
+    [DynamicDependency(nameof(UpperThumbPosition), typeof(RangeSlider))]
+    [DynamicDependency(nameof(LowerThumbPositionVertical), typeof(RangeSlider))]
+    [DynamicDependency(nameof(UpperThumbPositionVertical), typeof(RangeSlider))]
+    [DynamicDependency(nameof(RangeTrackMargin), typeof(RangeSlider))]
+    [DynamicDependency(nameof(RangeTrackWidth), typeof(RangeSlider))]
+    [DynamicDependency(nameof(RangeTrackMarginVertical), typeof(RangeSlider))]
+    [DynamicDependency(nameof(RangeTrackHeightVertical), typeof(RangeSlider))]
     public RangeSlider()
     {
         InitializeComponent();

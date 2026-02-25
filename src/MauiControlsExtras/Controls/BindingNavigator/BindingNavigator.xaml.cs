@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 
@@ -844,6 +845,8 @@ public partial class BindingNavigator : StyledControlBase, IKeyboardNavigable
     /// <summary>
     /// Initializes a new instance of the <see cref="BindingNavigator"/> class.
     /// </summary>
+    [DynamicDependency(nameof(DisplayPosition), typeof(BindingNavigator))]
+    [DynamicDependency(nameof(Count), typeof(BindingNavigator))]
     public BindingNavigator()
     {
         InitializeComponent();
