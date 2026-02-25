@@ -1307,6 +1307,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         if (bindable is ComboBox comboBox)
         {
             comboBox.SetupItemTemplate();
+            comboBox.UpdateDisplayState();
         }
     }
 
@@ -1315,6 +1316,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         if (bindable is ComboBox comboBox)
         {
             comboBox.SetupItemTemplate();
+            comboBox.UpdateDisplayState();
         }
     }
 
