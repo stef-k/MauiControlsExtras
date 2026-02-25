@@ -3743,12 +3743,18 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// Must be called before Children.Clear() to ensure cleanup even if HandlerChanging
     /// does not fire synchronously on child removal.
     /// </summary>
-    private void DetachContextMenuHandlersFromChildren(Grid grid)
+    private void DetachContextMenuHandlersFromChildren(Grid grid, int? expectedRowIndex = null)
     {
         foreach (var child in grid.Children.OfType<Grid>().ToList())
         {
             if (_cellContextMenuStates.TryGetValue(child, out var s))
             {
+                if (expectedRowIndex.HasValue && s.IsAttached && s.RowIndex != expectedRowIndex.Value)
+                {
+                    Debug.WriteLine($"[DataGrid] Warning: stale context menu handlers on recycled row " +
+                        $"(stale RowIndex={s.RowIndex}, new RowIndex={expectedRowIndex.Value}). Force-detaching.");
+                }
+
                 if (s.IsAttached && child.Handler?.PlatformView != null)
                 {
                     DetachNativeContextMenuHandlers(child.Handler.PlatformView, s);
@@ -4377,28 +4383,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var isSelected = _selectedItems.Contains(item);
         var isAlternate = rowIndex % 2 == 1;
 
-        // Defence-in-depth: on WinUI, async HandlerChanged events can re-attach native context
-        // menu handlers after cleanup. If any child cell still has an attached state from a
-        // different row, force-detach it now instead of crashing (#237).
-        if (rowGrid.Children.Count > 0)
-        {
-            foreach (var c in rowGrid.Children.OfType<Grid>().ToList())
-            {
-                if (_cellContextMenuStates.TryGetValue(c, out var s) && s.IsAttached && s.RowIndex != rowIndex)
-                {
-                    Debug.WriteLine($"[DataGrid] Warning: stale context menu handlers on recycled row " +
-                        $"(stale RowIndex={s.RowIndex}, new RowIndex={rowIndex}). Force-detaching.");
-                    if (c.Handler?.PlatformView != null)
-                        DetachNativeContextMenuHandlers(c.Handler.PlatformView, s);
-                    c.HandlerChanging -= OnCellContainerHandlerChanging;
-                    c.HandlerChanged -= OnCellContainerHandlerChanged;
-                    _cellContextMenuStates.Remove(c);
-                }
-            }
-        }
-
-        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously)
-        DetachContextMenuHandlersFromChildren(rowGrid);
+        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously).
+        // expectedRowIndex enables stale-handler diagnostics for recycled rows (#237).
+        DetachContextMenuHandlersFromChildren(rowGrid, expectedRowIndex: rowIndex);
 
         // Clear and rebuild cells (simpler approach; could optimize to update in-place)
         rowGrid.Children.Clear();
@@ -4612,6 +4599,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             var state = new CellContextMenuState { RowIndex = rowIndex, ColIndex = colIndex, Column = column };
             _cellContextMenuStates.AddOrUpdate(container, state);
+            container.HandlerChanging -= OnCellContainerHandlerChanging;
+            container.HandlerChanged -= OnCellContainerHandlerChanged;
             container.HandlerChanging += OnCellContainerHandlerChanging;
             container.HandlerChanged += OnCellContainerHandlerChanged;
         }

@@ -135,6 +135,45 @@ public class VirtualizingDataGridPanelTests
     }
 
     [Fact]
+    public void RowRecycling_InvokesCleanupBeforeUpdater()
+    {
+        var events = new List<(View Row, string Event)>();
+
+        var panel = new VirtualizingDataGridPanel
+        {
+            RowHeight = 44,
+            BufferSize = 5,
+            ItemsSource = Enumerable.Range(0, 100).Cast<object>().ToList(),
+            RowFactory = (item, index) => new Grid(),
+            RowUpdater = (row, item, index) => events.Add((row, "update")),
+            RowCleanup = row => events.Add((row, "cleanup"))
+        };
+
+        panel.Refresh(200);
+        events.Clear();
+
+        // Scroll far enough that all initial rows recycle and get reused
+        panel.UpdateScrollPosition(2000, 200);
+
+        var recycledRows = events.Select(e => e.Row).Distinct()
+            .Where(r => events.Any(e => e.Row == r && e.Event == "cleanup")
+                      && events.Any(e => e.Row == r && e.Event == "update"))
+            .ToList();
+
+        Assert.NotEmpty(recycledRows);
+
+        foreach (var row in recycledRows)
+        {
+            var rowEvents = events.Where(e => e.Row == row).ToList();
+            var lastCleanup = rowEvents.FindLastIndex(e => e.Event == "cleanup");
+            var firstUpdate = rowEvents.FindIndex(e => e.Event == "update");
+
+            Assert.True(lastCleanup < firstUpdate,
+                $"RowCleanup (index {lastCleanup}) must precede RowUpdater (index {firstUpdate}) on recycled rows.");
+        }
+    }
+
+    [Fact]
     public void RowCleanup_IsIdempotent_CalledTwiceOnSameRowWithoutError()
     {
         var cleanupCounts = new Dictionary<View, int>();
