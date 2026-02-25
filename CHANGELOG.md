@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Docs**: Centralized AOT & Trimming guide (`docs/aot.md`) with Func-based property reference table, code examples, and links to per-control sections
+
 ## [3.1.0] - 2026-02-26
 
 ### Added

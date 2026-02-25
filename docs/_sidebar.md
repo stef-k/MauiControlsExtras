@@ -2,6 +2,7 @@
   - [Introduction](home.md)
   - [Installation](installation.md)
   - [Quick Start](quickstart.md)
+  - [AOT & Trimming](aot.md)
 
 - Controls
   - [Accordion](controls/accordion.md)

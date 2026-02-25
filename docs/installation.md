@@ -38,6 +38,10 @@ Add to your `.csproj` file:
 | macOS Catalyst | 15.0 |
 | Windows | 10.0.17763.0 |
 
+## AOT & Trimming
+
+This library is fully compatible with NativeAOT and IL trimming. See the [AOT & Trimming Guide](aot.md) for details.
+
 ## Verify Installation
 
 After installing, you should be able to reference the controls in your XAML:
