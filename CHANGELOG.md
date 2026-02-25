@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **DataGrid**: Page size picker text is now horizontally centered (#239)
+- **DataGrid**: Header text color now reacts to `ForegroundColor` property changes without requiring a full refresh (#238)
 
 ## [3.0.0] - 2026-02-25
 

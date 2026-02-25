@@ -2361,6 +2361,19 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         RefreshDataCellTextColors();
     }
 
+    /// <inheritdoc />
+    protected override void OnForegroundColorChanged(Color? oldValue, Color? newValue)
+    {
+        base.OnForegroundColorChanged(oldValue, newValue);
+
+        if (_columns.Count > 0)
+        {
+            BuildHeader();
+        }
+
+        RefreshDataCellTextColors();
+    }
+
     /// <summary>
     /// Re-applies text colors to all visible data cells after a theme change,
     /// so that non-selected cells pick up the correct default text color.
