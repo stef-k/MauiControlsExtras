@@ -167,6 +167,18 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         propertyChanged: OnSelectedValueChanged);
 
     /// <summary>
+    /// Identifies the <see cref="SelectedIndex"/> bindable property.
+    /// </summary>
+    public static readonly BindableProperty SelectedIndexProperty = BindableProperty.Create(
+        nameof(SelectedIndex),
+        typeof(int),
+        typeof(ComboBox),
+        -1,
+        BindingMode.TwoWay,
+        validateValue: static (_, value) => (int)value >= -1,
+        propertyChanged: OnSelectedIndexChanged);
+
+    /// <summary>
     /// Identifies the <see cref="Placeholder"/> bindable property.
     /// </summary>
     public static readonly BindableProperty PlaceholderProperty = BindableProperty.Create(
@@ -555,6 +567,21 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
     {
         get => GetValue(SelectedValueProperty);
         set => SetValue(SelectedValueProperty, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the zero-based index of the selected item in <see cref="ItemsSource"/>.
+    /// </summary>
+    /// <value>The index of the selected item, or -1 if no item is selected.</value>
+    /// <remarks>
+    /// The index refers to the position in <see cref="ItemsSource"/> (the original collection),
+    /// not <see cref="FilteredItems"/>. Setting an out-of-range index is a silent no-op.
+    /// This property supports two-way binding.
+    /// </remarks>
+    public int SelectedIndex
+    {
+        get => (int)GetValue(SelectedIndexProperty);
+        set => SetValue(SelectedIndexProperty, value);
     }
 
     /// <summary>
@@ -1275,6 +1302,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             comboBox.UpdateFilteredItems(string.Empty);
             comboBox.ApplyDefaultValue();
+            comboBox.SyncSelectionAfterItemsSourceChanged();
         }
     }
 
@@ -1292,6 +1320,49 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             comboBox.SelectItemByValue(newValue);
         }
+    }
+
+    private static void OnSelectedIndexChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is ComboBox comboBox && !comboBox._isUpdatingFromSelection)
+        {
+            comboBox.SelectItemByIndex((int)newValue);
+        }
+    }
+
+    private void SelectItemByIndex(int index)
+    {
+        if (index < 0)
+        {
+            ClearSelection();
+            return;
+        }
+
+        if (ItemsSource == null)
+            return;
+
+        var item = FindItemAtIndex(index);
+        if (item == null)
+            return;
+
+        _isUpdatingFromSelection = true;
+        try
+        {
+            SelectedItem = item;
+
+            if (ValueMemberFunc != null || !string.IsNullOrEmpty(ValueMemberPath))
+            {
+                SelectedValue = GetValueMember(item);
+            }
+
+            UpdateDisplayState();
+        }
+        finally
+        {
+            _isUpdatingFromSelection = false;
+        }
+
+        RaiseSelectionChanged(item);
     }
 
     private static void OnDefaultValueChanged(BindableObject bindable, object oldValue, object newValue)
@@ -1362,6 +1433,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
             {
                 SelectedValue = null;
             }
+
+            SelectedIndex = FindIndexInItemsSource(newValue);
 
             UpdateDisplayState();
             RaiseSelectionChanged(newValue);
@@ -1491,6 +1564,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         {
             SelectedItem = null;
             SelectedValue = null;
+            SelectedIndex = -1;
             UpdateDisplayState();
             RaiseSelectionChanged(null);
         }
@@ -1912,6 +1986,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 SelectedValue = GetValueMember(item);
             }
 
+            SelectedIndex = FindIndexInItemsSource(item);
+
             UpdateDisplayState();
         }
         finally
@@ -1945,6 +2021,7 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
                 try
                 {
                     SelectedItem = item;
+                    SelectedIndex = FindIndexInItemsSource(item);
                     UpdateDisplayState();
                 }
                 finally
@@ -2052,6 +2129,26 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         }
     }
 
+    private void SyncSelectionAfterItemsSourceChanged()
+    {
+        _isUpdatingFromSelection = true;
+        try
+        {
+            if (SelectedItem != null)
+            {
+                SelectedIndex = FindIndexInItemsSource(SelectedItem);
+            }
+            else if (SelectedIndex >= 0)
+            {
+                SelectItemByIndex(SelectedIndex);
+            }
+        }
+        finally
+        {
+            _isUpdatingFromSelection = false;
+        }
+    }
+
     private void UpdateListMaxHeight()
     {
         ListMaxHeight = VisibleItemCount * 44;
@@ -2092,6 +2189,44 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
 
         if (!string.IsNullOrEmpty(IconMemberPath))
             return PropertyAccessor.GetValueSuppressed(item, IconMemberPath)?.ToString();
+
+        return null;
+    }
+
+    private int FindIndexInItemsSource(object? item)
+    {
+        if (item == null || ItemsSource == null)
+            return -1;
+
+        if (ItemsSource is IList list)
+            return list.IndexOf(item);
+
+        var index = 0;
+        foreach (var element in ItemsSource)
+        {
+            if (Equals(element, item))
+                return index;
+            index++;
+        }
+
+        return -1;
+    }
+
+    private object? FindItemAtIndex(int index)
+    {
+        if (index < 0 || ItemsSource == null)
+            return null;
+
+        if (ItemsSource is IList list)
+            return index < list.Count ? list[index] : null;
+
+        var current = 0;
+        foreach (var element in ItemsSource)
+        {
+            if (current == index)
+                return element;
+            current++;
+        }
 
         return null;
     }

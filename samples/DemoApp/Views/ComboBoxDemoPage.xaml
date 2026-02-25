@@ -31,6 +31,23 @@
                 </VerticalStackLayout>
             </Frame>
 
+            <!-- SelectedIndex Binding -->
+            <Frame Style="{StaticResource DemoCardStyle}">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="SelectedIndex Binding" Style="{StaticResource SectionTitleStyle}" />
+                    <Label Text="Select by position in ItemsSource. Index syncs with SelectedItem."
+                           Style="{StaticResource SectionDescriptionStyle}" />
+
+                    <extras:ComboBox ItemsSource="{Binding Departments}"
+                                     SelectedIndex="{Binding SelectedDepartmentIndex}"
+                                     Placeholder="Select by index..."
+                                     WidthRequest="300"
+                                     HorizontalOptions="Start" />
+
+                    <Label Text="{Binding SelectedDepartmentIndex, StringFormat='SelectedIndex: {0}'}" />
+                </VerticalStackLayout>
+            </Frame>
+
             <!-- Country Selector with Icons -->
             <Frame Style="{StaticResource DemoCardStyle}">
                 <VerticalStackLayout Spacing="15">

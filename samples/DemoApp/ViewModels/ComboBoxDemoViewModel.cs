@@ -19,6 +19,9 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     private string? _selectedDepartment;
 
     [ObservableProperty]
+    private int _selectedDepartmentIndex = -1;
+
+    [ObservableProperty]
     private ObservableCollection<string> _departments = [];
 
     [ObservableProperty]
@@ -64,6 +67,11 @@ public partial class ComboBoxDemoViewModel : BaseViewModel
     {
         if (value is not null)
             UpdateStatus($"Selected department: {value}");
+    }
+
+    partial void OnSelectedDepartmentIndexChanged(int value)
+    {
+        UpdateStatus($"Selected department index: {value}");
     }
 
     partial void OnSelectedEmployeeChanged(Employee? value)

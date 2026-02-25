@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ComboBox**: `SelectedIndex` bindable property for position-based selection (#243)
+
 ### Fixed
 
 - **DataGrid**: Page size picker text is now horizontally centered (#239)

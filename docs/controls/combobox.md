@@ -90,6 +90,33 @@ public class IconOption
 
 > **Note:** Icon images should be placed in the `Resources/Raw` folder of your MAUI project.
 
+## Selection Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `SelectedItem` | `object?` | `null` | The currently selected item object |
+| `SelectedValue` | `object?` | `null` | The value of the selected item (via `ValueMemberPath`/`ValueMemberFunc`) |
+| `SelectedIndex` | `int` | `-1` | Zero-based index of the selected item in `ItemsSource` |
+
+All three properties stay in sync automatically. Setting any one updates the others.
+
+## Selecting by Index
+
+Use `SelectedIndex` for position-based selection. The index refers to the position in `ItemsSource` (the original collection), not the filtered list.
+
+```xml
+<extras:ComboBox ItemsSource="{Binding Departments}"
+                 SelectedIndex="{Binding SelectedDepartmentIndex}"
+                 Placeholder="Select a department..." />
+```
+
+**Notes:**
+- `-1` means no selection (default)
+- Setting an out-of-range index is a silent no-op — no crash, no selection change
+- If `SelectedIndex` is set before `ItemsSource`, the selection resolves once items arrive
+- When `SelectedItem` changes (e.g., from dropdown pick), `SelectedIndex` updates automatically
+- The index always refers to `ItemsSource`, not `FilteredItems` (the search-filtered subset)
+
 ## Default Values
 
 Set a default selection when the control loads:
