@@ -103,3 +103,29 @@ public enum DataGridEditTrigger
     /// </summary>
     Manual
 }
+
+/// <summary>
+/// Specifies how a data grid column determines its width.
+/// </summary>
+public enum DataGridColumnSizeMode
+{
+    /// <summary>
+    /// Backward-compatible default: Width &lt; 0 uses auto sizing, Width &gt;= 0 uses the explicit pixel value.
+    /// </summary>
+    Auto,
+
+    /// <summary>
+    /// Explicit pixel width from <see cref="DataGridColumn.Width"/>.
+    /// </summary>
+    Fixed,
+
+    /// <summary>
+    /// Measures the header text so it never wraps. The computed width is stored in <see cref="DataGridColumn.ActualWidth"/>.
+    /// </summary>
+    FitHeader,
+
+    /// <summary>
+    /// Fills remaining space proportionally. <see cref="DataGridColumn.Width"/> acts as a star weight (default 1).
+    /// </summary>
+    Fill
+}

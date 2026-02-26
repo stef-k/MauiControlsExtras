@@ -77,6 +77,7 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
     private string? _filterText;
     private Func<object, object?>? _cellValueFunc;
     private Action<object, object?>? _cellValueSetter;
+    private DataGridColumnSizeMode _sizeMode = DataGridColumnSizeMode.Auto;
 
     /// <summary>
     /// Gets or sets the column header text.
@@ -265,6 +266,22 @@ public abstract class DataGridColumn : BindableObject, INotifyPropertyChanged
             if (Math.Abs(_actualWidth - value) > 0.001)
             {
                 _actualWidth = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets how this column determines its width.
+    /// </summary>
+    public DataGridColumnSizeMode SizeMode
+    {
+        get => _sizeMode;
+        set
+        {
+            if (_sizeMode != value)
+            {
+                _sizeMode = value;
                 OnPropertyChanged();
             }
         }

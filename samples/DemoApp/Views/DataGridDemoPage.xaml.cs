@@ -27,13 +27,13 @@ public partial class DataGridDemoPage : ContentPage
             Placeholder = "Search departments..."
         };
 
-        dataGrid.Columns.Add(new DataGridTextColumn { Header = "ID", Binding = "Id", Width = 60, IsReadOnly = true });
-        dataGrid.Columns.Add(new DataGridTextColumn { Header = "Name", Binding = "Name", Width = 150 });
+        dataGrid.Columns.Add(new DataGridTextColumn { Header = "ID", Binding = "Id", Width = 60, IsReadOnly = true, SizeMode = DataGridColumnSizeMode.FitHeader });
+        dataGrid.Columns.Add(new DataGridTextColumn { Header = "Name", Binding = "Name", Width = 2, SizeMode = DataGridColumnSizeMode.Fill });
         dataGrid.Columns.Add(departmentColumn);
         dataGrid.Columns.Add(new DataGridTextColumn { Header = "Salary", Binding = "Salary", Width = 100, Format = "C0" });
         dataGrid.Columns.Add(new DataGridDatePickerColumn { Header = "Hire Date", Binding = "HireDate", Width = 120, Format = "d" });
-        dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "Active", Binding = "IsActive", Width = 70 });
-        dataGrid.Columns.Add(new DataGridTextColumn { Header = "Email", Binding = "Email", Width = 200 });
+        dataGrid.Columns.Add(new DataGridCheckBoxColumn { Header = "Active", Binding = "IsActive", SizeMode = DataGridColumnSizeMode.FitHeader });
+        dataGrid.Columns.Add(new DataGridTextColumn { Header = "Email", Binding = "Email", SizeMode = DataGridColumnSizeMode.Fill });
 
         BindingContext = viewModel;
     }

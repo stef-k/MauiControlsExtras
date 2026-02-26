@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **DataGrid**: `DataGridColumnSizeMode` enum (`Auto`, `Fixed`, `FitHeader`, `Fill`) for per-column width behavior
+- **DataGrid**: `DataGridColumn.SizeMode` property — `FitHeader` sizes to header text, `Fill` distributes remaining space proportionally
+
 ### Fixed
 
 - **Theming**: Controls now respond to MAUI `RequestedThemeChanged`, fixing theme-dependent properties not updating when toggling `UserAppTheme` at runtime (#258)
