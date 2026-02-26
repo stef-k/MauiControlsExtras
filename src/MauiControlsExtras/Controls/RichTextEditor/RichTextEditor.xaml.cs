@@ -1894,6 +1894,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <summary>
     /// Inserts text at the current cursor position.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     public Task InsertTextAsync(string text)
     {
         var escaped = JsonSerializer.Serialize(text);
@@ -1903,6 +1905,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <summary>
     /// Inserts HTML at the current cursor position.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     public Task InsertHtmlAsync(string html)
     {
         var escaped = JsonSerializer.Serialize(html);
@@ -1912,6 +1916,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <summary>
     /// Inserts an image at the current cursor position.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     public Task InsertImageAsync(string url, string? altText = null)
     {
         var escapedUrl = JsonSerializer.Serialize(url);
@@ -1922,6 +1928,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
     /// <summary>
     /// Inserts a link at the current cursor position.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     public Task InsertLinkAsync(string url, string? text = null)
     {
         var escapedUrl = JsonSerializer.Serialize(url);
@@ -2064,6 +2072,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         }
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     private static void OnPlaceholderChanged(BindableObject bindable, object oldValue, object newValue)
     {
         if (bindable is RichTextEditor editor && editor._isInitialized)
@@ -2116,6 +2126,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
 
     #region Private Methods
 
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     private async Task SetContentInternalAsync(string? html)
     {
         if (!_isInitialized)
@@ -2128,6 +2140,8 @@ public partial class RichTextEditor : TextStyledControlBase, IKeyboardNavigable,
         await ExecuteJavaScriptAsync($"RichTextBridge.setContent({escaped})");
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes string — AOT-safe in practice.")]
     private async Task SetMarkdownInternalAsync(string? markdown)
     {
         if (!_isInitialized)

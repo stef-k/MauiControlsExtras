@@ -37,7 +37,7 @@
 
 		<!-- Generate XML documentation -->
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<NoWarn>$(NoWarn);CS1591</NoWarn>
+		<NoWarn>$(NoWarn);CS1591;XC0025;CsWinRT1030</NoWarn>
 
 		<!-- Enable package generation -->
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
