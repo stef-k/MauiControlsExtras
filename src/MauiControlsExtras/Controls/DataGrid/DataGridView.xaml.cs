@@ -130,6 +130,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private VirtualizingDataGridPanel? _frozenVirtualizingPanel;
 
     private bool _isUpdating;
+    private bool _isDistributingFill;
     private bool _isSyncingScroll;
     private DataGridColumn? _currentSortColumn;
     private object? _editingItem;
@@ -6077,7 +6078,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             return;
 
         var totalWidth = Width;
-        if (totalWidth <= 0)
+        if (totalWidth <= 0 || double.IsNaN(totalWidth) || double.IsInfinity(totalWidth))
             return;
 
         // Calculate width consumed by frozen columns
@@ -6191,15 +6192,24 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnDataGridSizeChanged(object? sender, EventArgs e)
     {
-        // Guard against re-entrancy during BuildGrid
-        if (_isUpdating)
+        // Guard against re-entrancy: DistributeFillColumnWidths modifies ColumnDefinition.Width
+        // which can synchronously re-trigger SizeChanged on WinUI, causing a StackOverflow.
+        if (_isUpdating || _isDistributingFill)
             return;
 
         // Recalculate Fill columns when the grid resizes
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
         {
-            DistributeFillColumnWidths();
+            _isDistributingFill = true;
+            try
+            {
+                DistributeFillColumnWidths();
+            }
+            finally
+            {
+                _isDistributingFill = false;
+            }
         }
     }
 
@@ -6240,7 +6250,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void SynchronizeColumnWidths()
     {
-        if (_isUpdating)
+        if (_isUpdating || _isDistributingFill)
             return;
 
         var frozenColumns = GetFrozenColumns();
@@ -6255,7 +6265,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Re-distribute Fill columns now that Auto columns have accurate ActualWidth
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
-            DistributeFillColumnWidths();
+        {
+            _isDistributingFill = true;
+            try
+            {
+                DistributeFillColumnWidths();
+            }
+            finally
+            {
+                _isDistributingFill = false;
+            }
+        }
     }
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
