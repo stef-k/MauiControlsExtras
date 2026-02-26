@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **AOT/Trimming**: Eliminate IL2026 trim warnings from `Binding` constructor — migrate internal self-bindings to expression-based `SetBinding` and suppress intentional reflection fallbacks (#259)
 - **DataGrid**: Fix `StackOverflowException` crash when using `Fill` column sizing mode — re-entrant `SizeChanged` on WinUI caused infinite recursion during column width distribution
 - **Theming**: Controls now respond to MAUI `RequestedThemeChanged`, fixing theme-dependent properties not updating when toggling `UserAppTheme` at runtime (#258)
 

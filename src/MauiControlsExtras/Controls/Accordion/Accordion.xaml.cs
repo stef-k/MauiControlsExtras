@@ -786,7 +786,7 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         var cornerRadiusShape = new RoundRectangle();
         cornerRadiusShape.SetBinding(
             RoundRectangle.CornerRadiusProperty,
-            new Binding(nameof(EffectiveCornerRadius), source: this));
+            static (Accordion a) => a.EffectiveCornerRadius, source: this);
 
         // Create the border
         var border = new Border
@@ -798,10 +798,10 @@ public partial class Accordion : HeaderedControlBase, IKeyboardNavigable, ISelec
         // Set up bindings for border
         border.SetBinding(
             Border.StrokeThicknessProperty,
-            new Binding(nameof(EffectiveBorderThickness), source: this));
+            static (Accordion a) => a.EffectiveBorderThickness, source: this);
         border.SetBinding(
             Border.StrokeProperty,
-            new Binding(nameof(CurrentBorderColor), source: this));
+            static (Accordion a) => a.CurrentBorderColor, source: this);
 
         // Set background color with theme support
         border.SetAppThemeColor(Border.BackgroundColorProperty,

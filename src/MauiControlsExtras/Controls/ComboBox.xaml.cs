@@ -1697,6 +1697,8 @@ public partial class ComboBox : TextStyledControlBase, IValidatable, Base.IKeybo
         }
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc/IconMemberFunc for AOT compatibility.")]
     private void SetupItemTemplate()
     {
         // If a custom ItemTemplate is provided, use it directly

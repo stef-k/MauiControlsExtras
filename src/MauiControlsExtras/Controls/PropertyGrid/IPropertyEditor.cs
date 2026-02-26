@@ -37,6 +37,8 @@ public abstract class PropertyEditorBase : IPropertyEditor
     /// Creates a binding to the property value.
     /// </summary>
     [DynamicDependency(nameof(PropertyItem.Value), typeof(PropertyItem))]
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Binds to PropertyItem.Value which is preserved via DynamicDependency.")]
     protected Binding CreateValueBinding(PropertyItem property, BindingMode mode = BindingMode.TwoWay)
     {
         return new Binding(nameof(PropertyItem.Value), mode, source: property);
