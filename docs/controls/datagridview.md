@@ -65,6 +65,33 @@ Per-column filtering can be controlled via `DataGridColumn.CanUserFilter`. When 
 
 > **Touch targets**: The filter icon in column headers meets the 44×44pt minimum touch target recommended by Apple HIG and Material Design guidelines.
 
+## Column Sizing Modes
+
+Each column's width behavior is controlled by the `SizeMode` property (`DataGridColumnSizeMode` enum):
+
+| Mode | Behavior |
+|------|----------|
+| `Auto` | Default. `Width < 0` → auto-sized, `Width >= 0` → explicit pixels. Backward compatible. |
+| `Fixed` | Always uses the explicit `Width` value (clamped to `MinWidth`/`MaxWidth`). |
+| `FitHeader` | Measures header text so it never wraps. Accounts for sort, filter, and resize icons. |
+| `Fill` | Fills remaining space proportionally. `Width` acts as a star weight (default 1). |
+
+### Example
+
+```csharp
+// FitHeader — sizes to header text, never wraps
+new DataGridTextColumn { Header = "ID", Binding = "Id", SizeMode = DataGridColumnSizeMode.FitHeader };
+
+// Fill — proportional: Name gets 2x the space of Email
+new DataGridTextColumn { Header = "Name", Binding = "Name", Width = 2, SizeMode = DataGridColumnSizeMode.Fill };
+new DataGridTextColumn { Header = "Email", Binding = "Email", SizeMode = DataGridColumnSizeMode.Fill };
+
+// Fixed — explicit 150px
+new DataGridTextColumn { Header = "Department", Binding = "Department", Width = 150, SizeMode = DataGridColumnSizeMode.Fixed };
+```
+
+> **Note:** Manually resizing a `Fill` or `FitHeader` column converts it to `Fixed`, preserving the user's chosen width.
+
 ## Column Types
 
 ### DataGridTextColumn

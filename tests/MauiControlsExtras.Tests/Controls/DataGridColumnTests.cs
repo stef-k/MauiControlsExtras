@@ -397,6 +397,86 @@ public class DataGridColumnTests
 
     #endregion
 
+    #region SizeMode Tests
+
+    [Fact]
+    public void SizeMode_DefaultsToAuto()
+    {
+        var col = new DataGridTextColumn();
+        Assert.Equal(DataGridColumnSizeMode.Auto, col.SizeMode);
+    }
+
+    [Fact]
+    public void SizeMode_RaisesPropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.SizeMode)) raised = true;
+        };
+
+        col.SizeMode = DataGridColumnSizeMode.Fill;
+
+        Assert.True(raised);
+        Assert.Equal(DataGridColumnSizeMode.Fill, col.SizeMode);
+    }
+
+    [Fact]
+    public void SizeMode_SameValue_DoesNotRaisePropertyChanged()
+    {
+        var col = new DataGridTextColumn();
+        col.SizeMode = DataGridColumnSizeMode.Fill;
+
+        var raised = false;
+        col.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(DataGridColumn.SizeMode)) raised = true;
+        };
+
+        col.SizeMode = DataGridColumnSizeMode.Fill; // same value
+
+        Assert.False(raised);
+    }
+
+    [Fact]
+    public void SizeMode_Fixed_PreservesWidth()
+    {
+        var col = new DataGridTextColumn { Width = 200, SizeMode = DataGridColumnSizeMode.Fixed };
+
+        Assert.Equal(200, col.Width);
+        Assert.Equal(DataGridColumnSizeMode.Fixed, col.SizeMode);
+    }
+
+    [Fact]
+    public void SizeMode_Fill_DefaultWidthActsAsStarWeight()
+    {
+        var col = new DataGridTextColumn { SizeMode = DataGridColumnSizeMode.Fill };
+
+        // Default width is -1 (auto). Fill columns treat Width <= 0 as weight 1.
+        Assert.Equal(-1, col.Width);
+        Assert.Equal(DataGridColumnSizeMode.Fill, col.SizeMode);
+    }
+
+    [Fact]
+    public void SizeMode_Fill_ExplicitWidthActsAsStarWeight()
+    {
+        var col = new DataGridTextColumn { SizeMode = DataGridColumnSizeMode.Fill, Width = 3 };
+
+        Assert.Equal(3, col.Width);
+        Assert.Equal(DataGridColumnSizeMode.Fill, col.SizeMode);
+    }
+
+    [Fact]
+    public void SizeMode_FitHeader_CanBeSet()
+    {
+        var col = new DataGridTextColumn { SizeMode = DataGridColumnSizeMode.FitHeader };
+
+        Assert.Equal(DataGridColumnSizeMode.FitHeader, col.SizeMode);
+    }
+
+    #endregion
+
     #region CellValueFunc / CellValueSetter Tests
 
     private class TestRowItem

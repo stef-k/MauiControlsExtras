@@ -2347,6 +2347,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         Unloaded += OnDataGridViewUnloaded;
+        SizeChanged += OnDataGridSizeChanged;
     }
 
     #endregion
@@ -2965,9 +2966,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public void AutoFitColumn(DataGridColumn column)
     {
-        // This would require measuring actual content width
-        // For now, set to auto
-        column.Width = -1;
+        // Fill columns use proportional distribution — skip to avoid destroying star weights
+        if (column.SizeMode == DataGridColumnSizeMode.Fill)
+            return;
+
+        var headerWidth = MeasureHeaderWidth(column);
+        var clamped = Math.Clamp(headerWidth, column.MinWidth, column.MaxWidth);
+        column.Width = clamped;
+        column.ActualWidth = clamped;
         BuildGrid();
     }
 
@@ -2978,7 +2984,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         foreach (var column in _columns)
         {
-            column.Width = -1;
+            // Fill columns use proportional distribution — skip to avoid destroying star weights
+            if (column.SizeMode == DataGridColumnSizeMode.Fill)
+                continue;
+
+            var headerWidth = MeasureHeaderWidth(column);
+            var clamped = Math.Clamp(headerWidth, column.MinWidth, column.MaxWidth);
+            column.Width = clamped;
+            column.ActualWidth = clamped;
         }
         BuildGrid();
     }
@@ -3874,6 +3887,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnDataGridViewUnloaded(object? sender, EventArgs e)
     {
+        SizeChanged -= OnDataGridSizeChanged;
         DetachContextMenuHandlersFromChildren(dataGrid);
         DetachContextMenuHandlersFromChildren(frozenDataGrid);
         ClearVirtualizationPanels();
@@ -3900,10 +3914,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         ApplyFilters();
         ApplySort();
 
+        // Pre-measure FitHeader columns before building UI
+        PreMeasureFitHeaderColumns();
+
         // Build UI
         BuildHeader();
         BuildDataRows();
         BuildFooter();
+
+        // Initial Fill distribution (uses estimates for Auto columns).
+        // SynchronizeColumnWidths re-runs DistributeFillColumnWidths after Auto columns have accurate widths.
+        DistributeFillColumnWidths();
 
         // Synchronize column widths after layout is complete
         ScheduleColumnWidthSync();
@@ -4040,7 +4061,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         for (int i = 0; i < frozenColumns.Count; i++)
         {
             var column = frozenColumns[i];
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             frozenHeaderGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
 
             var headerCell = CreateHeaderCell(column, i, true);
@@ -4052,7 +4073,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         for (int i = 0; i < scrollableColumns.Count; i++)
         {
             var column = scrollableColumns[i];
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
 
             var headerCell = CreateHeaderCell(column, i + frozenColumns.Count, false);
@@ -4256,7 +4277,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         for (int i = 0; i < frozenColumns.Count; i++)
         {
             var column = frozenColumns[i];
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             frozenDataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
         }
 
@@ -4264,7 +4285,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         for (int i = 0; i < scrollableColumns.Count; i++)
         {
             var column = scrollableColumns[i];
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             dataGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
         }
 
@@ -4377,7 +4398,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Add column definitions
         foreach (var column in columns)
         {
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
         }
 
@@ -4644,7 +4665,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         for (int i = 0; i < frozenColumns.Count; i++)
         {
             var column = frozenColumns[i];
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             frozenFooterGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
 
             var footerCell = CreateFooterCell(column);
@@ -4656,7 +4677,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         for (int i = 0; i < scrollableColumns.Count; i++)
         {
             var column = scrollableColumns[i];
-            var width = column.Width < 0 ? GridLength.Auto : new GridLength(column.Width);
+            var width = ResolveColumnWidth(column);
             footerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = width });
 
             var footerCell = CreateFooterCell(column);
@@ -5963,6 +5984,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 break;
 
             case GestureStatus.Running:
+                // Manual resize converts Fill/FitHeader → Fixed
+                if (column.SizeMode is DataGridColumnSizeMode.Fill or DataGridColumnSizeMode.FitHeader)
+                    column.SizeMode = DataGridColumnSizeMode.Fixed;
+
                 var newWidth = Math.Clamp(_resizeStartWidth + e.TotalX, column.MinWidth, column.MaxWidth);
                 column.Width = newWidth;
                 column.ActualWidth = newWidth;
@@ -5975,6 +6000,206 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 ColumnResized?.Invoke(this, endArgs);
                 _resizingColumnIndex = -1;
                 break;
+        }
+    }
+
+    private GridLength ResolveColumnWidth(DataGridColumn column)
+    {
+        return column.SizeMode switch
+        {
+            DataGridColumnSizeMode.Fixed => new GridLength(Math.Clamp(column.Width, column.MinWidth, column.MaxWidth)),
+            DataGridColumnSizeMode.FitHeader => new GridLength(Math.Clamp(
+                column.ActualWidth > 0 ? column.ActualWidth : column.MinWidth,
+                column.MinWidth, column.MaxWidth)),
+            DataGridColumnSizeMode.Fill => column.ActualWidth > 0
+                ? new GridLength(column.ActualWidth)
+                : new GridLength(column.MinWidth), // Use MinWidth until first SizeChanged distributes
+            _ => column.Width < 0 ? GridLength.Auto : new GridLength(column.Width), // Auto (backward compat)
+        };
+    }
+
+    private double MeasureHeaderWidth(DataGridColumn column)
+    {
+        var label = new Label
+        {
+            Text = column.Header,
+            FontSize = 14,
+            FontAttributes = FontAttributes.Bold,
+            MaxLines = 1,
+            LineBreakMode = LineBreakMode.NoWrap
+        };
+
+        var measured = label.Measure(double.PositiveInfinity, double.PositiveInfinity);
+        var textWidth = measured.Width;
+
+        // Add padding for contentGrid (8 left + 8 right)
+        double padding = 16;
+
+        // Add space for filter icon container if filterable
+        if (column.CanUserFilter)
+            padding += 48; // 44px min width + 4px margin
+
+        // Add space for sort indicator if sortable
+        if (column.CanUserSort)
+            padding += 18; // ~14px text + 4px margin
+
+        // Add space for resize grip if resizable
+        if (column.CanUserResize)
+            padding += 6;
+
+        return textWidth + padding;
+    }
+
+    private void PreMeasureFitHeaderColumns()
+    {
+        var visibleColumns = GetVisibleColumns();
+        foreach (var column in visibleColumns)
+        {
+            if (column.SizeMode != DataGridColumnSizeMode.FitHeader)
+                continue;
+
+            var measured = MeasureHeaderWidth(column);
+            var clamped = Math.Clamp(measured, column.MinWidth, column.MaxWidth);
+            column.ActualWidth = clamped;
+            column.Width = clamped;
+        }
+    }
+
+    private void DistributeFillColumnWidths()
+    {
+        var visibleColumns = GetVisibleColumns();
+        var frozenColumns = GetFrozenColumns();
+        var scrollableColumns = GetScrollableColumns();
+
+        // Fill only applies to scrollable columns; frozen columns auto-size
+        var fillColumns = scrollableColumns.Where(c => c.SizeMode == DataGridColumnSizeMode.Fill).ToList();
+        if (fillColumns.Count == 0)
+            return;
+
+        var totalWidth = Width;
+        if (totalWidth <= 0)
+            return;
+
+        // Calculate width consumed by frozen columns
+        double frozenConsumedWidth = 0;
+        foreach (var column in frozenColumns)
+        {
+            if (column.ActualWidth > 0)
+                frozenConsumedWidth += column.ActualWidth;
+            else if (column.Width >= 0)
+                frozenConsumedWidth += column.Width;
+            else
+                frozenConsumedWidth += column.MinWidth;
+        }
+
+        // Calculate width consumed by non-fill scrollable columns
+        double scrollableConsumedWidth = 0;
+        foreach (var column in scrollableColumns)
+        {
+            if (column.SizeMode == DataGridColumnSizeMode.Fill)
+                continue;
+
+            if (column.ActualWidth > 0)
+                scrollableConsumedWidth += column.ActualWidth;
+            else if (column.Width >= 0)
+                scrollableConsumedWidth += column.Width;
+            else
+                scrollableConsumedWidth += column.MinWidth;
+        }
+
+        var remainingWidth = Math.Max(0, totalWidth - frozenConsumedWidth - scrollableConsumedWidth);
+        if (remainingWidth <= 0)
+            return;
+
+        // Two-pass distribution to respect MinWidth/MaxWidth without overflow
+        // Pass 1: assign MinWidth to all Fill columns, compute surplus
+        double totalMinWidth = fillColumns.Sum(c => c.MinWidth);
+        double surplus = remainingWidth - totalMinWidth;
+
+        if (surplus <= 0)
+        {
+            // Not enough space — everyone gets MinWidth
+            foreach (var column in fillColumns)
+            {
+                column.ActualWidth = column.MinWidth;
+                var columnIndex = visibleColumns.IndexOf(column);
+                if (columnIndex >= 0)
+                    UpdateColumnWidth(columnIndex, column.MinWidth);
+            }
+            return;
+        }
+
+        // Pass 2: distribute surplus proportionally, capping at MaxWidth
+        var remaining = new List<DataGridColumn>(fillColumns);
+        var assigned = new Dictionary<DataGridColumn, double>();
+        foreach (var column in fillColumns)
+            assigned[column] = column.MinWidth;
+
+        double surplusToDistribute = surplus;
+
+        while (remaining.Count > 0 && surplusToDistribute > 0.5)
+        {
+            double totalWeight = 0;
+            foreach (var column in remaining)
+            {
+                var weight = column.Width > 0 ? column.Width : 1;
+                totalWeight += weight;
+            }
+
+            if (totalWeight <= 0)
+                break;
+
+            var capped = new List<DataGridColumn>();
+            double usedSurplus = 0;
+
+            foreach (var column in remaining)
+            {
+                var weight = column.Width > 0 ? column.Width : 1;
+                var share = surplusToDistribute * (weight / totalWeight);
+                var proposed = assigned[column] + share;
+
+                if (proposed >= column.MaxWidth)
+                {
+                    usedSurplus += column.MaxWidth - assigned[column];
+                    assigned[column] = column.MaxWidth;
+                    capped.Add(column);
+                }
+                else
+                {
+                    usedSurplus += share;
+                    assigned[column] = proposed;
+                }
+            }
+
+            if (capped.Count == 0)
+                break; // No columns hit MaxWidth — distribution is complete
+
+            surplusToDistribute -= usedSurplus;
+            foreach (var c in capped)
+                remaining.Remove(c);
+        }
+
+        // Apply computed widths
+        foreach (var column in fillColumns)
+        {
+            column.ActualWidth = assigned[column];
+            var columnIndex = visibleColumns.IndexOf(column);
+            if (columnIndex >= 0)
+                UpdateColumnWidth(columnIndex, assigned[column]);
+        }
+    }
+
+    private void OnDataGridSizeChanged(object? sender, EventArgs e)
+    {
+        // Guard against re-entrancy during BuildGrid
+        if (_isUpdating)
+            return;
+
+        // Recalculate Fill columns when the grid resizes
+        var visibleColumns = GetVisibleColumns();
+        if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+        {
+            DistributeFillColumnWidths();
         }
     }
 
@@ -6026,6 +6251,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         // Sync scrollable columns
         SyncColumnWidthsBetweenGrids(headerGrid, dataGrid, footerGrid, scrollableColumns);
+
+        // Re-distribute Fill columns now that Auto columns have accurate ActualWidth
+        var visibleColumns = GetVisibleColumns();
+        if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+            DistributeFillColumnWidths();
     }
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
@@ -6037,8 +6267,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             var column = columns[i];
 
-            // Skip columns with explicit widths (not Auto)
-            if (column.Width >= 0)
+            // Skip columns with explicit widths (not Auto), Fill, and FitHeader (already have computed widths)
+            if (column.Width >= 0
+                || column.SizeMode == DataGridColumnSizeMode.Fill
+                || column.SizeMode == DataGridColumnSizeMode.FitHeader)
                 continue;
 
             // Get the actual rendered widths
