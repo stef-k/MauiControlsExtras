@@ -131,6 +131,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private bool _isUpdating;
     private bool _isDistributingFill;
+    private double _lastDistributionWidth;
     private bool _isSyncingScroll;
     private DataGridColumn? _currentSortColumn;
     private object? _editingItem;
@@ -6102,6 +6103,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (totalWidth <= 0 || double.IsNaN(totalWidth) || double.IsInfinity(totalWidth))
             return;
 
+        _lastDistributionWidth = totalWidth;
+
         // Calculate width consumed by frozen columns
         double frozenConsumedWidth = 0;
         foreach (var column in frozenColumns)
@@ -6213,12 +6216,18 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnDataGridSizeChanged(object? sender, EventArgs e)
     {
-        // Guard against re-entrancy: DistributeFillColumnWidths modifies ColumnDefinition.Width
-        // which can synchronously re-trigger SizeChanged on WinUI, causing a StackOverflow.
         if (_isUpdating || _isDistributingFill)
             return;
 
-        // Recalculate Fill columns when the grid resizes
+        var currentWidth = Width;
+        if (currentWidth <= 0 || double.IsNaN(currentWidth) || double.IsInfinity(currentWidth))
+            return;
+
+        // Break layout cycle: modifying column widths can trigger another SizeChanged
+        // on WinUI. Only redistribute when width actually changed by ≥ 1 px.
+        if (Math.Abs(currentWidth - _lastDistributionWidth) < 1.0)
+            return;
+
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
             DistributeFillColumnWidthsGuarded();
