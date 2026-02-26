@@ -6223,14 +6223,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (currentWidth <= 0 || double.IsNaN(currentWidth) || double.IsInfinity(currentWidth))
             return;
 
-        // Break layout cycle: modifying column widths can trigger another SizeChanged
-        // on WinUI. Only redistribute when width actually changed by ≥ 1 px.
+        // Skip if width hasn't meaningfully changed (avoids redundant dispatches)
         if (Math.Abs(currentWidth - _lastDistributionWidth) < 1.0)
             return;
 
         var visibleColumns = GetVisibleColumns();
-        if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
-            DistributeFillColumnWidthsGuarded();
+        if (!visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+            return;
+
+        // CRITICAL: defer column width changes off the layout pass.
+        // Modifying ColumnDefinition.Width during SizeChanged causes
+        // LayoutCycleException on WinUI.
+        Dispatcher.Dispatch(() =>
+        {
+            if (!_isUpdating && !_isDistributingFill)
+                DistributeFillColumnWidthsGuarded();
+        });
     }
 
     private void UpdateColumnWidth(int columnIndex, double newWidth)
@@ -6239,24 +6247,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var isFrozen = columnIndex < frozenCount;
         var adjustedIndex = isFrozen ? columnIndex : columnIndex - frozenCount;
 
-        // Update header grid
+        // Update header grid (skip if unchanged to avoid layout invalidation)
         var headerDefs = isFrozen ? frozenHeaderGrid.ColumnDefinitions : headerGrid.ColumnDefinitions;
-        if (adjustedIndex < headerDefs.Count)
+        if (adjustedIndex < headerDefs.Count && !IsGridLengthEqual(headerDefs[adjustedIndex].Width, newWidth))
             headerDefs[adjustedIndex].Width = new GridLength(newWidth);
 
         // Update data grid
         var dataDefs = isFrozen ? frozenDataGrid.ColumnDefinitions : dataGrid.ColumnDefinitions;
-        if (adjustedIndex < dataDefs.Count)
+        if (adjustedIndex < dataDefs.Count && !IsGridLengthEqual(dataDefs[adjustedIndex].Width, newWidth))
             dataDefs[adjustedIndex].Width = new GridLength(newWidth);
 
         // Update footer grid if visible
         if (ShowFooter)
         {
             var footerDefs = isFrozen ? frozenFooterGrid.ColumnDefinitions : footerGrid.ColumnDefinitions;
-            if (adjustedIndex < footerDefs.Count)
+            if (adjustedIndex < footerDefs.Count && !IsGridLengthEqual(footerDefs[adjustedIndex].Width, newWidth))
                 footerDefs[adjustedIndex].Width = new GridLength(newWidth);
         }
     }
+
+    private static bool IsGridLengthEqual(GridLength current, double newValue)
+        => current.IsAbsolute && Math.Abs(current.Value - newValue) < 0.5;
 
     private void ScheduleColumnWidthSync()
     {
