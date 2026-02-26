@@ -6099,7 +6099,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (fillColumns.Count == 0)
             return;
 
-        var totalWidth = Width;
+        // Use the inner content area width (dataContainer), not the outer Width which
+        // includes Border StrokeThickness/padding. Using this.Width causes a feedback loop
+        // in content-sized layouts: the border overhead is mistaken for "extra space",
+        // Fill columns grow, content grows, Width grows, ad infinitum.
+        var totalWidth = dataContainer.Width;
         if (totalWidth <= 0 || double.IsNaN(totalWidth) || double.IsInfinity(totalWidth))
             return;
 
@@ -6219,7 +6223,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (_isUpdating || _isDistributingFill)
             return;
 
-        var currentWidth = Width;
+        var currentWidth = dataContainer.Width;
         if (currentWidth <= 0 || double.IsNaN(currentWidth) || double.IsInfinity(currentWidth))
             return;
 
