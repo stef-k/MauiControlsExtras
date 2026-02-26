@@ -237,6 +237,15 @@ public abstract class StyledControlBase : ContentView, IThemeAware
 }
 ```
 
+### MAUI Theme Bridge
+
+The library automatically bridges MAUI's `Application.RequestedThemeChanged` event to the library's `ThemeChanged` event. This ensures controls update when users toggle `Application.Current.UserAppTheme` (the standard MAUI approach for Light/Dark switching).
+
+- **Initialization**: The bridge is enabled lazily from `StyledControlBase.EnsureThemeSubscription()` via `MauiControlsExtrasTheme.EnableMauiThemeBridge()`. No manual setup is required.
+- **Debounce**: A `_lastNotifiedTheme` guard prevents double-firing when both `RaiseThemeChanged()` and `RequestedThemeChanged` fire for the same theme transition.
+- **Idempotent**: `EnableMauiThemeBridge()` is safe to call multiple times — only the first call subscribes.
+- **Null-safe**: When `Application.Current` is null (unit tests, design-time), the bridge is a no-op.
+
 ## MVVM Command Pattern
 
 ### Design Rule

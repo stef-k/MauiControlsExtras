@@ -207,6 +207,56 @@ public class MauiControlsExtrasThemeTests : ThemeTestBase
 
     #endregion
 
+    #region MAUI Theme Bridge
+
+    [Fact]
+    public void EnableMauiThemeBridge_WithNullApplication_DoesNotThrow()
+    {
+        // Application.Current is null in unit tests — must not throw
+        var ex = Record.Exception(() => MauiControlsExtrasTheme.EnableMauiThemeBridge());
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void EnableMauiThemeBridge_CalledMultipleTimes_IsIdempotent()
+    {
+        // Calling multiple times should not throw or cause side effects
+        var ex = Record.Exception(() =>
+        {
+            MauiControlsExtrasTheme.EnableMauiThemeBridge();
+            MauiControlsExtrasTheme.EnableMauiThemeBridge();
+            MauiControlsExtrasTheme.EnableMauiThemeBridge();
+        });
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void RaiseThemeChanged_StillFiresEvent_AfterBridgeEnabled()
+    {
+        // Regression: ensure manual RaiseThemeChanged still works after bridge init
+        MauiControlsExtrasTheme.EnableMauiThemeBridge();
+
+        var count = 0;
+        MauiControlsExtrasTheme.ThemeChanged += OnChanged;
+
+        try
+        {
+            MauiControlsExtrasTheme.RaiseThemeChanged();
+            Assert.Equal(1, count);
+
+            MauiControlsExtrasTheme.RaiseThemeChanged();
+            Assert.Equal(2, count);
+        }
+        finally
+        {
+            MauiControlsExtrasTheme.ThemeChanged -= OnChanged;
+        }
+
+        void OnChanged(object? sender, EventArgs e) => count++;
+    }
+
+    #endregion
+
     #region Theme-Aware Color Helpers (Application.Current is null in tests -> Light variant)
 
     [Fact]

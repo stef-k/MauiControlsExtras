@@ -8,6 +8,8 @@ public static class MauiControlsExtrasTheme
 {
     private static readonly WeakEventManager _themeChangedEventManager = new();
     private static ControlsTheme _current = ControlsTheme.Default;
+    private static int _isMauiThemeBridged; // 0 = false, 1 = true; accessed via Interlocked
+    private static AppTheme _lastNotifiedTheme;
 
     #region Current Theme
 
@@ -183,7 +185,42 @@ public static class MauiControlsExtrasTheme
     /// </summary>
     public static void RaiseThemeChanged()
     {
+        _lastNotifiedTheme = Application.Current?.RequestedTheme ?? AppTheme.Unspecified;
         _themeChangedEventManager.HandleEvent(null, EventArgs.Empty, nameof(ThemeChanged));
+    }
+
+    #endregion
+
+    #region MAUI Theme Bridge
+
+    /// <summary>
+    /// Subscribes to MAUI's <see cref="Application.RequestedThemeChanged"/> event and forwards it
+    /// as a library <see cref="ThemeChanged"/> event. Safe to call multiple times — only the first
+    /// call has effect. Does nothing when <see cref="Application.Current"/> is null (e.g. in unit tests).
+    /// </summary>
+    public static void EnableMauiThemeBridge()
+    {
+        if (Interlocked.CompareExchange(ref _isMauiThemeBridged, 1, 0) != 0)
+            return;
+
+        if (Application.Current is not { } app)
+        {
+            Volatile.Write(ref _isMauiThemeBridged, 0); // reset so next call can retry
+            return;
+        }
+
+        // Static delegate → singleton Application: both live for the process lifetime,
+        // so no unsubscription is needed and no leak is possible.
+        app.RequestedThemeChanged += OnMauiRequestedThemeChanged;
+        _lastNotifiedTheme = app.RequestedTheme;
+    }
+
+    private static void OnMauiRequestedThemeChanged(object? sender, AppThemeChangedEventArgs e)
+    {
+        if (e.RequestedTheme == _lastNotifiedTheme)
+            return;
+
+        RaiseThemeChanged();
     }
 
     #endregion

@@ -822,6 +822,7 @@ public abstract class StyledControlBase : ContentView, IThemeAware
             return;
         }
 
+        MauiControlsExtrasTheme.EnableMauiThemeBridge();
         MauiControlsExtrasTheme.ThemeChanged += OnGlobalThemeChanged;
         _isThemeSubscribed = true;
     }

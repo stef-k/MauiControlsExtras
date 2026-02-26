@@ -373,6 +373,19 @@ public class StyledControlBaseTests : ThemeTestBase
 
     #endregion
 
+    #region MAUI Theme Bridge Integration
+
+    [Fact]
+    public void Constructor_CallsEnableMauiThemeBridge_WithoutCrash()
+    {
+        // Application.Current is null in tests — the null-guard in EnableMauiThemeBridge
+        // must prevent any crash when StyledControlBase constructor runs
+        var ex = Record.Exception(() => new TestableStyledControl());
+        Assert.Null(ex);
+    }
+
+    #endregion
+
     #region Keyboard Behavior Attachment
 
     [Fact]
