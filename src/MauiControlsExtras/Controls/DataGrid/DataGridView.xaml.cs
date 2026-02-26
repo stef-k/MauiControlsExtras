@@ -130,6 +130,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private VirtualizingDataGridPanel? _frozenVirtualizingPanel;
 
     private bool _isUpdating;
+    private bool _isDistributingFill;
+    private double _lastDistributionWidth;
     private bool _isSyncingScroll;
     private DataGridColumn? _currentSortColumn;
     private object? _editingItem;
@@ -3914,9 +3916,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         ApplyFilters();
         ApplySort();
 
-        // Pre-measure FitHeader columns before building UI
-        PreMeasureFitHeaderColumns();
-
         // Build UI
         BuildHeader();
         BuildDataRows();
@@ -6008,9 +6007,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         return column.SizeMode switch
         {
             DataGridColumnSizeMode.Fixed => new GridLength(Math.Clamp(column.Width, column.MinWidth, column.MaxWidth)),
-            DataGridColumnSizeMode.FitHeader => new GridLength(Math.Clamp(
-                column.ActualWidth > 0 ? column.ActualWidth : column.MinWidth,
-                column.MinWidth, column.MaxWidth)),
+            DataGridColumnSizeMode.FitHeader => column.ActualWidth > 0
+                ? new GridLength(Math.Clamp(column.ActualWidth, column.MinWidth, column.MaxWidth))
+                : GridLength.Auto, // Auto until SyncColumnWidths locks to actual rendered width
             DataGridColumnSizeMode.Fill => column.ActualWidth > 0
                 ? new GridLength(column.ActualWidth)
                 : new GridLength(column.MinWidth), // Use MinWidth until first SizeChanged distributes
@@ -6065,6 +6064,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
+    /// <summary>
+    /// Calls <see cref="DistributeFillColumnWidths"/> with the <see cref="_isDistributingFill"/>
+    /// re-entrancy guard set. Use this from event handlers that may be re-triggered synchronously
+    /// by layout invalidation (e.g. SizeChanged on WinUI).
+    /// </summary>
+    private void DistributeFillColumnWidthsGuarded()
+    {
+        if (_isDistributingFill)
+            return;
+
+        _isDistributingFill = true;
+        try
+        {
+            DistributeFillColumnWidths();
+        }
+        finally
+        {
+            _isDistributingFill = false;
+        }
+    }
+
     private void DistributeFillColumnWidths()
     {
         var visibleColumns = GetVisibleColumns();
@@ -6076,9 +6096,15 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (fillColumns.Count == 0)
             return;
 
-        var totalWidth = Width;
-        if (totalWidth <= 0)
+        // Use the inner content area width (dataContainer), not the outer Width which
+        // includes Border StrokeThickness/padding. Using this.Width causes a feedback loop
+        // in content-sized layouts: the border overhead is mistaken for "extra space",
+        // Fill columns grow, content grows, Width grows, ad infinitum.
+        var totalWidth = dataContainer.Width;
+        if (totalWidth <= 0 || double.IsNaN(totalWidth) || double.IsInfinity(totalWidth))
             return;
+
+        _lastDistributionWidth = totalWidth;
 
         // Calculate width consumed by frozen columns
         double frozenConsumedWidth = 0;
@@ -6191,16 +6217,29 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnDataGridSizeChanged(object? sender, EventArgs e)
     {
-        // Guard against re-entrancy during BuildGrid
-        if (_isUpdating)
+        if (_isUpdating || _isDistributingFill)
             return;
 
-        // Recalculate Fill columns when the grid resizes
+        var currentWidth = dataContainer.Width;
+        if (currentWidth <= 0 || double.IsNaN(currentWidth) || double.IsInfinity(currentWidth))
+            return;
+
+        // Skip if width hasn't meaningfully changed (avoids redundant dispatches)
+        if (Math.Abs(currentWidth - _lastDistributionWidth) < 1.0)
+            return;
+
         var visibleColumns = GetVisibleColumns();
-        if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+        if (!visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+            return;
+
+        // CRITICAL: defer column width changes off the layout pass.
+        // Modifying ColumnDefinition.Width during SizeChanged causes
+        // LayoutCycleException on WinUI.
+        Dispatcher.Dispatch(() =>
         {
-            DistributeFillColumnWidths();
-        }
+            if (!_isUpdating && !_isDistributingFill)
+                DistributeFillColumnWidthsGuarded();
+        });
     }
 
     private void UpdateColumnWidth(int columnIndex, double newWidth)
@@ -6209,24 +6248,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var isFrozen = columnIndex < frozenCount;
         var adjustedIndex = isFrozen ? columnIndex : columnIndex - frozenCount;
 
-        // Update header grid
+        // Update header grid (skip if unchanged to avoid layout invalidation)
         var headerDefs = isFrozen ? frozenHeaderGrid.ColumnDefinitions : headerGrid.ColumnDefinitions;
-        if (adjustedIndex < headerDefs.Count)
+        if (adjustedIndex < headerDefs.Count && !IsGridLengthEqual(headerDefs[adjustedIndex].Width, newWidth))
             headerDefs[adjustedIndex].Width = new GridLength(newWidth);
 
         // Update data grid
         var dataDefs = isFrozen ? frozenDataGrid.ColumnDefinitions : dataGrid.ColumnDefinitions;
-        if (adjustedIndex < dataDefs.Count)
+        if (adjustedIndex < dataDefs.Count && !IsGridLengthEqual(dataDefs[adjustedIndex].Width, newWidth))
             dataDefs[adjustedIndex].Width = new GridLength(newWidth);
 
         // Update footer grid if visible
         if (ShowFooter)
         {
             var footerDefs = isFrozen ? frozenFooterGrid.ColumnDefinitions : footerGrid.ColumnDefinitions;
-            if (adjustedIndex < footerDefs.Count)
+            if (adjustedIndex < footerDefs.Count && !IsGridLengthEqual(footerDefs[adjustedIndex].Width, newWidth))
                 footerDefs[adjustedIndex].Width = new GridLength(newWidth);
         }
     }
+
+    private static bool IsGridLengthEqual(GridLength current, double newValue)
+        => current.IsAbsolute && Math.Abs(current.Value - newValue) < 0.5;
 
     private void ScheduleColumnWidthSync()
     {
@@ -6240,7 +6282,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void SynchronizeColumnWidths()
     {
-        if (_isUpdating)
+        if (_isUpdating || _isDistributingFill)
             return;
 
         var frozenColumns = GetFrozenColumns();
@@ -6255,7 +6297,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Re-distribute Fill columns now that Auto columns have accurate ActualWidth
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
-            DistributeFillColumnWidths();
+            DistributeFillColumnWidthsGuarded();
     }
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
@@ -6267,10 +6309,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             var column = columns[i];
 
-            // Skip columns with explicit widths (not Auto), Fill, and FitHeader (already have computed widths)
-            if (column.Width >= 0
-                || column.SizeMode == DataGridColumnSizeMode.Fill
-                || column.SizeMode == DataGridColumnSizeMode.FitHeader)
+            // Skip columns with explicit widths (not Auto) and Fill (proportionally distributed).
+            // FitHeader columns use Auto initially and get locked here after first layout.
+            if (column.SizeMode == DataGridColumnSizeMode.Fill)
+                continue;
+            if (column.SizeMode != DataGridColumnSizeMode.FitHeader && column.Width >= 0)
                 continue;
 
             // Get the actual rendered widths

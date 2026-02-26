@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **DataGrid**: Fix `StackOverflowException` crash when using `Fill` column sizing mode — re-entrant `SizeChanged` on WinUI caused infinite recursion during column width distribution
 - **Theming**: Controls now respond to MAUI `RequestedThemeChanged`, fixing theme-dependent properties not updating when toggling `UserAppTheme` at runtime (#258)
 
 ## [3.1.1] - 2026-02-26
