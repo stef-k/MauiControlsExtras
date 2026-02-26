@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Input;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Base.Validation;
@@ -1324,6 +1325,8 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
         }
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
     private void SetupItemTemplate()
     {
         // If a custom ItemTemplate is provided, wrap it with checkbox support
@@ -1347,7 +1350,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
                 {
                     VerticalOptions = LayoutOptions.Center
                 };
-                checkBox.SetBinding(CheckBox.ColorProperty, new Binding(nameof(EffectiveAccentColor), source: this));
+                checkBox.SetBinding(CheckBox.ColorProperty, static (MultiSelectComboBox c) => c.EffectiveAccentColor, source: this);
                 checkBox.CheckedChanged += OnItemCheckChanged;
                 Grid.SetColumn(checkBox, 0);
                 grid.Add(checkBox);
@@ -1412,7 +1415,7 @@ public partial class MultiSelectComboBox : TextStyledControlBase, IValidatable, 
             {
                 VerticalOptions = LayoutOptions.Center
             };
-            checkBox.SetBinding(CheckBox.ColorProperty, new Binding(nameof(EffectiveAccentColor), source: this));
+            checkBox.SetBinding(CheckBox.ColorProperty, static (MultiSelectComboBox c) => c.EffectiveAccentColor, source: this);
             checkBox.CheckedChanged += OnItemCheckChanged;
             Grid.SetColumn(checkBox, 0);
             grid.Add(checkBox);

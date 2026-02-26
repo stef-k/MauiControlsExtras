@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Base;
 using MauiControlsExtras.Helpers;
 
@@ -223,6 +224,8 @@ public partial class ComboBoxPopupContent : StyledControlBase
         UpdateFilteredItems(searchText);
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "Reflection fallback for non-AOT scenarios. Use DisplayMemberFunc for AOT compatibility.")]
     private void SetupItemTemplate()
     {
         var displayMemberPath = _displayMemberPath;

@@ -1021,9 +1021,9 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             Content = indicatorScrollView
         };
         stepIndicatorTop.SetBinding(Border.BackgroundColorProperty,
-            new Binding(nameof(EffectiveStepIndicatorBackgroundColor), source: this));
+            static (Wizard w) => w.EffectiveStepIndicatorBackgroundColor, source: this);
         stepIndicatorTop.SetBinding(Border.PaddingProperty,
-            new Binding(nameof(StepIndicatorPadding), source: this));
+            static (Wizard w) => w.StepIndicatorPadding, source: this);
 
         // Step title label
         stepTitleLabel = new Label
@@ -1031,11 +1031,11 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             Margin = new Thickness(0, 0, 0, 4)
         };
         stepTitleLabel.SetBinding(Label.FontSizeProperty,
-            new Binding(nameof(StepTitleFontSize), source: this));
+            static (Wizard w) => w.StepTitleFontSize, source: this);
         stepTitleLabel.SetBinding(Label.FontAttributesProperty,
-            new Binding(nameof(StepTitleFontAttributes), source: this));
+            static (Wizard w) => w.StepTitleFontAttributes, source: this);
         stepTitleLabel.SetBinding(Label.TextColorProperty,
-            new Binding(nameof(EffectiveForegroundColor), source: this));
+            static (Wizard w) => w.EffectiveForegroundColor, source: this);
 
         // Step description label
         stepDescriptionLabel = new Label
@@ -1092,9 +1092,9 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             BackgroundColor = Colors.Transparent
         };
         cancelButton.SetBinding(Button.TextProperty,
-            new Binding(nameof(CancelButtonText), source: this));
+            static (Wizard w) => w.CancelButtonText, source: this);
         cancelButton.SetBinding(Button.IsVisibleProperty,
-            new Binding(nameof(ShowCancelButton), source: this));
+            static (Wizard w) => w.ShowCancelButton, source: this);
         cancelButton.SetAppThemeColor(Button.TextColorProperty,
             Color.FromArgb("#666666"),
             Color.FromArgb("#AAAAAA"));
@@ -1107,7 +1107,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             Margin = new Thickness(0, 0, 8, 0)
         };
         skipButton.SetBinding(Button.TextProperty,
-            new Binding(nameof(SkipButtonText), source: this));
+            static (Wizard w) => w.SkipButtonText, source: this);
         skipButton.SetAppThemeColor(Button.TextColorProperty,
             Color.FromArgb("#666666"),
             Color.FromArgb("#AAAAAA"));
@@ -1118,14 +1118,14 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             Margin = new Thickness(0, 0, 8, 0)
         };
         backButton.SetBinding(Button.TextProperty,
-            new Binding(nameof(BackButtonText), source: this));
+            static (Wizard w) => w.BackButtonText, source: this);
         backButton.SetBinding(Button.IsVisibleProperty,
-            new Binding(nameof(ShowBackButton), source: this));
+            static (Wizard w) => w.ShowBackButton, source: this);
         backButton.SetAppThemeColor(Button.BackgroundColorProperty,
             Color.FromArgb("#E0E0E0"),
             Color.FromArgb("#404040"));
         backButton.SetBinding(Button.TextColorProperty,
-            new Binding(nameof(EffectiveForegroundColor), source: this));
+            static (Wizard w) => w.EffectiveForegroundColor, source: this);
         backButton.Clicked += OnBackClicked;
 
         nextButton = new Button
@@ -1133,9 +1133,9 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             TextColor = Colors.White
         };
         nextButton.SetBinding(Button.TextProperty,
-            new Binding(nameof(NextButtonText), source: this));
+            static (Wizard w) => w.NextButtonText, source: this);
         nextButton.SetBinding(Button.BackgroundColorProperty,
-            new Binding(nameof(EffectiveAccentColor), source: this));
+            static (Wizard w) => w.EffectiveAccentColor, source: this);
         nextButton.Clicked += OnNextClicked;
 
         // Navigation grid
@@ -1183,7 +1183,7 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
         // Corner radius shape
         var cornerRadiusShape = new RoundRectangle();
         cornerRadiusShape.SetBinding(RoundRectangle.CornerRadiusProperty,
-            new Binding(nameof(EffectiveCornerRadius), source: this));
+            static (Wizard w) => w.EffectiveCornerRadius, source: this);
 
         // Outer border
         var outerBorder = new Border
@@ -1192,9 +1192,9 @@ public partial class Wizard : NavigationControlBase, IKeyboardNavigable
             Content = mainGrid
         };
         outerBorder.SetBinding(Border.StrokeThicknessProperty,
-            new Binding(nameof(EffectiveBorderThickness), source: this));
+            static (Wizard w) => w.EffectiveBorderThickness, source: this);
         outerBorder.SetBinding(Border.StrokeProperty,
-            new Binding(nameof(CurrentBorderColor), source: this));
+            static (Wizard w) => w.CurrentBorderColor, source: this);
         outerBorder.SetAppThemeColor(Border.BackgroundColorProperty,
             Color.FromArgb("#FFFFFF"),
             Color.FromArgb("#1E1E1E"));
