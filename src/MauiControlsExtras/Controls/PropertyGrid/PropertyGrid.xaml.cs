@@ -1113,6 +1113,8 @@ public partial class PropertyGrid : HeaderedControlBase, IKeyboardNavigable
         return grid;
     }
 
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Enum type is discovered at runtime; AOT-safe path is RegisterMetadata().")]
     private View CreateEnumEditor(PropertyItem property, bool isReadOnly)
     {
         var values = Enum.GetValues(property.PropertyType);

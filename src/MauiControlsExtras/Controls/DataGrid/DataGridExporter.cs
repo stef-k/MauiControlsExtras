@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 
@@ -55,6 +56,8 @@ public static class DataGridExporter
     /// <summary>
     /// Exports data to JSON format.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes List<Dictionary<string, object?>> — genuinely dynamic by design.")]
     public static string ExportToJson(
         IEnumerable<object> items,
         IEnumerable<DataGridColumn> columns,
@@ -94,6 +97,8 @@ public static class DataGridExporter
     /// <summary>
     /// Exports data to JSON format asynchronously.
     /// </summary>
+    [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+        Justification = "Serializes List<Dictionary<string, object?>> — genuinely dynamic by design.")]
     public static async Task ExportToJsonAsync(
         Stream stream,
         IEnumerable<object> items,

@@ -4,7 +4,7 @@ namespace MauiControlsExtras.Helpers;
 
 /// <summary>
 /// Defines metadata for a single property, enabling AOT-safe property grid editing
-/// without runtime reflection. Register entries via <see cref="PropertyGrid.RegisterMetadata"/>.
+/// without runtime reflection. Register entries via <see cref="Controls.PropertyGrid.RegisterMetadata(Type, PropertyMetadataEntry[])"/>.
 /// </summary>
 public class PropertyMetadataEntry
 {

@@ -5,7 +5,7 @@ namespace MauiControlsExtras.Helpers;
 
 /// <summary>
 /// Static registry for AOT-safe property metadata. Register metadata for types that
-/// will be used with <see cref="PropertyGrid"/> to avoid runtime reflection.
+/// will be used with <see cref="Controls.PropertyGrid"/> to avoid runtime reflection.
 /// </summary>
 public static class PropertyMetadataRegistry
 {
