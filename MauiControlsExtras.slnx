@@ -3,9 +3,7 @@
     <Project Path="src/MauiControlsExtras/MauiControlsExtras.csproj" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests/MauiControlsExtras.Tests/MauiControlsExtras.Tests.csproj">
-      <Build Solution="Debug|*" Project="false" />
-    </Project>
+    <Project Path="tests/MauiControlsExtras.Tests/MauiControlsExtras.Tests.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/DemoApp/DemoApp.csproj">
