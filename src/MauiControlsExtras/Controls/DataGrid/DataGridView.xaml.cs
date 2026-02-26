@@ -3916,9 +3916,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         ApplyFilters();
         ApplySort();
 
-        // Pre-measure FitHeader columns before building UI
-        PreMeasureFitHeaderColumns();
-
         // Build UI
         BuildHeader();
         BuildDataRows();
@@ -6010,9 +6007,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         return column.SizeMode switch
         {
             DataGridColumnSizeMode.Fixed => new GridLength(Math.Clamp(column.Width, column.MinWidth, column.MaxWidth)),
-            DataGridColumnSizeMode.FitHeader => new GridLength(Math.Clamp(
-                column.ActualWidth > 0 ? column.ActualWidth : column.MinWidth,
-                column.MinWidth, column.MaxWidth)),
+            DataGridColumnSizeMode.FitHeader => column.ActualWidth > 0
+                ? new GridLength(Math.Clamp(column.ActualWidth, column.MinWidth, column.MaxWidth))
+                : GridLength.Auto, // Auto until SyncColumnWidths locks to actual rendered width
             DataGridColumnSizeMode.Fill => column.ActualWidth > 0
                 ? new GridLength(column.ActualWidth)
                 : new GridLength(column.MinWidth), // Use MinWidth until first SizeChanged distributes
@@ -6312,10 +6309,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             var column = columns[i];
 
-            // Skip columns with explicit widths (not Auto), Fill, and FitHeader (already have computed widths)
-            if (column.Width >= 0
-                || column.SizeMode == DataGridColumnSizeMode.Fill
-                || column.SizeMode == DataGridColumnSizeMode.FitHeader)
+            // Skip columns with explicit widths (not Auto) and Fill (proportionally distributed).
+            // FitHeader columns use Auto initially and get locked here after first layout.
+            if (column.SizeMode == DataGridColumnSizeMode.Fill)
+                continue;
+            if (column.SizeMode != DataGridColumnSizeMode.FitHeader && column.Width >= 0)
                 continue;
 
             // Get the actual rendered widths
