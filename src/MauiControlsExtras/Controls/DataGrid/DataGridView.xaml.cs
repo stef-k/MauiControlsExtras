@@ -6066,6 +6066,27 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
+    /// <summary>
+    /// Calls <see cref="DistributeFillColumnWidths"/> with the <see cref="_isDistributingFill"/>
+    /// re-entrancy guard set. Use this from event handlers that may be re-triggered synchronously
+    /// by layout invalidation (e.g. SizeChanged on WinUI).
+    /// </summary>
+    private void DistributeFillColumnWidthsGuarded()
+    {
+        if (_isDistributingFill)
+            return;
+
+        _isDistributingFill = true;
+        try
+        {
+            DistributeFillColumnWidths();
+        }
+        finally
+        {
+            _isDistributingFill = false;
+        }
+    }
+
     private void DistributeFillColumnWidths()
     {
         var visibleColumns = GetVisibleColumns();
@@ -6200,17 +6221,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Recalculate Fill columns when the grid resizes
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
-        {
-            _isDistributingFill = true;
-            try
-            {
-                DistributeFillColumnWidths();
-            }
-            finally
-            {
-                _isDistributingFill = false;
-            }
-        }
+            DistributeFillColumnWidthsGuarded();
     }
 
     private void UpdateColumnWidth(int columnIndex, double newWidth)
@@ -6265,17 +6276,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Re-distribute Fill columns now that Auto columns have accurate ActualWidth
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
-        {
-            _isDistributingFill = true;
-            try
-            {
-                DistributeFillColumnWidths();
-            }
-            finally
-            {
-                _isDistributingFill = false;
-            }
-        }
+            DistributeFillColumnWidthsGuarded();
     }
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
