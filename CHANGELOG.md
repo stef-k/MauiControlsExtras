@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-02-26
+
 ### Added
 
 - **DataGrid**: `DataGridColumnSizeMode` enum (`Auto`, `Fixed`, `FitHeader`, `Fill`) for per-column width behavior
@@ -371,6 +373,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.2.0 | 2026-02-26 | DataGrid column sizing modes (Fill, FitHeader), zero-warning build, IL2026/IL3050 AOT fixes, theme change responsiveness |
 | 3.1.0 | 2026-02-26 | SelectedIndex/SelectedIndices features, AOT/trimming fixes, DataGrid virtualization crash fix, ComboBox selection fixes |
 | 3.0.0 | 2026-02-25 | AOT/trimming safety for all controls, Func-based property accessors, PropertyMetadataRegistry (#232, #233) |
 | 2.1.8 | 2026-02-24 | DataGrid theme-reactive headers, pagination layout, picker centering, cell text colors (#231) |
