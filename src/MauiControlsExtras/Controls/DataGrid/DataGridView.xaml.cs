@@ -4022,11 +4022,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         BuildDataRows();
         BuildFooter();
 
-        // Initial Fill distribution (uses estimates for Auto columns).
-        // SynchronizeColumnWidths re-runs DistributeFillColumnWidths after Auto columns have accurate widths.
-        DistributeFillColumnWidths();
-
-        // Synchronize column widths after layout is complete
+        // Defer Fill distribution off the current call stack to avoid LayoutCycleException
+        // on WinUI — modifying ColumnDefinition.Width during a layout/binding pass causes
+        // a layout cycle. ScheduleColumnWidthSync handles the final sync after Auto columns
+        // have accurate widths.
         ScheduleColumnWidthSync();
 
         // Show/hide empty view
@@ -4459,8 +4458,18 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Use virtualization if enabled or if the dataset exceeds 2 screenfuls
         if (ShouldUseVirtualization())
         {
-            BuildVirtualizedRows();
-            return;
+            try
+            {
+                BuildVirtualizedRows();
+                return;
+            }
+            catch (Exception ex)
+            {
+                // Fall back to non-virtualized rendering if virtualization setup fails
+                // (e.g., WinUI exception from visual tree modification during layout)
+                Trace.TraceWarning($"[DataGridView] Virtualization setup failed, falling back to non-virtualized: {ex}");
+                ClearVirtualizationPanels();
+            }
         }
 
         // Clear any virtualization panels
