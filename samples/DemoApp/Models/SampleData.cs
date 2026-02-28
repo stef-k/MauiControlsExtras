@@ -127,29 +127,51 @@ public static class SampleData
         new("PL", "Poland", "\U0001F1F5\U0001F1F1")
     ];
 
-    public static List<Employee> Employees =>
-    [
-        new() { Id = 1, Name = "John Smith", Department = "Engineering", Salary = 85000, HireDate = new DateTime(2020, 3, 15), IsActive = true, Email = "john.smith@company.com" },
-        new() { Id = 2, Name = "Jane Doe", Department = "Marketing", Salary = 72000, HireDate = new DateTime(2019, 7, 22), IsActive = true, Email = "jane.doe@company.com" },
-        new() { Id = 3, Name = "Bob Johnson", Department = "Engineering", Salary = 95000, HireDate = new DateTime(2018, 1, 10), IsActive = true, Email = "bob.johnson@company.com" },
-        new() { Id = 4, Name = "Alice Williams", Department = "HR", Salary = 65000, HireDate = new DateTime(2021, 5, 3), IsActive = true, Email = "alice.williams@company.com" },
-        new() { Id = 5, Name = "Charlie Brown", Department = "Finance", Salary = 78000, HireDate = new DateTime(2020, 9, 18), IsActive = true, Email = "charlie.brown@company.com" },
-        new() { Id = 6, Name = "Diana Ross", Department = "Engineering", Salary = 92000, HireDate = new DateTime(2017, 11, 5), IsActive = true, Email = "diana.ross@company.com" },
-        new() { Id = 7, Name = "Edward King", Department = "Sales", Salary = 68000, HireDate = new DateTime(2022, 2, 14), IsActive = true, Email = "edward.king@company.com" },
-        new() { Id = 8, Name = "Fiona Green", Department = "Marketing", Salary = 75000, HireDate = new DateTime(2019, 4, 28), IsActive = false, Email = "fiona.green@company.com" },
-        new() { Id = 9, Name = "George Miller", Department = "Engineering", Salary = 88000, HireDate = new DateTime(2020, 6, 12), IsActive = true, Email = "george.miller@company.com" },
-        new() { Id = 10, Name = "Hannah White", Department = "Finance", Salary = 82000, HireDate = new DateTime(2018, 8, 30), IsActive = true, Email = "hannah.white@company.com" },
-        new() { Id = 11, Name = "Ivan Black", Department = "Engineering", Salary = 105000, HireDate = new DateTime(2015, 3, 20), IsActive = true, Email = "ivan.black@company.com" },
-        new() { Id = 12, Name = "Julia Adams", Department = "HR", Salary = 62000, HireDate = new DateTime(2023, 1, 8), IsActive = true, Email = "julia.adams@company.com" },
-        new() { Id = 13, Name = "Kevin Lee", Department = "Sales", Salary = 71000, HireDate = new DateTime(2021, 7, 15), IsActive = true, Email = "kevin.lee@company.com" },
-        new() { Id = 14, Name = "Laura Martinez", Department = "Marketing", Salary = 79000, HireDate = new DateTime(2019, 10, 25), IsActive = true, Email = "laura.martinez@company.com" },
-        new() { Id = 15, Name = "Michael Chen", Department = "Engineering", Salary = 98000, HireDate = new DateTime(2016, 12, 1), IsActive = true, Email = "michael.chen@company.com" },
-        new() { Id = 16, Name = "Nancy Taylor", Department = "Finance", Salary = 85000, HireDate = new DateTime(2018, 5, 17), IsActive = false, Email = "nancy.taylor@company.com" },
-        new() { Id = 17, Name = "Oscar Wilson", Department = "Engineering", Salary = 91000, HireDate = new DateTime(2019, 2, 8), IsActive = true, Email = "oscar.wilson@company.com" },
-        new() { Id = 18, Name = "Patricia Garcia", Department = "HR", Salary = 68000, HireDate = new DateTime(2020, 11, 30), IsActive = true, Email = "patricia.garcia@company.com" },
-        new() { Id = 19, Name = "Quincy Robinson", Department = "Sales", Salary = 74000, HireDate = new DateTime(2021, 4, 5), IsActive = true, Email = "quincy.robinson@company.com" },
-        new() { Id = 20, Name = "Rachel Clark", Department = "Marketing", Salary = 77000, HireDate = new DateTime(2022, 8, 22), IsActive = true, Email = "rachel.clark@company.com" }
-    ];
+    public static List<Employee> Employees { get; } = GenerateEmployees(500);
+
+    private static List<Employee> GenerateEmployees(int count)
+    {
+        var seeds = new (string Name, string Dept, decimal Salary, bool Active)[]
+        {
+            ("John Smith", "Engineering", 85000, true),
+            ("Jane Doe", "Marketing", 72000, true),
+            ("Bob Johnson", "Engineering", 95000, true),
+            ("Alice Williams", "HR", 65000, true),
+            ("Charlie Brown", "Finance", 78000, true),
+            ("Diana Ross", "Engineering", 92000, true),
+            ("Edward King", "Sales", 68000, true),
+            ("Fiona Green", "Marketing", 75000, false),
+            ("George Miller", "Engineering", 88000, true),
+            ("Hannah White", "Finance", 82000, true),
+            ("Ivan Black", "Engineering", 105000, true),
+            ("Julia Adams", "HR", 62000, true),
+            ("Kevin Lee", "Sales", 71000, true),
+            ("Laura Martinez", "Marketing", 79000, true),
+            ("Michael Chen", "Engineering", 98000, true),
+            ("Nancy Taylor", "Finance", 85000, false),
+            ("Oscar Wilson", "Engineering", 91000, true),
+            ("Patricia Garcia", "HR", 68000, true),
+            ("Quincy Robinson", "Sales", 74000, true),
+            ("Rachel Clark", "Marketing", 77000, true),
+        };
+
+        var baseDate = new DateTime(2015, 1, 1);
+        var random = new Random(42);
+        return Enumerable.Range(1, count).Select(i =>
+        {
+            var s = seeds[(i - 1) % seeds.Length];
+            return new Employee
+            {
+                Id = i,
+                Name = i <= seeds.Length ? s.Name : $"{s.Name} #{i}",
+                Department = s.Dept,
+                Salary = s.Salary + (i * 500),
+                HireDate = baseDate.AddDays(random.Next(0, 3650)),
+                IsActive = s.Active,
+                Email = $"{s.Name.ToLower().Replace(' ', '.')}.{i}@company.com",
+            };
+        }).ToList();
+    }
 
     public static List<string> Departments => ["Engineering", "Marketing", "HR", "Finance", "Sales", "Operations", "IT", "Legal"];
 

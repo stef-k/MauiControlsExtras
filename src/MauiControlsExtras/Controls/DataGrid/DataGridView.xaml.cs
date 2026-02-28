@@ -4804,9 +4804,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     private void UpdateDataCellContent(Grid container, object item, DataGridColumn column, int rowIndex, int colIndex, bool isSelected, bool isAlternate)
     {
-        // Update binding context and automation id
+        // Update binding context (AutomationId is set once in CreateDataCell; it is
+        // immutable in MAUI and would throw on reassignment)
         container.BindingContext = item;
-        container.AutomationId = $"cell_{rowIndex}_{colIndex}";
 
         // Update background
         UpdateCellBackground(container, rowIndex, colIndex, isSelected, isAlternate);
