@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace MauiControlsExtras.Controls;
 
 /// <summary>
@@ -7,7 +9,7 @@ internal static class PopupOverlayHelper
 {
     private const double DefaultPopupHeight = 280.0;
     private const double DefaultPopupWidth = 250.0;
-    private const string OverlayWrapperStyleId = "__ComboBoxOverlayWrapper__";
+    private static readonly ConditionalWeakTable<ContentPage, Grid> _wrapperCache = new();
 
     /// <summary>
     /// Gets the bounds of a view relative to the specified container,
@@ -142,22 +144,51 @@ internal static class PopupOverlayHelper
     /// regardless of the original content's layout type (StackLayout, Grid with
     /// rows, etc.).
     /// </summary>
+    /// <remarks>
+    /// The wrapper Grid is intentionally persistent — it is never removed in
+    /// <see cref="Dismiss"/>. This is by design for several reasons:
+    /// <list type="bullet">
+    ///   <item><description>
+    ///     <b>Safety</b>: <see cref="Dismiss"/> is called from the <c>onPageSizeChanged</c>
+    ///     handler — reparenting content during <c>SizeChanged</c> risks re-entrant layout
+    ///     exceptions. The project already fixed a <c>StackOverflowException</c> from
+    ///     re-entrant <c>SizeChanged</c> in DataGrid (see CHANGELOG v3.2.0).
+    ///   </description></item>
+    ///   <item><description>
+    ///     <b>Race condition</b>: rapid open/close sequences could cause
+    ///     "specified child already has a parent" exceptions on Android if the wrapper
+    ///     were removed and re-created.
+    ///   </description></item>
+    ///   <item><description>
+    ///     <b>Harmless</b>: the wrapper is layout-neutral (empty Grid, pass-through
+    ///     for a single child) with zero visual impact.
+    ///   </description></item>
+    ///   <item><description>
+    ///     <b>Auto-cleanup</b>: <see cref="ConditionalWeakTable{TKey, TValue}"/> weak
+    ///     references release dead pages automatically; stale-wrapper detection handles
+    ///     content replacement between calls.
+    ///   </description></item>
+    /// </list>
+    /// </remarks>
     private static Layout EnsureRootLayout(Page page)
     {
         if (page is not ContentPage contentPage)
             throw new InvalidOperationException("Cannot find a Layout in the Page to host the popup overlay. The Page must be a ContentPage.");
 
-        // Already wrapped by a previous call — reuse.
-        if (contentPage.Content is Grid grid && grid.StyleId == OverlayWrapperStyleId)
-            return grid;
+        // Already wrapped by a previous call — reuse if the cached wrapper
+        // is still the page's content.
+        if (_wrapperCache.TryGetValue(contentPage, out var cached) && contentPage.Content == cached)
+            return cached;
 
         // Wrap existing content in a plain Grid (no RowDefinitions/ColumnDefinitions)
         // so that the overlay can cover the full page area.
-        var wrapper = new Grid { StyleId = OverlayWrapperStyleId };
+        var wrapper = new Grid();
         var originalContent = contentPage.Content;
         contentPage.Content = wrapper;
         if (originalContent != null)
             wrapper.Children.Add(originalContent);
+
+        _wrapperCache.AddOrUpdate(contentPage, wrapper);
 
         return wrapper;
     }
