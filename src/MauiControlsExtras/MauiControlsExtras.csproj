@@ -22,7 +22,7 @@
 
 		<!-- NuGet Package Metadata -->
 		<PackageId>StefK.MauiControlsExtras</PackageId>
-		<Version>3.2.0</Version>
+		<Version>3.3.0</Version>
 		<Authors>stef-k</Authors>
 		<Company>stef-k</Company>
 		<Product>MAUI Controls Extras</Product>
