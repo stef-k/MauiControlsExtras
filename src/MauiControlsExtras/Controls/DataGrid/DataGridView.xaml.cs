@@ -1035,7 +1035,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(ShowDefaultContextMenu),
         typeof(bool),
         typeof(DataGridView),
-        true);
+        true,
+        propertyChanged: OnContextMenuPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="ContextMenuTemplate"/> bindable property.
@@ -1044,7 +1045,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(ContextMenuTemplate),
         typeof(DataTemplate),
         typeof(DataGridView),
-        null);
+        null,
+        propertyChanged: OnContextMenuPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="ContextMenuItems"/> bindable property.
@@ -1053,7 +1055,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(ContextMenuItems),
         typeof(ContextMenuItemCollection),
         typeof(DataGridView),
-        null);
+        null,
+        propertyChanged: OnContextMenuPropertyChanged);
 
     #endregion
 
@@ -3637,6 +3640,16 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     // 3,500 cells), we attach ONE right-click/long-press handler per ScrollView (2 total).
     // At event time, we hit-test the content Grid to find which cell was targeted.
 
+    private static void OnContextMenuPropertyChanged(BindableObject bindable, object oldValue, object newValue)
+    {
+        if (bindable is DataGridView grid)
+        {
+            // Re-try attaching handlers if a context menu property is set after initial load
+            grid.AttachGridLevelContextMenuHandlers(grid.dataScrollView, grid._dataScrollViewContextMenu, isFrozen: false);
+            grid.AttachGridLevelContextMenuHandlers(grid.frozenDataScrollView, grid._frozenScrollViewContextMenu, isFrozen: true);
+        }
+    }
+
     private void OnDataScrollViewHandlerChanged(object? sender, EventArgs e)
     {
         AttachGridLevelContextMenuHandlers(dataScrollView, _dataScrollViewContextMenu, isFrozen: false);
@@ -3667,7 +3680,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 // Convert viewport-relative coords to content coords by adding scroll offset
                 var contentX = winPos.X + scrollView.ScrollX;
                 var contentY = winPos.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, new Point(winPos.X, winPos.Y), isFrozen);
+                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
             };
             element.RightTapped += state.RightTappedHandler;
 
@@ -3680,7 +3693,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 var winPos = args.GetPosition(element);
                 var contentX = winPos.X + scrollView.ScrollX;
                 var contentY = winPos.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, new Point(winPos.X, winPos.Y), isFrozen);
+                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
             };
             element.Holding += state.HoldingHandler;
         }
@@ -3693,7 +3706,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 var location = gesture.LocationInView(uiView);
                 var contentX = location.X + scrollView.ScrollX;
                 var contentY = location.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, new Point(location.X, location.Y), isFrozen);
+                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
             });
             state.SecondaryClickRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
             uiView.AddGestureRecognizer(state.SecondaryClickRecognizer);
@@ -3707,7 +3720,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 var location = gesture.LocationInView(uiView);
                 var contentX = location.X + scrollView.ScrollX;
                 var contentY = location.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, new Point(location.X, location.Y), isFrozen);
+                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
             });
             state.LongPressRecognizer.MinimumPressDuration = LongPressDurationSeconds;
             uiView.AddGestureRecognizer(state.LongPressRecognizer);
@@ -3738,7 +3751,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 var viewportPos = isFrozen ? _androidFrozenScrollLastTouch : _androidDataScrollLastTouch;
                 var contentX = viewportPos.X + scrollView.ScrollX;
                 var contentY = viewportPos.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, viewportPos, isFrozen);
+                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
             };
             androidView.LongClick += state.LongClickHandler;
         }
@@ -3812,7 +3825,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// Hit-tests content coordinates to find the cell container, then dispatches the context menu.
     /// Works for both non-virtualized (dataGrid) and virtualized (_virtualizingPanel) modes.
     /// </summary>
-    private void HandleGridLevelContextMenu(double contentX, double contentY, Point viewportPosition, bool isFrozen)
+    private void HandleGridLevelContextMenu(double contentX, double contentY, bool isFrozen)
     {
         // Determine the content grid to search
         Layout contentGrid;
@@ -4331,20 +4344,25 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var viewportHeight = dataScrollView.Height;
         if (viewportHeight <= 0 || double.IsNaN(viewportHeight))
             viewportHeight = 400; // sensible fallback before layout
-        return Math.Max(1, (int)(viewportHeight / RowHeight));
+        var effectiveRowHeight = RowHeight > 0 ? RowHeight : 44.0;
+        return Math.Max(1, (int)(viewportHeight / effectiveRowHeight));
     }
 
     /// <summary>
     /// Determines whether virtualization should be used for the current dataset.
     /// Returns true if the user explicitly enabled it, or if the item count
     /// exceeds twice the viewport capacity (auto-virtualization).
+    /// Uses hysteresis: once auto-virtualization is active, only disengages when
+    /// items drop below 1 screenful (instead of 2) to prevent flip-flop on resize.
     /// </summary>
     private bool ShouldUseVirtualization()
     {
         if (EnableVirtualization)
             return true;
         var capacity = GetVisibleRowCapacity();
-        return _sortedItems.Count > capacity * 2;
+        // Hysteresis: if already auto-virtualized, use lower threshold to disengage
+        var threshold = _virtualizingPanel != null ? capacity : capacity * 2;
+        return _sortedItems.Count > threshold;
     }
 
     private void BuildDataRows()
