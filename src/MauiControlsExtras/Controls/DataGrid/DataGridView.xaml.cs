@@ -4291,46 +4291,44 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             return false;
 
         // Item count changed (last page, page size change) — row definitions don't match
-        if (dataGrid.RowDefinitions.Count != displayItems.Count)
+        if (dataGrid.RowDefinitions.Count != displayItems.Count ||
+            frozenDataGrid.RowDefinitions.Count != displayItems.Count)
             return false;
 
-        // No existing cells to update
-        if (dataGrid.Children.Count == 0 && frozenDataGrid.Children.Count == 0)
+        // Verify expected cell counts: rows * columns for each grid
+        if (dataGrid.Children.Count != displayItems.Count * scrollableColumns.Count ||
+            frozenDataGrid.Children.Count != displayItems.Count * frozenColumns.Count)
             return false;
 
         var sortedIndex = BuildSortedItemsIndex();
 
+        // Cells are laid out in row-major order (row 0 col 0, row 0 col 1, ..., row 1 col 0, ...).
+        // Direct index calculation: childIndex = displayIndex * columnCount + colIndex.
         for (int displayIndex = 0; displayIndex < displayItems.Count; displayIndex++)
         {
             var item = displayItems[displayIndex];
-            sortedIndex.TryGetValue(item, out var actualRowIndex);
+            var actualRowIndex = sortedIndex.TryGetValue(item, out var idx) ? idx : -1;
             var isSelected = _selectedItems.Contains(item);
             var isAlternate = displayIndex % 2 == 1;
 
-            // Update frozen cells
-            foreach (var child in frozenDataGrid.Children)
+            // Update frozen cells via direct index
+            for (int colIndex = 0; colIndex < frozenColumns.Count; colIndex++)
             {
-                if (child is Grid cell && Grid.GetRow(cell) == displayIndex)
+                var childIndex = displayIndex * frozenColumns.Count + colIndex;
+                if (frozenDataGrid.Children[childIndex] is Grid cell)
                 {
-                    var colIndex = Grid.GetColumn(cell);
-                    if (colIndex < frozenColumns.Count)
-                    {
-                        UpdateDataCellContent(cell, item, frozenColumns[colIndex], actualRowIndex, colIndex, isSelected, isAlternate);
-                    }
+                    UpdateDataCellContent(cell, item, frozenColumns[colIndex], actualRowIndex, colIndex, isSelected, isAlternate);
                 }
             }
 
-            // Update scrollable cells
-            foreach (var child in dataGrid.Children)
+            // Update scrollable cells via direct index
+            for (int colIndex = 0; colIndex < scrollableColumns.Count; colIndex++)
             {
-                if (child is Grid cell && Grid.GetRow(cell) == displayIndex)
+                var childIndex = displayIndex * scrollableColumns.Count + colIndex;
+                if (dataGrid.Children[childIndex] is Grid cell)
                 {
-                    var colIndex = Grid.GetColumn(cell);
-                    if (colIndex < scrollableColumns.Count)
-                    {
-                        var fullColIndex = colIndex + frozenColumns.Count;
-                        UpdateDataCellContent(cell, item, scrollableColumns[colIndex], actualRowIndex, fullColIndex, isSelected, isAlternate);
-                    }
+                    var fullColIndex = colIndex + frozenColumns.Count;
+                    UpdateDataCellContent(cell, item, scrollableColumns[colIndex], actualRowIndex, fullColIndex, isSelected, isAlternate);
                 }
             }
         }
@@ -4403,7 +4401,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             dataGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(RowHeight) });
 
             var item = displayItems[displayIndex];
-            sortedIndex.TryGetValue(item, out var actualRowIndex);
+            var actualRowIndex = sortedIndex.TryGetValue(item, out var idx) ? idx : -1;
             var isSelected = _selectedItems.Contains(item);
             var isAlternate = displayIndex % 2 == 1;
 
@@ -5472,7 +5470,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 UpdateGridValidationState();
 
                 // Use targeted refresh when virtualization is active to avoid full panel rebuild
-                if (EnableVirtualization && !EnablePagination && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
+                if (EnableVirtualization && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
                     RefreshVirtualizedCell(_editingRowIndex, _editingColumnIndex);
                 else
                     BuildDataRows();
@@ -5596,7 +5594,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _originalCellContent = null;
 
         // Use targeted refresh when virtualization is active to avoid full panel rebuild
-        if (EnableVirtualization && !EnablePagination && editedRowIndex >= 0 && editedColIndex >= 0)
+        if (EnableVirtualization && editedRowIndex >= 0 && editedColIndex >= 0)
         {
             RefreshVirtualizedCell(editedRowIndex, editedColIndex);
             return;
@@ -5661,7 +5659,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private Grid? FindCellContainer(int rowIndex, int colIndex)
     {
         // Virtualized path: cells live inside the virtualizing panels, not the static grids
-        if (EnableVirtualization && !EnablePagination)
+        if (EnableVirtualization)
             return FindCellContainerVirtualized(rowIndex, colIndex);
 
         var frozenColumns = GetFrozenColumns();
@@ -6776,7 +6774,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Update virtualization panels if active
-        if (EnableVirtualization && !EnablePagination && _virtualizingPanel != null)
+        if (EnableVirtualization && _virtualizingPanel != null)
         {
             // Auto-commit any active edit before recycling rows to prevent data loss
             if (_editingItem != null && _editingRowIndex >= 0)
@@ -6996,7 +6994,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             PageSize = newSize;
             CurrentPage = 1;
-            BuildDataRows();
+            // Use same fast-path routing as OnPaginationChanged
+            if (EnableVirtualization)
+                UpdateVirtualizedDataForPageChange();
+            else
+                BuildDataRows(); // Row count changes, so TryUpdateDataRowsInPlace would return false
             UpdatePaginationUI();
         }
     }
