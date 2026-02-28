@@ -4679,6 +4679,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (row is not Grid rowGrid)
             return;
 
+        // Sync ColumnDefinitions to latest column.ActualWidth (Fill/FitHeader may have
+        // changed since this row was created or last recycled).
+        SyncRowGridColumnWidths(rowGrid, columns);
+
         var isSelected = _selectedItems.Contains(item);
         var isAlternate = rowIndex % 2 == 1;
 
@@ -6597,7 +6601,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         Dispatcher.Dispatch(() =>
         {
             if (!_isUpdating && !_isDistributingFill)
+            {
                 DistributeFillColumnWidthsGuarded();
+                SyncVirtualizedRowColumnWidths();
+            }
         });
     }
 
@@ -6670,6 +6677,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
             DistributeFillColumnWidthsGuarded();
+
+        // Propagate final column widths to all visible virtualized row Grids.
+        // Virtualized rows have independent ColumnDefinitions that don't auto-sync
+        // with the header/footer grids — they must be updated explicitly.
+        SyncVirtualizedRowColumnWidths();
     }
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
@@ -6709,6 +6721,43 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 // Update the column's actual width
                 column.ActualWidth = maxWidth;
             }
+        }
+    }
+
+    private void SyncVirtualizedRowColumnWidths()
+    {
+        var scrollableColumns = GetScrollableColumns();
+        var frozenColumns = GetFrozenColumns();
+
+        if (_virtualizingPanel != null)
+            SyncPanelRowColumnWidths(_virtualizingPanel, scrollableColumns);
+        if (_frozenVirtualizingPanel != null)
+            SyncPanelRowColumnWidths(_frozenVirtualizingPanel, frozenColumns);
+    }
+
+    private void SyncPanelRowColumnWidths(VirtualizingDataGridPanel panel, List<DataGridColumn> columns)
+    {
+        foreach (var child in panel.Children)
+        {
+            if (child is Grid rowGrid)
+                SyncRowGridColumnWidths(rowGrid, columns);
+        }
+    }
+
+    private void SyncRowGridColumnWidths(Grid rowGrid, List<DataGridColumn> columns)
+    {
+        for (int i = 0; i < columns.Count && i < rowGrid.ColumnDefinitions.Count; i++)
+        {
+            var newWidth = ResolveColumnWidth(columns[i]);
+            var current = rowGrid.ColumnDefinitions[i].Width;
+
+            // Skip if unchanged to avoid unnecessary layout invalidation
+            if (newWidth.IsAbsolute && current.IsAbsolute && Math.Abs(newWidth.Value - current.Value) < 0.5)
+                continue;
+            if (newWidth.GridUnitType == current.GridUnitType && Math.Abs(newWidth.Value - current.Value) < 0.5)
+                continue;
+
+            rowGrid.ColumnDefinitions[i].Width = newWidth;
         }
     }
 

@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGrid**: Fix context menu position drift on lower rows — use cell-relative coordinates instead of viewport-relative for `MenuFlyout.ShowAt` anchor (#268)
 - **DataGrid**: Fix Fill column sizing requiring window maximize — add `HorizontalOptions="FillAndExpand"` to `dataContainer` so it inherits valid width at first layout (#268)
 - **DataGrid**: Prevent `COMException 0x80004005` in WinUI measure pass — `VirtualizingDataGridPanel.Measure` no longer returns `PositiveInfinity` as desired width when inside a horizontal ScrollView (#268)
+- **DataGrid**: Fix column widths not propagating to virtualized rows — Fill/FitHeader column widths are now synced to all visible virtualized row Grids after distribution, and recycled rows pick up latest widths on reuse (#268)
 - **ComboBox**: Fix popup appearing on the first ComboBox when a second instance is clicked — overlay now always uses a dedicated wrapper Grid so it covers the full page regardless of the original layout type (StackLayout, Grid with RowDefinitions, etc.) (#267)
 - **ComboBox**: Replace `StyleId`-based wrapper detection with `ConditionalWeakTable` for cleaner page-wrapper tracking in `PopupOverlayHelper` (#267)
 
