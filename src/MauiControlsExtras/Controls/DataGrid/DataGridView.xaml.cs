@@ -4016,9 +4016,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         ApplyFilters();
         ApplySort();
 
-        // Build UI
-        BuildHeader();
+        // Build UI — PreMeasure before BuildHeader so FitHeader columns
+        // have ActualWidth set when ResolveColumnWidth is called for headers.
         PreMeasureFitHeaderColumns();
+        BuildHeader();
         BuildDataRows();
         BuildFooter();
 
@@ -4202,11 +4203,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             VerticalOptions = LayoutOptions.Center
         };
 
-        // Header text
+        // Header text — prevent wrapping so FitHeader measurement matches rendering
         var headerLabel = new Label
         {
             Text = column.Header,
+            FontSize = 14,
             FontAttributes = FontAttributes.Bold,
+            MaxLines = 1,
+            LineBreakMode = LineBreakMode.NoWrap,
             VerticalOptions = LayoutOptions.Center,
             TextColor = EffectiveForegroundColor
         };
@@ -6563,18 +6567,40 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void OnDataContainerSizeChanged(object? sender, EventArgs e)
     {
-        if (!_pendingFillSync || _isUpdating || _isDistributingFill)
+        if (_isUpdating || _isDistributingFill)
             return;
 
         var width = dataContainer.Width;
         if (width <= 0 || double.IsNaN(width) || double.IsInfinity(width))
             return;
 
-        _pendingFillSync = false;
+        // First-time sync after BuildGrid — run full SynchronizeColumnWidths
+        if (_pendingFillSync)
+        {
+            _pendingFillSync = false;
+            Dispatcher.Dispatch(() =>
+            {
+                if (!_isUpdating && !_isDistributingFill)
+                    SynchronizeColumnWidths();
+            });
+            return;
+        }
+
+        // Subsequent resize — redistribute Fill columns when container width changes
+        if (Math.Abs(width - _lastDistributionWidth) < 1.0)
+            return;
+
+        var visibleColumns = GetVisibleColumns();
+        if (!visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+            return;
+
         Dispatcher.Dispatch(() =>
         {
             if (!_isUpdating && !_isDistributingFill)
-                SynchronizeColumnWidths();
+            {
+                DistributeFillColumnWidthsGuarded();
+                SyncVirtualizedRowColumnWidths();
+            }
         });
     }
 

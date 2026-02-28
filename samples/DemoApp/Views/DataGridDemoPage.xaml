@@ -73,25 +73,22 @@
             </Grid>
         </Frame>
 
-        <!-- DataGrid -->
+        <!-- DataGrid — no external ScrollView needed; the control handles its own scrolling.
+             An outer horizontal ScrollView would prevent Fill columns from seeing the viewport width. -->
         <Frame Grid.Row="2" Style="{StaticResource DemoCardStyle}" Padding="0">
-            <ScrollView Orientation="Horizontal">
-                <Grid MinimumHeightRequest="300"
-                      WidthRequest="{OnIdiom Phone=980, Tablet=1200, Desktop=-1}">
-                    <extras:DataGridView x:Name="dataGrid"
-                                         ItemsSource="{Binding Employees}"
-                                         SelectedItem="{Binding SelectedEmployee}"
-                                         CanUserSort="{Binding CanUserSort}"
-                                         CanUserFilter="{Binding CanUserFilter}"
-                                         CanUserEdit="{Binding CanUserEdit}"
-                                         EnablePagination="{Binding EnablePagination}"
-                                         ShowDefaultContextMenu="True"
-                                         AutoGenerateColumns="False"
-                                         VerticalOptions="FillAndExpand"
-                                         HorizontalOptions="FillAndExpand"
-                                         SelectionChanged="OnSelectionChanged" />
-                </Grid>
-            </ScrollView>
+            <extras:DataGridView x:Name="dataGrid"
+                                 ItemsSource="{Binding Employees}"
+                                 SelectedItem="{Binding SelectedEmployee}"
+                                 CanUserSort="{Binding CanUserSort}"
+                                 CanUserFilter="{Binding CanUserFilter}"
+                                 CanUserEdit="{Binding CanUserEdit}"
+                                 EnablePagination="{Binding EnablePagination}"
+                                 ShowDefaultContextMenu="True"
+                                 AutoGenerateColumns="False"
+                                 VerticalOptions="FillAndExpand"
+                                 HorizontalOptions="FillAndExpand"
+                                 MinimumHeightRequest="300"
+                                 SelectionChanged="OnSelectionChanged" />
         </Frame>
 
         <!-- Status -->
