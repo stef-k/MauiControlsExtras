@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ComboBox**: Fix popup appearing on the first ComboBox when a second instance is clicked — overlay now always uses a dedicated wrapper Grid so it covers the full page regardless of the original layout type (StackLayout, Grid with RowDefinitions, etc.) (#267)
+
 ## [3.2.0] - 2026-02-26
 
 ### Added
