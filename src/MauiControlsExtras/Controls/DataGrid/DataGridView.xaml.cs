@@ -3642,11 +3642,23 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private static void OnContextMenuPropertyChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        if (bindable is DataGridView grid)
+        if (bindable is not DataGridView grid)
+            return;
+
+        // Use GetValue to avoid ContextMenuItems getter's lazy auto-creation (which would recurse)
+        var wantsContextMenu = grid.ShowDefaultContextMenu
+            || grid.ContextMenuTemplate != null
+            || (grid.GetValue(ContextMenuItemsProperty) is ContextMenuItemCollection c && c.Count > 0);
+
+        if (wantsContextMenu)
         {
-            // Re-try attaching handlers if a context menu property is set after initial load
             grid.AttachGridLevelContextMenuHandlers(grid.dataScrollView, grid._dataScrollViewContextMenu, isFrozen: false);
             grid.AttachGridLevelContextMenuHandlers(grid.frozenDataScrollView, grid._frozenScrollViewContextMenu, isFrozen: true);
+        }
+        else
+        {
+            grid.DetachGridLevelContextMenuHandlers(grid.dataScrollView, grid._dataScrollViewContextMenu);
+            grid.DetachGridLevelContextMenuHandlers(grid.frozenDataScrollView, grid._frozenScrollViewContextMenu);
         }
     }
 
@@ -3829,14 +3841,46 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         // Determine the content grid to search
         Layout contentGrid;
+        bool isVirtualized;
         if (isFrozen)
+        {
+            isVirtualized = _frozenVirtualizingPanel != null;
             contentGrid = _frozenVirtualizingPanel as Layout ?? frozenDataGrid;
+        }
         else
+        {
+            isVirtualized = _virtualizingPanel != null;
             contentGrid = _virtualizingPanel as Layout ?? dataGrid;
+        }
 
-        var cell = FindCellContainerAtPosition(contentGrid, contentX, contentY);
-        if (cell == null)
-            return;
+        Grid? cell;
+        double cellAbsoluteX, cellAbsoluteY;
+
+        if (isVirtualized)
+        {
+            // Two-level: virtualizing panel children are row Grids, cells are nested inside
+            var row = FindChildAtPosition(contentGrid, contentX, contentY);
+            if (row is not Grid rowGrid)
+                return;
+
+            // Cell Frame.X is relative to the row; contentX equals row-relative X since row.Frame.X == 0
+            cell = FindChildAtPosition(rowGrid, contentX, contentY - rowGrid.Frame.Y) as Grid;
+            if (cell == null)
+                return;
+
+            cellAbsoluteX = rowGrid.Frame.X + cell.Frame.X;
+            cellAbsoluteY = rowGrid.Frame.Y + cell.Frame.Y;
+        }
+        else
+        {
+            // Flat grid: cells are direct children with content-space Frames
+            cell = FindChildAtPosition(contentGrid, contentX, contentY) as Grid;
+            if (cell == null)
+                return;
+
+            cellAbsoluteX = cell.Frame.X;
+            cellAbsoluteY = cell.Frame.Y;
+        }
 
         if (!_cellMetadata.TryGetValue(cell, out var meta))
             return;
@@ -3844,24 +3888,24 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (ShouldSuppressContextMenu(meta.RowIndex, meta.ColIndex))
             return;
 
-        var cellRelativePosition = new Point(contentX - cell.Frame.X, contentY - cell.Frame.Y);
+        var cellRelativePosition = new Point(contentX - cellAbsoluteX, contentY - cellAbsoluteY);
         DispatchShowContextMenuSafely(meta.Item, meta.Column, meta.RowIndex, meta.ColIndex, cellRelativePosition, cell);
     }
 
     /// <summary>
-    /// Finds the cell container (Grid) at the given content-space coordinates.
-    /// Uses Frame-based hit testing which works for both flat Grid children and virtualizing panel children.
+    /// Finds the first child view at the given coordinates within a layout.
+    /// Coordinates are relative to the layout's content space.
     /// </summary>
-    private static Grid? FindCellContainerAtPosition(Layout grid, double contentX, double contentY)
+    private static View? FindChildAtPosition(Layout grid, double x, double y)
     {
         foreach (var child in grid.Children)
         {
-            if (child is Grid cell && cell.Frame.Width > 0)
+            if (child is View view && view.Frame.Width > 0)
             {
-                var f = cell.Frame;
-                if (contentX >= f.X && contentX < f.X + f.Width &&
-                    contentY >= f.Y && contentY < f.Y + f.Height)
-                    return cell;
+                var f = view.Frame;
+                if (x >= f.X && x < f.X + f.Width &&
+                    y >= f.Y && y < f.Y + f.Height)
+                    return view;
             }
         }
         return null;
