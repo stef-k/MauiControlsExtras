@@ -3831,7 +3831,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (ShouldSuppressContextMenu(meta.RowIndex, meta.ColIndex))
             return;
 
-        DispatchShowContextMenuSafely(meta.Item, meta.Column, meta.RowIndex, meta.ColIndex, viewportPosition, cell);
+        var cellRelativePosition = new Point(contentX - cell.Frame.X, contentY - cell.Frame.Y);
+        DispatchShowContextMenuSafely(meta.Item, meta.Column, meta.RowIndex, meta.ColIndex, cellRelativePosition, cell);
     }
 
     /// <summary>
@@ -4257,7 +4258,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private bool TryUpdateDataRowsInPlace()
     {
         // Virtualized mode has its own fast path (UpdateVirtualizedDataForPageChange)
-        if (EnableVirtualization)
+        if (_virtualizingPanel != null)
             return false;
 
         // Row details make grid row indices unpredictable — fall back to full rebuild
@@ -4321,10 +4322,35 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         return true;
     }
 
+    /// <summary>
+    /// Returns the number of data rows that fit in the current viewport.
+    /// Falls back to 400px when the viewport height is not yet available.
+    /// </summary>
+    private int GetVisibleRowCapacity()
+    {
+        var viewportHeight = dataScrollView.Height;
+        if (viewportHeight <= 0 || double.IsNaN(viewportHeight))
+            viewportHeight = 400; // sensible fallback before layout
+        return Math.Max(1, (int)(viewportHeight / RowHeight));
+    }
+
+    /// <summary>
+    /// Determines whether virtualization should be used for the current dataset.
+    /// Returns true if the user explicitly enabled it, or if the item count
+    /// exceeds twice the viewport capacity (auto-virtualization).
+    /// </summary>
+    private bool ShouldUseVirtualization()
+    {
+        if (EnableVirtualization)
+            return true;
+        var capacity = GetVisibleRowCapacity();
+        return _sortedItems.Count > capacity * 2;
+    }
+
     private void BuildDataRows()
     {
-        // Use virtualization if enabled
-        if (EnableVirtualization)
+        // Use virtualization if enabled or if the dataset exceeds 2 screenfuls
+        if (ShouldUseVirtualization())
         {
             BuildVirtualizedRows();
             return;
@@ -4454,8 +4480,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Feed page slice when paginated, all items otherwise
         var displayItems = GetDisplayItems();
 
+        var dynamicBuffer = GetVisibleRowCapacity();
         _virtualizingPanel.RowHeight = RowHeight;
-        _virtualizingPanel.BufferSize = VirtualizationBufferSize;
+        _virtualizingPanel.BufferSize = EnableVirtualization ? VirtualizationBufferSize : dynamicBuffer;
         _virtualizingPanel.ItemsSource = displayItems;
         _virtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, scrollableColumns, frozenColumns.Count);
         _virtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, scrollableColumns, frozenColumns.Count);
@@ -4471,7 +4498,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
 
             _frozenVirtualizingPanel.RowHeight = RowHeight;
-            _frozenVirtualizingPanel.BufferSize = VirtualizationBufferSize;
+            _frozenVirtualizingPanel.BufferSize = EnableVirtualization ? VirtualizationBufferSize : dynamicBuffer;
             _frozenVirtualizingPanel.ItemsSource = displayItems;
             _frozenVirtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, frozenColumns, 0);
             _frozenVirtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, frozenColumns, 0);
@@ -5434,7 +5461,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 UpdateGridValidationState();
 
                 // Use targeted refresh when virtualization is active to avoid full panel rebuild
-                if (EnableVirtualization && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
+                if (_virtualizingPanel != null && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
                     RefreshVirtualizedCell(_editingRowIndex, _editingColumnIndex);
                 else
                     BuildDataRows();
@@ -5558,7 +5585,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _originalCellContent = null;
 
         // Use targeted refresh when virtualization is active to avoid full panel rebuild
-        if (EnableVirtualization && editedRowIndex >= 0 && editedColIndex >= 0)
+        if (_virtualizingPanel != null && editedRowIndex >= 0 && editedColIndex >= 0)
         {
             RefreshVirtualizedCell(editedRowIndex, editedColIndex);
             return;
@@ -5623,7 +5650,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private Grid? FindCellContainer(int rowIndex, int colIndex)
     {
         // Virtualized path: cells live inside the virtualizing panels, not the static grids
-        if (EnableVirtualization)
+        if (_virtualizingPanel != null)
             return FindCellContainerVirtualized(rowIndex, colIndex);
 
         var frozenColumns = GetFrozenColumns();
@@ -6768,7 +6795,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Update virtualization panels if active
-        if (EnableVirtualization && _virtualizingPanel != null)
+        if (_virtualizingPanel != null)
         {
             // Auto-commit any active edit before recycling rows to prevent data loss
             if (_editingItem != null && _editingRowIndex >= 0)
@@ -6989,7 +7016,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             PageSize = newSize;
             CurrentPage = 1;
             // Use same fast-path routing as OnPaginationChanged
-            if (EnableVirtualization)
+            if (_virtualizingPanel != null)
                 UpdateVirtualizedDataForPageChange();
             else
                 BuildDataRows(); // Row count changes, so TryUpdateDataRowsInPlace would return false
@@ -7075,7 +7102,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         if (bindable is DataGridView grid && !grid._isUpdating)
         {
-            if (grid.EnableVirtualization)
+            if (grid._virtualizingPanel != null)
                 grid.UpdateVirtualizedDataForPageChange();
             else if (!grid.TryUpdateDataRowsInPlace())
                 grid.BuildDataRows();

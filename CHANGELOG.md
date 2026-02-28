@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **DataGrid**: Adaptive auto-virtualization — automatically virtualizes when items exceed 2 screenfuls, with dynamic buffer size (1 screenful per side) based on viewport capacity; small datasets render without virtualization overhead (#268)
+
 ### Changed
 
 - **DataGrid**: Replace per-cell native context menu handlers with grid-level handlers on ScrollViews — reduces ~14,000 event subscriptions to 2 for large datasets (#268)
@@ -23,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **DataGrid**: Remove `AutomationId` reassignment in `UpdateDataCellContent` — MAUI's `Element.AutomationId` is set-once and throws `InvalidOperationException` on reused cells during page navigation (#268)
+- **DataGrid**: Fix context menu position drift on lower rows — use cell-relative coordinates instead of viewport-relative for `MenuFlyout.ShowAt` anchor (#268)
+- **DataGrid**: Fix Fill column sizing requiring window maximize — add `HorizontalOptions="FillAndExpand"` to `dataContainer` so it inherits valid width at first layout (#268)
 - **ComboBox**: Fix popup appearing on the first ComboBox when a second instance is clicked — overlay now always uses a dedicated wrapper Grid so it covers the full page regardless of the original layout type (StackLayout, Grid with RowDefinitions, etc.) (#267)
 - **ComboBox**: Replace `StyleId`-based wrapper detection with `ConditionalWeakTable` for cleaner page-wrapper tracking in `PopupOverlayHelper` (#267)
 
