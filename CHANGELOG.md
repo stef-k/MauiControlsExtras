@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataGrid**: Enable virtualization + pagination coexistence — `EnableVirtualization` and `EnablePagination` can now be used together; the virtualizing panel receives the page slice and recycles rows via `RowUpdater` (#268)
 - **DataGrid**: Optimize virtualized row recycling with in-place cell updates — `UpdateVirtualizedRow` now updates existing cell containers instead of clearing and rebuilding (#268)
 - **DataGrid**: Replace O(n) `_sortedItems.IndexOf` in `BuildDataRows` with pre-built O(1) dictionary lookup (#268)
+- **DemoApp**: Expand sample employee dataset from 20 to 500 items for pagination/virtualization testing (#268)
 
 ### Fixed
 
