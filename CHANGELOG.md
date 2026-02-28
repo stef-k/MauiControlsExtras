@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **DataGrid**: Optimize pagination page changes with in-place cell content updates — preserves Grid containers, gesture recognizers, and native context menu handlers instead of full teardown/rebuild (~5-7x faster) (#268)
+- **DataGrid**: Enable virtualization + pagination coexistence — `EnableVirtualization` and `EnablePagination` can now be used together; the virtualizing panel receives the page slice and recycles rows via `RowUpdater` (#268)
+- **DataGrid**: Optimize virtualized row recycling with in-place cell updates — `UpdateVirtualizedRow` now updates existing cell containers instead of clearing and rebuilding (#268)
+- **DataGrid**: Replace O(n) `_sortedItems.IndexOf` in `BuildDataRows` with pre-built O(1) dictionary lookup (#268)
+
 ### Fixed
 
 - **ComboBox**: Fix popup appearing on the first ComboBox when a second instance is clicked — overlay now always uses a dedicated wrapper Grid so it covers the full page regardless of the original layout type (StackLayout, Grid with RowDefinitions, etc.) (#267)
