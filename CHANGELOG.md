@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [3.3.0] - 2026-02-28
 
 ### Added
 
@@ -404,6 +404,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.3.0 | 2026-02-28 | DataGrid auto-virtualization, pagination optimization, context menu & column sizing fixes, ComboBox popup anchor fix |
 | 3.2.0 | 2026-02-26 | DataGrid column sizing modes (Fill, FitHeader), zero-warning build, IL2026/IL3050 AOT fixes, theme change responsiveness |
 | 3.1.0 | 2026-02-26 | SelectedIndex/SelectedIndices features, AOT/trimming fixes, DataGrid virtualization crash fix, ComboBox selection fixes |
 | 3.0.0 | 2026-02-25 | AOT/trimming safety for all controls, Func-based property accessors, PropertyMetadataRegistry (#232, #233) |
