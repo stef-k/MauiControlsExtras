@@ -6369,10 +6369,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private double MeasureHeaderWidth(DataGridColumn column)
     {
+        var headerText = column.Header ?? string.Empty;
+        double fontSize = 14;
+
+        // Try Label.Measure first — works when a handler is available
         var label = new Label
         {
-            Text = column.Header,
-            FontSize = 14,
+            Text = headerText,
+            FontSize = fontSize,
             FontAttributes = FontAttributes.Bold,
             MaxLines = 1,
             LineBreakMode = LineBreakMode.NoWrap
@@ -6380,6 +6384,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         var measured = label.Measure(double.PositiveInfinity, double.PositiveInfinity);
         var textWidth = measured.Width;
+
+        // Fallback: Label.Measure returns 0 for disconnected elements (no handler).
+        // Estimate using average bold character width for proportional fonts (Segoe UI / SF Pro).
+        if (textWidth <= 0 && headerText.Length > 0)
+            textWidth = Math.Ceiling(headerText.Length * fontSize * 0.62);
 
         // Add padding for contentGrid (8 left + 8 right)
         double padding = 16;
@@ -6712,10 +6721,13 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
     {
-        if (headerGridRef.ColumnDefinitions.Count == 0 || dataGridRef.ColumnDefinitions.Count == 0)
+        if (headerGridRef.ColumnDefinitions.Count == 0)
             return;
 
-        for (int i = 0; i < columns.Count && i < headerGridRef.ColumnDefinitions.Count && i < dataGridRef.ColumnDefinitions.Count; i++)
+        // When virtualized, dataGrid is empty — use header-only widths for FitHeader columns.
+        bool hasDataGrid = dataGridRef.ColumnDefinitions.Count > 0;
+
+        for (int i = 0; i < columns.Count && i < headerGridRef.ColumnDefinitions.Count; i++)
         {
             var column = columns[i];
 
@@ -6728,7 +6740,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             // Get the actual rendered widths
             var headerWidth = GetColumnActualWidth(headerGridRef, i);
-            var dataWidth = GetColumnActualWidth(dataGridRef, i);
+            var dataWidth = hasDataGrid && i < dataGridRef.ColumnDefinitions.Count
+                ? GetColumnActualWidth(dataGridRef, i)
+                : 0;
 
             // Use the maximum width to ensure alignment
             var maxWidth = Math.Max(headerWidth, dataWidth);
@@ -6738,7 +6752,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 var newGridLength = new GridLength(maxWidth);
                 headerGridRef.ColumnDefinitions[i].Width = newGridLength;
-                dataGridRef.ColumnDefinitions[i].Width = newGridLength;
+
+                if (hasDataGrid && i < dataGridRef.ColumnDefinitions.Count)
+                    dataGridRef.ColumnDefinitions[i].Width = newGridLength;
 
                 // Update footer if visible
                 if (ShowFooter && i < footerGridRef.ColumnDefinitions.Count)
