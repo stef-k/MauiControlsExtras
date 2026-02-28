@@ -11,6 +11,7 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
     private readonly Dictionary<int, View> _visibleRows = new();
     private readonly Queue<View> _recycledRows = new();
     private double _scrollOffset;
+    private double _lastMeasuredWidth;
     private int _firstVisibleIndex;
     private int _lastVisibleIndex;
 
@@ -201,8 +202,13 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
 
         // Never return infinite desired size — WinUI throws COMException 0x80004005.
         // When inside a ScrollView (Orientation=Both), widthConstraint is PositiveInfinity;
-        // use the actual measured content width instead.
-        var desiredWidth = double.IsInfinity(widthConstraint) ? maxChildWidth : widthConstraint;
+        // use the actual measured content width instead. If no children are rendered yet
+        // (transient state during initial load), use _lastMeasuredWidth to prevent collapse.
+        if (maxChildWidth > 0)
+            _lastMeasuredWidth = maxChildWidth;
+        var desiredWidth = double.IsInfinity(widthConstraint)
+            ? (maxChildWidth > 0 ? maxChildWidth : _lastMeasuredWidth)
+            : widthConstraint;
         return new Size(desiredWidth, TotalHeight);
     }
 

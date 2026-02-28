@@ -3906,8 +3906,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             if (row is not Grid rowGrid)
                 return;
 
-            // Cell Frame.X is relative to the row; contentX equals row-relative X since row.Frame.X == 0
-            cell = FindChildAtPosition(rowGrid, contentX, contentY - rowGrid.Frame.Y) as Grid;
+            // Convert content-space coordinates to row-relative coordinates
+            cell = FindChildAtPosition(rowGrid, contentX - rowGrid.Frame.X, contentY - rowGrid.Frame.Y) as Grid;
             if (cell == null)
                 return;
 
@@ -6686,7 +6686,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _pendingFillSync = true;
         Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(500), () =>
         {
-            if (_pendingFillSync)
+            // Re-check all guards inside the callback — OnDataContainerSizeChanged
+            // may have already cleared _pendingFillSync and dispatched its own sync.
+            if (_pendingFillSync && !_isUpdating && !_isDistributingFill)
             {
                 _pendingFillSync = false;
                 SynchronizeColumnWidths();
@@ -6779,7 +6781,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void SyncPanelRowColumnWidths(VirtualizingDataGridPanel panel, List<DataGridColumn> columns)
     {
-        foreach (var child in panel.Children)
+        // Snapshot children — layout invalidation from width changes could trigger
+        // UpdateVisibleRows which modifies the live Children collection.
+        var snapshot = panel.Children.ToList();
+        foreach (var child in snapshot)
         {
             if (child is Grid rowGrid)
                 SyncRowGridColumnWidths(rowGrid, columns);
