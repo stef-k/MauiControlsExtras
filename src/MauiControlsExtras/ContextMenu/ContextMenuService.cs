@@ -79,6 +79,11 @@ public class ContextMenuService : IContextMenuService
             if (anchor.Handler?.PlatformView is not Microsoft.UI.Xaml.FrameworkElement element)
                 return;
 
+            // Element must be connected to the visual tree for ShowAt to work;
+            // virtualized/recycled cells may lose their XamlRoot.
+            if (element.XamlRoot == null)
+                return;
+
             var menuFlyout = new Microsoft.UI.Xaml.Controls.MenuFlyout();
 
             foreach (var item in items)

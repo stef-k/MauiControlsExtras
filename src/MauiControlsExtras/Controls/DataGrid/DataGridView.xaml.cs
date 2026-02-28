@@ -3688,25 +3688,39 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             state.RightTappedHandler = (sender, args) =>
             {
-                args.Handled = true;
-                var winPos = args.GetPosition(element);
-                // Convert viewport-relative coords to content coords by adding scroll offset
-                var contentX = winPos.X + scrollView.ScrollX;
-                var contentY = winPos.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                try
+                {
+                    args.Handled = true;
+                    var winPos = args.GetPosition(element);
+                    // Convert viewport-relative coords to content coords by adding scroll offset
+                    var contentX = winPos.X + scrollView.ScrollX;
+                    var contentY = winPos.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] RightTapped handler error: {ex}");
+                }
             };
             element.RightTapped += state.RightTappedHandler;
 
             state.HoldingHandler = (sender, args) =>
             {
-                if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
-                    return;
+                try
+                {
+                    if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
+                        return;
 
-                args.Handled = true;
-                var winPos = args.GetPosition(element);
-                var contentX = winPos.X + scrollView.ScrollX;
-                var contentY = winPos.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                    args.Handled = true;
+                    var winPos = args.GetPosition(element);
+                    var contentX = winPos.X + scrollView.ScrollX;
+                    var contentY = winPos.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] Holding handler error: {ex}");
+                }
             };
             element.Holding += state.HoldingHandler;
         }
@@ -3716,10 +3730,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 #if MACCATALYST
             state.SecondaryClickRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
             {
-                var location = gesture.LocationInView(uiView);
-                var contentX = location.X + scrollView.ScrollX;
-                var contentY = location.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                try
+                {
+                    var location = gesture.LocationInView(uiView);
+                    var contentX = location.X + scrollView.ScrollX;
+                    var contentY = location.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] SecondaryClick handler error: {ex}");
+                }
             });
             state.SecondaryClickRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
             uiView.AddGestureRecognizer(state.SecondaryClickRecognizer);
@@ -3727,13 +3748,20 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             state.LongPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
             {
-                if (gesture.State != UIKit.UIGestureRecognizerState.Began)
-                    return;
+                try
+                {
+                    if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                        return;
 
-                var location = gesture.LocationInView(uiView);
-                var contentX = location.X + scrollView.ScrollX;
-                var contentY = location.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                    var location = gesture.LocationInView(uiView);
+                    var contentX = location.X + scrollView.ScrollX;
+                    var contentY = location.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] LongPress handler error: {ex}");
+                }
             });
             state.LongPressRecognizer.MinimumPressDuration = LongPressDurationSeconds;
             uiView.AddGestureRecognizer(state.LongPressRecognizer);
@@ -3743,28 +3771,42 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             state.TouchHandler = (sender, args) =>
             {
-                if (args.Event?.Action == Android.Views.MotionEventActions.Down)
+                try
                 {
-                    var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
-                    var rawX = args.Event.GetX();
-                    var rawY = args.Event.GetY();
-                    if (isFrozen)
-                        _androidFrozenScrollLastTouch = new Point(rawX / density, rawY / density);
-                    else
-                        _androidDataScrollLastTouch = new Point(rawX / density, rawY / density);
+                    if (args.Event?.Action == Android.Views.MotionEventActions.Down)
+                    {
+                        var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+                        var rawX = args.Event.GetX();
+                        var rawY = args.Event.GetY();
+                        if (isFrozen)
+                            _androidFrozenScrollLastTouch = new Point(rawX / density, rawY / density);
+                        else
+                            _androidDataScrollLastTouch = new Point(rawX / density, rawY / density);
+                    }
+                    args.Handled = false;
                 }
-                args.Handled = false;
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] Touch handler error: {ex}");
+                }
             };
             androidView.LongClickable = true;
             androidView.Touch += state.TouchHandler;
 
             state.LongClickHandler = (sender, args) =>
             {
-                args.Handled = true;
-                var viewportPos = isFrozen ? _androidFrozenScrollLastTouch : _androidDataScrollLastTouch;
-                var contentX = viewportPos.X + scrollView.ScrollX;
-                var contentY = viewportPos.Y + scrollView.ScrollY;
-                HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                try
+                {
+                    args.Handled = true;
+                    var viewportPos = isFrozen ? _androidFrozenScrollLastTouch : _androidDataScrollLastTouch;
+                    var contentX = viewportPos.X + scrollView.ScrollX;
+                    var contentY = viewportPos.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] LongClick handler error: {ex}");
+                }
             };
             androidView.LongClick += state.LongClickHandler;
         }
@@ -3923,9 +3965,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
             catch (Exception ex)
             {
+                // Log but do not re-throw — this runs inside Dispatcher.Dispatch(Action)
+                // which is async void; re-throwing would surface as an unhandled WinUI exception.
                 Trace.TraceWarning($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
 #if DEBUG
-                throw;
+                System.Diagnostics.Debug.WriteLine($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
 #endif
             }
         });
