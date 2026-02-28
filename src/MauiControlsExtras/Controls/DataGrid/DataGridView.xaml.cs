@@ -3677,7 +3677,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (state.IsAttached || scrollView.Handler?.PlatformView == null)
             return;
 
-        if (!(ShowDefaultContextMenu || ContextMenuTemplate != null || ContextMenuItems.Count > 0))
+        if (!(ShowDefaultContextMenu || ContextMenuTemplate != null
+            || (GetValue(ContextMenuItemsProperty) is ContextMenuItemCollection c && c.Count > 0)))
             return;
 
         var platformView = scrollView.Handler.PlatformView;
