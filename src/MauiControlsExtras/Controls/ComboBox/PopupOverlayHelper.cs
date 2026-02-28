@@ -7,17 +7,20 @@ internal static class PopupOverlayHelper
 {
     private const double DefaultPopupHeight = 280.0;
     private const double DefaultPopupWidth = 250.0;
+    private const string OverlayWrapperStyleId = "__ComboBoxOverlayWrapper__";
 
     /// <summary>
-    /// Gets the bounds of a view relative to the page, accounting for ScrollView offsets.
+    /// Gets the bounds of a view relative to the specified container,
+    /// accounting for ScrollView offsets.  Stops accumulating at <paramref name="relativeTo"/>
+    /// so the result is in that container's coordinate space.
     /// </summary>
-    internal static Rect GetBoundsRelativeToPage(View view)
+    internal static Rect GetBoundsRelativeTo(View view, Element? relativeTo)
     {
         var x = 0.0;
         var y = 0.0;
 
         Element? current = view;
-        while (current != null)
+        while (current != null && current != relativeTo)
         {
             if (current is VisualElement ve)
             {
@@ -37,6 +40,11 @@ internal static class PopupOverlayHelper
     }
 
     /// <summary>
+    /// Gets the bounds of a view relative to the page, accounting for ScrollView offsets.
+    /// </summary>
+    internal static Rect GetBoundsRelativeToPage(View view) => GetBoundsRelativeTo(view, relativeTo: null);
+
+    /// <summary>
     /// Creates a full-page overlay with the popup anchored to the specified view.
     /// Returns the overlay Grid for later removal.
     /// </summary>
@@ -52,7 +60,7 @@ internal static class PopupOverlayHelper
 
         var rootLayout = EnsureRootLayout(page);
 
-        var anchorBounds = GetBoundsRelativeToPage(anchor);
+        var anchorBounds = GetBoundsRelativeTo(anchor, rootLayout);
         var popupWidth = Math.Max(anchorBounds.Width, DefaultPopupWidth);
         var popupHeight = DefaultPopupHeight;
         var pageWidth = page.Width > 0 ? page.Width : rootLayout.Width;
@@ -128,27 +136,30 @@ internal static class PopupOverlayHelper
     }
 
     /// <summary>
-    /// Ensures the page content is a Layout we can add overlays to.
-    /// If it's not (e.g., a single ScrollView), wraps it in a Grid.
+    /// Ensures the page content is wrapped in a dedicated overlay-hosting Grid.
+    /// This Grid has no RowDefinitions/ColumnDefinitions, so children can freely
+    /// overlap — which is required for the full-page popup overlay to work
+    /// regardless of the original content's layout type (StackLayout, Grid with
+    /// rows, etc.).
     /// </summary>
     private static Layout EnsureRootLayout(Page page)
     {
-        if (page is ContentPage contentPage)
-        {
-            if (contentPage.Content is Layout layout)
-                return layout;
+        if (page is not ContentPage contentPage)
+            throw new InvalidOperationException("Cannot find a Layout in the Page to host the popup overlay. The Page must be a ContentPage.");
 
-            // Wrap existing content in a Grid
-            var wrapper = new Grid();
-            var originalContent = contentPage.Content;
-            contentPage.Content = wrapper;
-            if (originalContent != null)
-                wrapper.Children.Add(originalContent);
+        // Already wrapped by a previous call — reuse.
+        if (contentPage.Content is Grid grid && grid.StyleId == OverlayWrapperStyleId)
+            return grid;
 
-            return wrapper;
-        }
+        // Wrap existing content in a plain Grid (no RowDefinitions/ColumnDefinitions)
+        // so that the overlay can cover the full page area.
+        var wrapper = new Grid { StyleId = OverlayWrapperStyleId };
+        var originalContent = contentPage.Content;
+        contentPage.Content = wrapper;
+        if (originalContent != null)
+            wrapper.Children.Add(originalContent);
 
-        throw new InvalidOperationException("Cannot find a Layout in the Page to host the popup overlay. The Page must be a ContentPage.");
+        return wrapper;
     }
 
 }
