@@ -190,15 +190,20 @@ public class VirtualizingDataGridPanel : Layout, ILayoutManager
     /// <inheritdoc />
     public new Size Measure(double widthConstraint, double heightConstraint)
     {
-        // Measure all visible children
+        // Measure all visible children and track actual content width
+        double maxChildWidth = 0;
         foreach (var child in Children)
         {
             child.Measure(widthConstraint, RowHeight);
+            if (child.DesiredSize.Width > maxChildWidth)
+                maxChildWidth = child.DesiredSize.Width;
         }
 
-        // Return total size
-        var totalHeight = TotalHeight;
-        return new Size(widthConstraint, totalHeight);
+        // Never return infinite desired size — WinUI throws COMException 0x80004005.
+        // When inside a ScrollView (Orientation=Both), widthConstraint is PositiveInfinity;
+        // use the actual measured content width instead.
+        var desiredWidth = double.IsInfinity(widthConstraint) ? maxChildWidth : widthConstraint;
+        return new Size(desiredWidth, TotalHeight);
     }
 
     /// <inheritdoc />
