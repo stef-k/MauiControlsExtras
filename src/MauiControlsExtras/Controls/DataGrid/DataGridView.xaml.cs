@@ -131,6 +131,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private bool _isUpdating;
     private bool _isDistributingFill;
+    private bool _pendingFillSync;
     private double _lastDistributionWidth;
     private bool _isSyncingScroll;
     private DataGridColumn? _currentSortColumn;
@@ -165,31 +166,23 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     // Context menu long-press duration for iOS/macOS UILongPressGestureRecognizer.
     // Android and Windows use their platform-default long-press/holding thresholds.
     private const double LongPressDurationSeconds = 0.5;
-    // ConditionalWeakTable keyed by Grid cell containers. Entries are removed deterministically
-    // by DetachContextMenuHandlersFromChildren (which calls Remove after detaching handlers),
-    // so the weak-reference semantics serve only as a safety net for missed cleanup paths.
-    private readonly ConditionalWeakTable<Grid, CellContextMenuState> _cellContextMenuStates = new();
+
+    // Grid-level context menu handler state (one per ScrollView, replaces per-cell handlers).
+    private readonly GridContextMenuHandlerState _dataScrollViewContextMenu = new();
+    private readonly GridContextMenuHandlerState _frozenScrollViewContextMenu = new();
 #if ANDROID
-    private readonly ConditionalWeakTable<Android.Views.View, PointHolder> _androidLastTouchPositions = new();
-    /// <summary>
-    /// Reference-type wrapper for a DIP touch position, required because
-    /// <see cref="ConditionalWeakTable{TKey,TValue}"/> values must be reference types.
-    /// Immutable — replaced atomically via AddOrUpdate to eliminate torn-read risk.
-    /// </summary>
-    private sealed class PointHolder(Point positionDip)
-    {
-        public readonly Point PositionDip = positionDip;
-    }
+    // Stores the last touch-down position (in DIPs) for the Android long-click handler,
+    // keyed per ScrollView platform view.
+    private Point _androidDataScrollLastTouch;
+    private Point _androidFrozenScrollLastTouch;
 #endif
 
-    // RowIndex/ColIndex/Column are mutated in-place during cell reuse (pagination fast path).
-    // Native handlers capture the state *object* and read fields at event time, so mutation is safe.
-    // IsAttached is only accessed from the main thread (MAUI handler lifecycle events).
-    private sealed class CellContextMenuState
+    /// <summary>
+    /// Stores native event handler references for grid-level context menus on a ScrollView.
+    /// Two instances exist: one for <c>dataScrollView</c> and one for <c>frozenDataScrollView</c>.
+    /// </summary>
+    private sealed class GridContextMenuHandlerState
     {
-        public required int RowIndex { get; set; }
-        public required int ColIndex { get; set; }
-        public required DataGridColumn Column { get; set; }
         public bool IsAttached;
 #if WINDOWS
         public Microsoft.UI.Xaml.Input.RightTappedEventHandler? RightTappedHandler;
@@ -1042,7 +1035,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(ShowDefaultContextMenu),
         typeof(bool),
         typeof(DataGridView),
-        true);
+        true,
+        propertyChanged: OnContextMenuPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="ContextMenuTemplate"/> bindable property.
@@ -1051,7 +1045,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(ContextMenuTemplate),
         typeof(DataTemplate),
         typeof(DataGridView),
-        null);
+        null,
+        propertyChanged: OnContextMenuPropertyChanged);
 
     /// <summary>
     /// Identifies the <see cref="ContextMenuItems"/> bindable property.
@@ -1060,7 +1055,8 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         nameof(ContextMenuItems),
         typeof(ContextMenuItemCollection),
         typeof(DataGridView),
-        null);
+        null,
+        propertyChanged: OnContextMenuPropertyChanged);
 
     #endregion
 
@@ -2363,8 +2359,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             keyboardBehavior.HandleTabKey = true;
         }
 
+        Loaded += OnDataGridViewLoaded;
         Unloaded += OnDataGridViewUnloaded;
         SizeChanged += OnDataGridSizeChanged;
+        dataContainer.SizeChanged += OnDataContainerSizeChanged;
+        dataScrollView.HandlerChanged += OnDataScrollViewHandlerChanged;
+        frozenDataScrollView.HandlerChanged += OnFrozenScrollViewHandlerChanged;
     }
 
     #endregion
@@ -3636,73 +3636,89 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     public IReadOnlyList<DataGridContextMenuAction>? GetDefaultContextMenuActions() => _lastContextMenuActions;
 
-    private void OnCellContainerHandlerChanging(object? sender, HandlerChangingEventArgs e)
+    // ── Grid-level context menu handler attachment ──
+    // Instead of per-cell native handlers (which created ~14,000 event subscriptions for
+    // 3,500 cells), we attach ONE right-click/long-press handler per ScrollView (2 total).
+    // At event time, we hit-test the content Grid to find which cell was targeted.
+
+    private static void OnContextMenuPropertyChanged(BindableObject bindable, object oldValue, object newValue)
     {
-        if (sender is not Grid container)
+        if (bindable is not DataGridView grid)
             return;
 
-        if (e.OldHandler?.PlatformView != null && _cellContextMenuStates.TryGetValue(container, out var state))
+        // Use GetValue to avoid ContextMenuItems getter's lazy auto-creation (which would recurse)
+        var wantsContextMenu = grid.ShowDefaultContextMenu
+            || grid.ContextMenuTemplate != null
+            || (grid.GetValue(ContextMenuItemsProperty) is ContextMenuItemCollection c && c.Count > 0);
+
+        if (wantsContextMenu)
         {
-            DetachNativeContextMenuHandlers(e.OldHandler.PlatformView, state);
-            container.HandlerChanging -= OnCellContainerHandlerChanging;
-            container.HandlerChanged -= OnCellContainerHandlerChanged;
-            // CWT entry is intentionally kept (not removed here) so that
-            // DetachContextMenuHandlersFromChildren can find it during row
-            // teardown. Re-attachment after a handler swap (e.g. hot reload)
-            // is handled by full row rebuild, not by HandlerChanged.
+            grid.AttachGridLevelContextMenuHandlers(grid.dataScrollView, grid._dataScrollViewContextMenu, isFrozen: false);
+            grid.AttachGridLevelContextMenuHandlers(grid.frozenDataScrollView, grid._frozenScrollViewContextMenu, isFrozen: true);
+        }
+        else
+        {
+            grid.DetachGridLevelContextMenuHandlers(grid.dataScrollView, grid._dataScrollViewContextMenu);
+            grid.DetachGridLevelContextMenuHandlers(grid.frozenDataScrollView, grid._frozenScrollViewContextMenu);
         }
     }
 
-    private void OnCellContainerHandlerChanged(object? sender, EventArgs e)
+    private void OnDataScrollViewHandlerChanged(object? sender, EventArgs e)
     {
-        if (sender is not Grid container)
-            return;
-
-        if (!_cellContextMenuStates.TryGetValue(container, out var state) || state.IsAttached)
-            return;
-
-        if (container.Handler?.PlatformView == null)
-            return;
-
-        // On WinUI, HandlerChanged can fire asynchronously after the container has been
-        // removed from its row during recycling. Do not re-attach on disconnected cells (#237).
-        if (container.Parent == null)
-            return;
-
-        AttachNativeContextMenuHandlers(container, container.Handler.PlatformView, state);
+        AttachGridLevelContextMenuHandlers(dataScrollView, _dataScrollViewContextMenu, isFrozen: false);
     }
 
-    private void AttachNativeContextMenuHandlers(Grid container, object platformView, CellContextMenuState state)
+    private void OnFrozenScrollViewHandlerChanged(object? sender, EventArgs e)
     {
-        Debug.Assert(MainThread.IsMainThread, "AttachNativeContextMenuHandlers must be called on the UI thread.");
+        AttachGridLevelContextMenuHandlers(frozenDataScrollView, _frozenScrollViewContextMenu, isFrozen: true);
+    }
+
+    private void AttachGridLevelContextMenuHandlers(ScrollView scrollView, GridContextMenuHandlerState state, bool isFrozen)
+    {
+        if (state.IsAttached || scrollView.Handler?.PlatformView == null)
+            return;
+
+        if (!(ShowDefaultContextMenu || ContextMenuTemplate != null
+            || (GetValue(ContextMenuItemsProperty) is ContextMenuItemCollection c && c.Count > 0)))
+            return;
+
+        var platformView = scrollView.Handler.PlatformView;
 
 #if WINDOWS
         if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
         {
             state.RightTappedHandler = (sender, args) =>
             {
-                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
-                    return;
-
-                args.Handled = true;
-                var winPos = args.GetPosition(element);
-                var position = new Point(winPos.X, winPos.Y);
-                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+                try
+                {
+                    var winPos = args.GetPosition(element);
+                    var contentX = winPos.X + scrollView.ScrollX;
+                    var contentY = winPos.Y + scrollView.ScrollY;
+                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] RightTapped handler error: {ex}");
+                }
             };
             element.RightTapped += state.RightTappedHandler;
 
             state.HoldingHandler = (sender, args) =>
             {
-                if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
-                    return;
+                try
+                {
+                    if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
+                        return;
 
-                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
-                    return;
-
-                args.Handled = true;
-                var winPos = args.GetPosition(element);
-                var position = new Point(winPos.X, winPos.Y);
-                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+                    var winPos = args.GetPosition(element);
+                    var contentX = winPos.X + scrollView.ScrollX;
+                    var contentY = winPos.Y + scrollView.ScrollY;
+                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] Holding handler error: {ex}");
+                }
             };
             element.Holding += state.HoldingHandler;
         }
@@ -3712,12 +3728,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 #if MACCATALYST
             state.SecondaryClickRecognizer = new UIKit.UITapGestureRecognizer((gesture) =>
             {
-                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
-                    return;
-
-                var location = gesture.LocationInView(uiView);
-                var position = new Point(location.X, location.Y);
-                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+                try
+                {
+                    var location = gesture.LocationInView(uiView);
+                    var contentX = location.X + scrollView.ScrollX;
+                    var contentY = location.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] SecondaryClick handler error: {ex}");
+                }
             });
             state.SecondaryClickRecognizer.ButtonMaskRequired = UIKit.UIEventButtonMask.Secondary;
             uiView.AddGestureRecognizer(state.SecondaryClickRecognizer);
@@ -3725,15 +3746,20 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             state.LongPressRecognizer = new UIKit.UILongPressGestureRecognizer((gesture) =>
             {
-                if (gesture.State != UIKit.UIGestureRecognizerState.Began)
-                    return;
+                try
+                {
+                    if (gesture.State != UIKit.UIGestureRecognizerState.Began)
+                        return;
 
-                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
-                    return;
-
-                var location = gesture.LocationInView(uiView);
-                var position = new Point(location.X, location.Y);
-                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+                    var location = gesture.LocationInView(uiView);
+                    var contentX = location.X + scrollView.ScrollX;
+                    var contentY = location.Y + scrollView.ScrollY;
+                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] LongPress handler error: {ex}");
+                }
             });
             state.LongPressRecognizer.MinimumPressDuration = LongPressDurationSeconds;
             uiView.AddGestureRecognizer(state.LongPressRecognizer);
@@ -3743,29 +3769,41 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         {
             state.TouchHandler = (sender, args) =>
             {
-                if (args.Event?.Action == Android.Views.MotionEventActions.Down)
+                try
                 {
-                    var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
-                    var rawX = args.Event.GetX();
-                    var rawY = args.Event.GetY();
-                    _androidLastTouchPositions.AddOrUpdate(androidView, new PointHolder(new Point(rawX / density, rawY / density)));
+                    if (args.Event?.Action == Android.Views.MotionEventActions.Down)
+                    {
+                        var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+                        var rawX = args.Event.GetX();
+                        var rawY = args.Event.GetY();
+                        if (isFrozen)
+                            _androidFrozenScrollLastTouch = new Point(rawX / density, rawY / density);
+                        else
+                            _androidDataScrollLastTouch = new Point(rawX / density, rawY / density);
+                    }
+                    args.Handled = false;
                 }
-                // Touch handler only records position for the subsequent LongClick handler.
-                // Handled must remain false so the event propagates to nested ScrollView
-                // and other gesture recognizers. Verified with nested scroll scenarios.
-                args.Handled = false;
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] Touch handler error: {ex}");
+                }
             };
             androidView.LongClickable = true;
             androidView.Touch += state.TouchHandler;
 
             state.LongClickHandler = (sender, args) =>
             {
-                if (ShouldSuppressContextMenu(state.RowIndex, state.ColIndex))
-                    return;
-
-                args.Handled = true;
-                var position = GetLastAndroidTouchPosition(androidView);
-                DispatchShowContextMenuSafely(container.BindingContext, state.Column, state.RowIndex, state.ColIndex, position, container);
+                try
+                {
+                    var viewportPos = isFrozen ? _androidFrozenScrollLastTouch : _androidDataScrollLastTouch;
+                    var contentX = viewportPos.X + scrollView.ScrollX;
+                    var contentY = viewportPos.Y + scrollView.ScrollY;
+                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning($"[DataGridView] LongClick handler error: {ex}");
+                }
             };
             androidView.LongClick += state.LongClickHandler;
         }
@@ -3773,45 +3811,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         state.IsAttached = true;
     }
 
-    /// <summary>
-    /// Detaches native context menu handlers from all cell containers in the given grid.
-    /// Must be called before Children.Clear() to ensure cleanup even if HandlerChanging
-    /// does not fire synchronously on child removal.
-    /// </summary>
-    private void DetachContextMenuHandlersFromChildren(Grid grid, int? expectedRowIndex = null)
+    private void DetachGridLevelContextMenuHandlers(ScrollView scrollView, GridContextMenuHandlerState state)
     {
-        foreach (var child in grid.Children.OfType<Grid>().ToList())
-        {
-            if (_cellContextMenuStates.TryGetValue(child, out var s))
-            {
-                if (expectedRowIndex.HasValue && s.IsAttached && s.RowIndex != expectedRowIndex.Value)
-                {
-                    Debug.WriteLine($"[DataGrid] Warning: stale context menu handlers on recycled row " +
-                        $"(stale RowIndex={s.RowIndex}, new RowIndex={expectedRowIndex.Value}). Force-detaching.");
-                }
-
-                if (s.IsAttached && child.Handler?.PlatformView != null)
-                {
-                    DetachNativeContextMenuHandlers(child.Handler.PlatformView, s);
-                }
-
-                // Always unsubscribe lifecycle events regardless of IsAttached / PlatformView state.
-                // On WinUI, HandlerChanged can fire asynchronously after handler teardown begins;
-                // if we skip unsubscription, the late-arriving event re-attaches native handlers
-                // on a cell that has already been cleaned up (#237).
-                child.HandlerChanging -= OnCellContainerHandlerChanging;
-                child.HandlerChanged -= OnCellContainerHandlerChanged;
-            }
-            _cellContextMenuStates.Remove(child);
-        }
-    }
-
-    private void DetachNativeContextMenuHandlers(object platformView, CellContextMenuState state)
-    {
-        Debug.Assert(MainThread.IsMainThread, "DetachNativeContextMenuHandlers must be called on the UI thread.");
-
         if (!state.IsAttached)
             return;
+
+        var platformView = scrollView.Handler?.PlatformView;
+        if (platformView == null)
+        {
+            state.IsAttached = false;
+            return;
+        }
 
 #if WINDOWS
         if (platformView is Microsoft.UI.Xaml.FrameworkElement element)
@@ -3858,10 +3868,90 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 androidView.Touch -= state.TouchHandler;
                 state.TouchHandler = null;
             }
-            _androidLastTouchPositions.Remove(androidView);
         }
 #endif
         state.IsAttached = false;
+    }
+
+    /// <summary>
+    /// Hit-tests content coordinates to find the cell container, then dispatches the context menu.
+    /// Works for both non-virtualized (dataGrid) and virtualized (_virtualizingPanel) modes.
+    /// </summary>
+    /// <returns><c>true</c> if a cell was found and the context menu dispatched; <c>false</c> if
+    /// the hit-test missed (empty area, suppressed cell, etc.).</returns>
+    private bool HandleGridLevelContextMenu(double contentX, double contentY, bool isFrozen)
+    {
+        // Determine the content grid to search
+        Layout contentGrid;
+        bool isVirtualized;
+        if (isFrozen)
+        {
+            isVirtualized = _frozenVirtualizingPanel != null;
+            contentGrid = _frozenVirtualizingPanel as Layout ?? frozenDataGrid;
+        }
+        else
+        {
+            isVirtualized = _virtualizingPanel != null;
+            contentGrid = _virtualizingPanel as Layout ?? dataGrid;
+        }
+
+        Grid? cell;
+        double cellAbsoluteX, cellAbsoluteY;
+
+        if (isVirtualized)
+        {
+            // Two-level: virtualizing panel children are row Grids, cells are nested inside
+            var row = FindChildAtPosition(contentGrid, contentX, contentY);
+            if (row is not Grid rowGrid)
+                return false;
+
+            // Convert content-space coordinates to row-relative coordinates
+            cell = FindChildAtPosition(rowGrid, contentX - rowGrid.Frame.X, contentY - rowGrid.Frame.Y) as Grid;
+            if (cell == null)
+                return false;
+
+            cellAbsoluteX = rowGrid.Frame.X + cell.Frame.X;
+            cellAbsoluteY = rowGrid.Frame.Y + cell.Frame.Y;
+        }
+        else
+        {
+            // Flat grid: cells are direct children with content-space Frames
+            cell = FindChildAtPosition(contentGrid, contentX, contentY) as Grid;
+            if (cell == null)
+                return false;
+
+            cellAbsoluteX = cell.Frame.X;
+            cellAbsoluteY = cell.Frame.Y;
+        }
+
+        if (!_cellMetadata.TryGetValue(cell, out var meta))
+            return false;
+
+        if (ShouldSuppressContextMenu(meta.RowIndex, meta.ColIndex))
+            return false;
+
+        var cellRelativePosition = new Point(contentX - cellAbsoluteX, contentY - cellAbsoluteY);
+        DispatchShowContextMenuSafely(meta.Item, meta.Column, meta.RowIndex, meta.ColIndex, cellRelativePosition, cell);
+        return true;
+    }
+
+    /// <summary>
+    /// Finds the first child view at the given coordinates within a layout.
+    /// Coordinates are relative to the layout's content space.
+    /// </summary>
+    private static View? FindChildAtPosition(Layout grid, double x, double y)
+    {
+        foreach (var child in grid.Children)
+        {
+            if (child is View view && view.Frame.Width > 0)
+            {
+                var f = view.Frame;
+                if (x >= f.X && x < f.X + f.Width &&
+                    y >= f.Y && y < f.Y + f.Height)
+                    return view;
+            }
+        }
+        return null;
     }
 
     private void DispatchShowContextMenuSafely(object? item, DataGridColumn? column,
@@ -3875,9 +3965,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
             catch (Exception ex)
             {
+                // Log but do not re-throw — this runs inside Dispatcher.Dispatch(Action)
+                // which is async void; re-throwing would surface as an unhandled WinUI exception.
                 Trace.TraceWarning($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
 #if DEBUG
-                throw;
+                System.Diagnostics.Debug.WriteLine($"[DataGridView] Context menu error at [{rowIndex},{colIndex}]: {ex}");
 #endif
             }
         });
@@ -3892,21 +3984,28 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
         => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
 
-#if ANDROID
-    private Point GetLastAndroidTouchPosition(Android.Views.View androidView)
+    private void OnDataGridViewLoaded(object? sender, EventArgs e)
     {
-        if (_androidLastTouchPositions.TryGetValue(androidView, out var holder))
-            return holder.PositionDip;
-
-        return Point.Zero;
+        // Re-subscribe handlers that were detached in OnDataGridViewUnloaded.
+        // -= before += prevents double subscription on first Loaded (constructor already subscribes).
+        SizeChanged -= OnDataGridSizeChanged;
+        SizeChanged += OnDataGridSizeChanged;
+        dataContainer.SizeChanged -= OnDataContainerSizeChanged;
+        dataContainer.SizeChanged += OnDataContainerSizeChanged;
+        dataScrollView.HandlerChanged -= OnDataScrollViewHandlerChanged;
+        dataScrollView.HandlerChanged += OnDataScrollViewHandlerChanged;
+        frozenDataScrollView.HandlerChanged -= OnFrozenScrollViewHandlerChanged;
+        frozenDataScrollView.HandlerChanged += OnFrozenScrollViewHandlerChanged;
     }
-#endif
 
     private void OnDataGridViewUnloaded(object? sender, EventArgs e)
     {
         SizeChanged -= OnDataGridSizeChanged;
-        DetachContextMenuHandlersFromChildren(dataGrid);
-        DetachContextMenuHandlersFromChildren(frozenDataGrid);
+        dataContainer.SizeChanged -= OnDataContainerSizeChanged;
+        dataScrollView.HandlerChanged -= OnDataScrollViewHandlerChanged;
+        frozenDataScrollView.HandlerChanged -= OnFrozenScrollViewHandlerChanged;
+        DetachGridLevelContextMenuHandlers(dataScrollView, _dataScrollViewContextMenu);
+        DetachGridLevelContextMenuHandlers(frozenDataScrollView, _frozenScrollViewContextMenu);
         ClearVirtualizationPanels();
     }
 
@@ -3931,16 +4030,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         ApplyFilters();
         ApplySort();
 
-        // Build UI
+        // Build UI — PreMeasure before BuildHeader so FitHeader columns
+        // have ActualWidth set when ResolveColumnWidth is called for headers.
+        PreMeasureFitHeaderColumns();
         BuildHeader();
         BuildDataRows();
         BuildFooter();
 
-        // Initial Fill distribution (uses estimates for Auto columns).
-        // SynchronizeColumnWidths re-runs DistributeFillColumnWidths after Auto columns have accurate widths.
-        DistributeFillColumnWidths();
-
-        // Synchronize column widths after layout is complete
+        // Defer Fill distribution off the current call stack to avoid LayoutCycleException
+        // on WinUI — modifying ColumnDefinition.Width during a layout/binding pass causes
+        // a layout cycle. ScheduleColumnWidthSync handles the final sync after Auto columns
+        // have accurate widths.
         ScheduleColumnWidthSync();
 
         // Show/hide empty view
@@ -4117,11 +4217,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             VerticalOptions = LayoutOptions.Center
         };
 
-        // Header text
+        // Header text — prevent wrapping so FitHeader measurement matches rendering
         var headerLabel = new Label
         {
             Text = column.Header,
+            FontSize = 14,
             FontAttributes = FontAttributes.Bold,
+            MaxLines = 1,
+            LineBreakMode = LineBreakMode.NoWrap,
             VerticalOptions = LayoutOptions.Center,
             TextColor = EffectiveForegroundColor
         };
@@ -4274,7 +4377,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private bool TryUpdateDataRowsInPlace()
     {
         // Virtualized mode has its own fast path (UpdateVirtualizedDataForPageChange)
-        if (EnableVirtualization)
+        if (_virtualizingPanel != null)
             return false;
 
         // Row details make grid row indices unpredictable — fall back to full rebuild
@@ -4338,21 +4441,57 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         return true;
     }
 
+    /// <summary>
+    /// Returns the number of data rows that fit in the current viewport.
+    /// Falls back to 400px when the viewport height is not yet available.
+    /// </summary>
+    private int GetVisibleRowCapacity()
+    {
+        var viewportHeight = dataScrollView.Height;
+        if (viewportHeight <= 0 || double.IsNaN(viewportHeight))
+            viewportHeight = 400; // sensible fallback before layout
+        var effectiveRowHeight = RowHeight > 0 ? RowHeight : 44.0;
+        return Math.Max(1, (int)(viewportHeight / effectiveRowHeight));
+    }
+
+    /// <summary>
+    /// Determines whether virtualization should be used for the current dataset.
+    /// Returns true if the user explicitly enabled it, or if the item count
+    /// exceeds twice the viewport capacity (auto-virtualization).
+    /// Uses hysteresis: once auto-virtualization is active, only disengages when
+    /// items drop below 1 screenful (instead of 2) to prevent flip-flop on resize.
+    /// </summary>
+    private bool ShouldUseVirtualization()
+    {
+        if (EnableVirtualization)
+            return true;
+        var capacity = GetVisibleRowCapacity();
+        // Hysteresis: if already auto-virtualized, use lower threshold to disengage
+        var threshold = _virtualizingPanel != null ? capacity : capacity * 2;
+        return _sortedItems.Count > threshold;
+    }
+
     private void BuildDataRows()
     {
-        // Use virtualization if enabled
-        if (EnableVirtualization)
+        // Use virtualization if enabled or if the dataset exceeds 2 screenfuls
+        if (ShouldUseVirtualization())
         {
-            BuildVirtualizedRows();
-            return;
+            try
+            {
+                BuildVirtualizedRows();
+                return;
+            }
+            catch (Exception ex)
+            {
+                // Fall back to non-virtualized rendering if virtualization setup fails
+                // (e.g., WinUI exception from visual tree modification during layout)
+                Trace.TraceWarning($"[DataGridView] Virtualization setup failed, falling back to non-virtualized: {ex}");
+                ClearVirtualizationPanels();
+            }
         }
 
         // Clear any virtualization panels
         ClearVirtualizationPanels();
-
-        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously)
-        DetachContextMenuHandlersFromChildren(dataGrid);
-        DetachContextMenuHandlersFromChildren(frozenDataGrid);
 
         // Clear existing rows
         dataGrid.Children.Clear();
@@ -4393,47 +4532,58 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Pre-build O(1) index lookup (replaces O(n) _sortedItems.IndexOf per row)
         var sortedIndex = BuildSortedItemsIndex();
 
-        // Add row definitions and cells
-        var gridRowIndex = 0;
-        for (int displayIndex = 0; displayIndex < displayItems.Count; displayIndex++)
+        // Suppress per-child layout passes during bulk cell creation
+        dataGrid.BatchBegin();
+        frozenDataGrid.BatchBegin();
+        try
         {
-            frozenDataGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(RowHeight) });
-            dataGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(RowHeight) });
-
-            var item = displayItems[displayIndex];
-            var actualRowIndex = sortedIndex.TryGetValue(item, out var idx) ? idx : -1;
-            var isSelected = _selectedItems.Contains(item);
-            var isAlternate = displayIndex % 2 == 1;
-
-            // Build frozen cells
-            for (int colIndex = 0; colIndex < frozenColumns.Count; colIndex++)
+            // Add row definitions and cells
+            var gridRowIndex = 0;
+            for (int displayIndex = 0; displayIndex < displayItems.Count; displayIndex++)
             {
-                var column = frozenColumns[colIndex];
-                var cell = CreateDataCell(item, column, actualRowIndex, colIndex, isSelected, isAlternate);
-                frozenDataGrid.Children.Add(cell);
-                Grid.SetRow(cell, gridRowIndex);
-                Grid.SetColumn(cell, colIndex);
-            }
+                frozenDataGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(RowHeight) });
+                dataGrid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(RowHeight) });
 
-            // Build scrollable cells
-            for (int colIndex = 0; colIndex < scrollableColumns.Count; colIndex++)
-            {
-                var column = scrollableColumns[colIndex];
-                var fullColIndex = colIndex + frozenColumns.Count;
-                var cell = CreateDataCell(item, column, actualRowIndex, fullColIndex, isSelected, isAlternate);
-                dataGrid.Children.Add(cell);
-                Grid.SetRow(cell, gridRowIndex);
-                Grid.SetColumn(cell, colIndex);
-            }
+                var item = displayItems[displayIndex];
+                var actualRowIndex = sortedIndex.TryGetValue(item, out var idx) ? idx : -1;
+                var isSelected = _selectedItems.Contains(item);
+                var isAlternate = displayIndex % 2 == 1;
 
-            gridRowIndex++;
+                // Build frozen cells
+                for (int colIndex = 0; colIndex < frozenColumns.Count; colIndex++)
+                {
+                    var column = frozenColumns[colIndex];
+                    var cell = CreateDataCell(item, column, actualRowIndex, colIndex, isSelected, isAlternate);
+                    frozenDataGrid.Children.Add(cell);
+                    Grid.SetRow(cell, gridRowIndex);
+                    Grid.SetColumn(cell, colIndex);
+                }
 
-            // Add row details if applicable
-            if (ShouldShowRowDetails(item, isSelected))
-            {
-                AddRowDetails(item, gridRowIndex, frozenColumns.Count, scrollableColumns.Count);
+                // Build scrollable cells
+                for (int colIndex = 0; colIndex < scrollableColumns.Count; colIndex++)
+                {
+                    var column = scrollableColumns[colIndex];
+                    var fullColIndex = colIndex + frozenColumns.Count;
+                    var cell = CreateDataCell(item, column, actualRowIndex, fullColIndex, isSelected, isAlternate);
+                    dataGrid.Children.Add(cell);
+                    Grid.SetRow(cell, gridRowIndex);
+                    Grid.SetColumn(cell, colIndex);
+                }
+
                 gridRowIndex++;
+
+                // Add row details if applicable
+                if (ShouldShowRowDetails(item, isSelected))
+                {
+                    AddRowDetails(item, gridRowIndex, frozenColumns.Count, scrollableColumns.Count);
+                    gridRowIndex++;
+                }
             }
+        }
+        finally
+        {
+            frozenDataGrid.BatchCommit();
+            dataGrid.BatchCommit();
         }
 
         // Force layout invalidation so ScrollView containers re-measure
@@ -4445,10 +4595,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         var frozenColumns = GetFrozenColumns();
         var scrollableColumns = GetScrollableColumns();
-
-        // Detach native context menu handlers before clearing (HandlerChanging may not fire synchronously)
-        DetachContextMenuHandlersFromChildren(dataGrid);
-        DetachContextMenuHandlersFromChildren(frozenDataGrid);
 
         // Clear non-virtualized grids
         dataGrid.Children.Clear();
@@ -4468,12 +4614,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         // Feed page slice when paginated, all items otherwise
         var displayItems = GetDisplayItems();
 
+        var dynamicBuffer = GetVisibleRowCapacity();
         _virtualizingPanel.RowHeight = RowHeight;
-        _virtualizingPanel.BufferSize = VirtualizationBufferSize;
+        _virtualizingPanel.BufferSize = EnableVirtualization ? VirtualizationBufferSize : dynamicBuffer;
         _virtualizingPanel.ItemsSource = displayItems;
         _virtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, scrollableColumns, frozenColumns.Count);
         _virtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, scrollableColumns, frozenColumns.Count);
-        _virtualizingPanel.RowCleanup = row => { if (row is Grid g) DetachContextMenuHandlersFromChildren(g); };
         _virtualizingPanel.Refresh(dataScrollView.Height > 0 ? dataScrollView.Height : 400);
 
         // Initialize or update frozen virtualizing panel
@@ -4486,11 +4632,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
 
             _frozenVirtualizingPanel.RowHeight = RowHeight;
-            _frozenVirtualizingPanel.BufferSize = VirtualizationBufferSize;
+            _frozenVirtualizingPanel.BufferSize = EnableVirtualization ? VirtualizationBufferSize : dynamicBuffer;
             _frozenVirtualizingPanel.ItemsSource = displayItems;
             _frozenVirtualizingPanel.RowFactory = (item, rowIndex) => CreateVirtualizedRow(item, rowIndex, frozenColumns, 0);
             _frozenVirtualizingPanel.RowUpdater = (row, item, rowIndex) => UpdateVirtualizedRow(row, item, rowIndex, frozenColumns, 0);
-            _frozenVirtualizingPanel.RowCleanup = row => { if (row is Grid g) DetachContextMenuHandlersFromChildren(g); };
             _frozenVirtualizingPanel.Refresh(dataScrollView.Height > 0 ? dataScrollView.Height : 400);
         }
     }
@@ -4552,6 +4697,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         if (row is not Grid rowGrid)
             return;
 
+        // Sync ColumnDefinitions to latest column.ActualWidth (Fill/FitHeader may have
+        // changed since this row was created or last recycled).
+        SyncRowGridColumnWidths(rowGrid, columns);
+
         var isSelected = _selectedItems.Contains(item);
         var isAlternate = rowIndex % 2 == 1;
 
@@ -4572,7 +4721,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Column count mismatch (structural change) — fall back to full rebuild
-        DetachContextMenuHandlersFromChildren(rowGrid, expectedRowIndex: rowIndex);
         rowGrid.Children.Clear();
 
         for (int colIndex = 0; colIndex < columns.Count; colIndex++)
@@ -4783,17 +4931,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             container.GestureRecognizers.Add(dropGesture);
         }
 
-        // Add context menu gesture (right-click on desktop, long-press on mobile)
-        if (ShowDefaultContextMenu || ContextMenuTemplate != null || ContextMenuItems.Count > 0)
-        {
-            var state = new CellContextMenuState { RowIndex = rowIndex, ColIndex = colIndex, Column = column };
-            _cellContextMenuStates.AddOrUpdate(container, state);
-            container.HandlerChanging -= OnCellContainerHandlerChanging;
-            container.HandlerChanged -= OnCellContainerHandlerChanged;
-            container.HandlerChanging += OnCellContainerHandlerChanging;
-            container.HandlerChanged += OnCellContainerHandlerChanged;
-        }
-
         return container;
     }
 
@@ -4804,9 +4941,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     private void UpdateDataCellContent(Grid container, object item, DataGridColumn column, int rowIndex, int colIndex, bool isSelected, bool isAlternate)
     {
-        // Update binding context and automation id
+        // Update binding context (AutomationId is set once in CreateDataCell; it is
+        // immutable in MAUI and would throw on reassignment)
         container.BindingContext = item;
-        container.AutomationId = $"cell_{rowIndex}_{colIndex}";
 
         // Update background
         UpdateCellBackground(container, rowIndex, colIndex, isSelected, isAlternate);
@@ -4871,14 +5008,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             meta.Column = column;
             meta.RowIndex = rowIndex;
             meta.ColIndex = colIndex;
-        }
-
-        // Update CellContextMenuState so native handlers see current values
-        if (_cellContextMenuStates.TryGetValue(container, out var state))
-        {
-            state.RowIndex = rowIndex;
-            state.ColIndex = colIndex;
-            state.Column = column;
         }
     }
 
@@ -5202,23 +5331,58 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             var isSelected = _selectedItems.Contains(itemToUpdate);
             var isAlternate = displayIndex % 2 == 1;
 
-            // Update frozen cells
-            foreach (var child in frozenDataGrid.Children)
+            if (_virtualizingPanel != null)
             {
-                if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                // Virtualized: cells are inside row Grids in the virtualizing panel
+                var rowView = _virtualizingPanel.GetVisibleRow(displayIndex);
+                if (rowView is Grid rowGrid)
                 {
-                    var colIndex = Grid.GetColumn(cellGrid);
-                    UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    foreach (var cell in rowGrid.Children)
+                    {
+                        if (cell is Grid cellGrid)
+                        {
+                            var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
+                            UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                        }
+                    }
+                }
+
+                // Also update frozen virtualizing panel if present
+                if (_frozenVirtualizingPanel != null)
+                {
+                    var frozenRowView = _frozenVirtualizingPanel.GetVisibleRow(displayIndex);
+                    if (frozenRowView is Grid frozenRowGrid)
+                    {
+                        foreach (var cell in frozenRowGrid.Children)
+                        {
+                            if (cell is Grid cellGrid)
+                            {
+                                var colIndex = Grid.GetColumn(cellGrid);
+                                UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                            }
+                        }
+                    }
                 }
             }
-
-            // Update scrollable cells
-            foreach (var child in dataGrid.Children)
+            else
             {
-                if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                // Non-virtualized: cells are direct children of dataGrid/frozenDataGrid
+                foreach (var child in frozenDataGrid.Children)
                 {
-                    var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
-                    UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                    {
+                        var colIndex = Grid.GetColumn(cellGrid);
+                        UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    }
+                }
+
+                foreach (var child in dataGrid.Children)
+                {
+                    if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                    {
+                        var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
+                        UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    }
                 }
             }
         }
@@ -5470,7 +5634,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 UpdateGridValidationState();
 
                 // Use targeted refresh when virtualization is active to avoid full panel rebuild
-                if (EnableVirtualization && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
+                if (_virtualizingPanel != null && _editingRowIndex >= 0 && _editingColumnIndex >= 0)
                     RefreshVirtualizedCell(_editingRowIndex, _editingColumnIndex);
                 else
                     BuildDataRows();
@@ -5594,7 +5758,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         _originalCellContent = null;
 
         // Use targeted refresh when virtualization is active to avoid full panel rebuild
-        if (EnableVirtualization && editedRowIndex >= 0 && editedColIndex >= 0)
+        if (_virtualizingPanel != null && editedRowIndex >= 0 && editedColIndex >= 0)
         {
             RefreshVirtualizedCell(editedRowIndex, editedColIndex);
             return;
@@ -5659,7 +5823,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     private Grid? FindCellContainer(int rowIndex, int colIndex)
     {
         // Virtualized path: cells live inside the virtualizing panels, not the static grids
-        if (EnableVirtualization)
+        if (_virtualizingPanel != null)
             return FindCellContainerVirtualized(rowIndex, colIndex);
 
         var frozenColumns = GetFrozenColumns();
@@ -6254,10 +6418,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private double MeasureHeaderWidth(DataGridColumn column)
     {
+        var headerText = column.Header ?? string.Empty;
+        double fontSize = 14;
+
+        // Try Label.Measure first — works when a handler is available
         var label = new Label
         {
-            Text = column.Header,
-            FontSize = 14,
+            Text = headerText,
+            FontSize = fontSize,
             FontAttributes = FontAttributes.Bold,
             MaxLines = 1,
             LineBreakMode = LineBreakMode.NoWrap
@@ -6265,6 +6433,11 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
         var measured = label.Measure(double.PositiveInfinity, double.PositiveInfinity);
         var textWidth = measured.Width;
+
+        // Fallback: Label.Measure returns 0 for disconnected elements (no handler).
+        // Estimate using average bold character width for proportional fonts (Segoe UI / SF Pro).
+        if (textWidth <= 0 && headerText.Length > 0)
+            textWidth = Math.Ceiling(headerText.Length * fontSize * 0.62);
 
         // Add padding for contentGrid (8 left + 8 right)
         double padding = 16;
@@ -6450,6 +6623,45 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
     }
 
+    private void OnDataContainerSizeChanged(object? sender, EventArgs e)
+    {
+        if (_isUpdating || _isDistributingFill)
+            return;
+
+        var width = dataContainer.Width;
+        if (width <= 0 || double.IsNaN(width) || double.IsInfinity(width))
+            return;
+
+        // First-time sync after BuildGrid — run full SynchronizeColumnWidths
+        if (_pendingFillSync)
+        {
+            _pendingFillSync = false;
+            Dispatcher.Dispatch(() =>
+            {
+                if (!_isUpdating && !_isDistributingFill)
+                    SynchronizeColumnWidths();
+            });
+            return;
+        }
+
+        // Subsequent resize — redistribute Fill columns when container width changes
+        if (Math.Abs(width - _lastDistributionWidth) < 1.0)
+            return;
+
+        var visibleColumns = GetVisibleColumns();
+        if (!visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
+            return;
+
+        Dispatcher.Dispatch(() =>
+        {
+            if (!_isUpdating && !_isDistributingFill)
+            {
+                DistributeFillColumnWidthsGuarded();
+                SyncVirtualizedRowColumnWidths();
+            }
+        });
+    }
+
     private void OnDataGridSizeChanged(object? sender, EventArgs e)
     {
         if (_isUpdating || _isDistributingFill)
@@ -6473,7 +6685,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         Dispatcher.Dispatch(() =>
         {
             if (!_isUpdating && !_isDistributingFill)
+            {
                 DistributeFillColumnWidthsGuarded();
+                SyncVirtualizedRowColumnWidths();
+            }
         });
     }
 
@@ -6507,11 +6722,26 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
     private void ScheduleColumnWidthSync()
     {
-        // Schedule synchronization after layout is complete
-        Dispatcher.Dispatch(() =>
+        var width = dataContainer.Width;
+        if (width > 0 && !double.IsNaN(width) && !double.IsInfinity(width))
         {
-            // Give layout time to complete, then sync
-            Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(50), SynchronizeColumnWidths);
+            // Width already valid (subsequent rebuilds) — sync on next dispatch
+            Dispatcher.Dispatch(SynchronizeColumnWidths);
+            return;
+        }
+
+        // Width not yet available — let dataContainer.SizeChanged trigger sync.
+        // Fallback timer in case SizeChanged never fires.
+        _pendingFillSync = true;
+        Dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(500), () =>
+        {
+            // Re-check all guards inside the callback — OnDataContainerSizeChanged
+            // may have already cleared _pendingFillSync and dispatched its own sync.
+            if (_pendingFillSync && !_isUpdating && !_isDistributingFill)
+            {
+                _pendingFillSync = false;
+                SynchronizeColumnWidths();
+            }
         });
     }
 
@@ -6533,14 +6763,22 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         var visibleColumns = GetVisibleColumns();
         if (visibleColumns.Any(c => c.SizeMode == DataGridColumnSizeMode.Fill))
             DistributeFillColumnWidthsGuarded();
+
+        // Propagate final column widths to all visible virtualized row Grids.
+        // Virtualized rows have independent ColumnDefinitions that don't auto-sync
+        // with the header/footer grids — they must be updated explicitly.
+        SyncVirtualizedRowColumnWidths();
     }
 
     private void SyncColumnWidthsBetweenGrids(Grid headerGridRef, Grid dataGridRef, Grid footerGridRef, List<DataGridColumn> columns)
     {
-        if (headerGridRef.ColumnDefinitions.Count == 0 || dataGridRef.ColumnDefinitions.Count == 0)
+        if (headerGridRef.ColumnDefinitions.Count == 0)
             return;
 
-        for (int i = 0; i < columns.Count && i < headerGridRef.ColumnDefinitions.Count && i < dataGridRef.ColumnDefinitions.Count; i++)
+        // When virtualized, dataGrid is empty — use header-only widths for FitHeader columns.
+        bool hasDataGrid = dataGridRef.ColumnDefinitions.Count > 0;
+
+        for (int i = 0; i < columns.Count && i < headerGridRef.ColumnDefinitions.Count; i++)
         {
             var column = columns[i];
 
@@ -6553,7 +6791,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
 
             // Get the actual rendered widths
             var headerWidth = GetColumnActualWidth(headerGridRef, i);
-            var dataWidth = GetColumnActualWidth(dataGridRef, i);
+            var dataWidth = hasDataGrid && i < dataGridRef.ColumnDefinitions.Count
+                ? GetColumnActualWidth(dataGridRef, i)
+                : 0;
 
             // Use the maximum width to ensure alignment
             var maxWidth = Math.Max(headerWidth, dataWidth);
@@ -6563,7 +6803,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 var newGridLength = new GridLength(maxWidth);
                 headerGridRef.ColumnDefinitions[i].Width = newGridLength;
-                dataGridRef.ColumnDefinitions[i].Width = newGridLength;
+
+                if (hasDataGrid && i < dataGridRef.ColumnDefinitions.Count)
+                    dataGridRef.ColumnDefinitions[i].Width = newGridLength;
 
                 // Update footer if visible
                 if (ShowFooter && i < footerGridRef.ColumnDefinitions.Count)
@@ -6572,6 +6814,46 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                 // Update the column's actual width
                 column.ActualWidth = maxWidth;
             }
+        }
+    }
+
+    private void SyncVirtualizedRowColumnWidths()
+    {
+        var scrollableColumns = GetScrollableColumns();
+        var frozenColumns = GetFrozenColumns();
+
+        if (_virtualizingPanel != null)
+            SyncPanelRowColumnWidths(_virtualizingPanel, scrollableColumns);
+        if (_frozenVirtualizingPanel != null)
+            SyncPanelRowColumnWidths(_frozenVirtualizingPanel, frozenColumns);
+    }
+
+    private void SyncPanelRowColumnWidths(VirtualizingDataGridPanel panel, List<DataGridColumn> columns)
+    {
+        // Snapshot children — layout invalidation from width changes could trigger
+        // UpdateVisibleRows which modifies the live Children collection.
+        var snapshot = panel.Children.ToList();
+        foreach (var child in snapshot)
+        {
+            if (child is Grid rowGrid)
+                SyncRowGridColumnWidths(rowGrid, columns);
+        }
+    }
+
+    private void SyncRowGridColumnWidths(Grid rowGrid, List<DataGridColumn> columns)
+    {
+        for (int i = 0; i < columns.Count && i < rowGrid.ColumnDefinitions.Count; i++)
+        {
+            var newWidth = ResolveColumnWidth(columns[i]);
+            var current = rowGrid.ColumnDefinitions[i].Width;
+
+            // Skip if unchanged to avoid unnecessary layout invalidation
+            if (newWidth.IsAbsolute && current.IsAbsolute && Math.Abs(newWidth.Value - current.Value) < 0.5)
+                continue;
+            if (newWidth.GridUnitType == current.GridUnitType && Math.Abs(newWidth.Value - current.Value) < 0.5)
+                continue;
+
+            rowGrid.ColumnDefinitions[i].Width = newWidth;
         }
     }
 
@@ -6774,7 +7056,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         }
 
         // Update virtualization panels if active
-        if (EnableVirtualization && _virtualizingPanel != null)
+        if (_virtualizingPanel != null)
         {
             // Auto-commit any active edit before recycling rows to prevent data loss
             if (_editingItem != null && _editingRowIndex >= 0)
@@ -6995,7 +7277,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             PageSize = newSize;
             CurrentPage = 1;
             // Use same fast-path routing as OnPaginationChanged
-            if (EnableVirtualization)
+            if (_virtualizingPanel != null)
                 UpdateVirtualizedDataForPageChange();
             else
                 BuildDataRows(); // Row count changes, so TryUpdateDataRowsInPlace would return false
@@ -7081,7 +7363,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     {
         if (bindable is DataGridView grid && !grid._isUpdating)
         {
-            if (grid.EnableVirtualization)
+            if (grid._virtualizingPanel != null)
                 grid.UpdateVirtualizedDataForPageChange();
             else if (!grid.TryUpdateDataRowsInPlace())
                 grid.BuildDataRows();

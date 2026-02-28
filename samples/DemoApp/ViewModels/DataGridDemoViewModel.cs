@@ -23,7 +23,7 @@ public partial class DataGridDemoViewModel : BaseViewModel
     private bool _canUserEdit = true;
 
     [ObservableProperty]
-    private bool _enablePagination;
+    private bool _enablePagination = true;
 
     public List<string> Departments => SampleData.Departments;
 

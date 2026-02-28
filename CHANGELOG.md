@@ -7,15 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **DataGrid**: Adaptive auto-virtualization — automatically virtualizes when items exceed 2 screenfuls, with dynamic buffer size (1 screenful per side) based on viewport capacity; small datasets render without virtualization overhead (#268)
+
 ### Changed
 
+- **DataGrid**: Replace per-cell native context menu handlers with grid-level handlers on ScrollViews — reduces ~14,000 event subscriptions to 2 for large datasets (#268)
+- **DataGrid**: Suppress per-child layout passes during bulk cell creation with `BatchBegin`/`BatchCommit` (#268)
+- **DataGrid**: Reliable Fill column distribution via `dataContainer.SizeChanged` hook instead of fragile 50ms timer (#268)
+- **DataGrid**: Call `PreMeasureFitHeaderColumns` before row creation so FitHeader columns have accurate widths up front (#268)
+- **DemoApp**: Enable pagination by default in DataGrid demo for better UX with 500-item dataset (#268)
 - **DataGrid**: Optimize pagination page changes with in-place cell content updates — preserves Grid containers, gesture recognizers, and native context menu handlers instead of full teardown/rebuild (~5-7x faster) (#268)
 - **DataGrid**: Enable virtualization + pagination coexistence — `EnableVirtualization` and `EnablePagination` can now be used together; the virtualizing panel receives the page slice and recycles rows via `RowUpdater` (#268)
 - **DataGrid**: Optimize virtualized row recycling with in-place cell updates — `UpdateVirtualizedRow` now updates existing cell containers instead of clearing and rebuilding (#268)
 - **DataGrid**: Replace O(n) `_sortedItems.IndexOf` in `BuildDataRows` with pre-built O(1) dictionary lookup (#268)
+- **DemoApp**: Expand sample employee dataset from 20 to 500 items for pagination/virtualization testing (#268)
 
 ### Fixed
 
+- **DataGrid**: Remove `AutomationId` reassignment in `UpdateDataCellContent` — MAUI's `Element.AutomationId` is set-once and throws `InvalidOperationException` on reused cells during page navigation (#268)
+- **DataGrid**: Fix context menu position drift on lower rows — use cell-relative coordinates instead of viewport-relative for `MenuFlyout.ShowAt` anchor (#268)
+- **DataGrid**: Fix Fill column sizing requiring window maximize — add `HorizontalOptions="FillAndExpand"` to `dataContainer` so it inherits valid width at first layout (#268)
+- **DataGrid**: Prevent `COMException 0x80004005` in WinUI measure pass — `VirtualizingDataGridPanel.Measure` no longer returns `PositiveInfinity` as desired width when inside a horizontal ScrollView (#268)
+- **DataGrid**: Fix column widths not propagating to virtualized rows — Fill/FitHeader column widths are now synced to all visible virtualized row Grids after distribution, and recycled rows pick up latest widths on reuse (#268)
+- **DataGrid**: Fix FitHeader columns too narrow on first render — run `PreMeasureFitHeaderColumns` before `BuildHeader` so headers get pre-measured widths instead of `GridLength.Auto`; add `MaxLines=1` and `LineBreakMode=NoWrap` to header labels to prevent wrapping (#268)
+- **DataGrid**: Fix Fill columns not re-expanding on window resize — `OnDataContainerSizeChanged` now handles subsequent resize events (not just the initial sync), redistributing Fill column widths when the container width changes (#268)
+- **DataGrid**: Fix row selection highlight not showing in virtualized mode — `UpdateSelectionVisualState` now searches the virtualizing panel's visible row Grids instead of the empty `dataGrid.Children` (#268)
+- **DemoApp**: Remove redundant external horizontal ScrollView around DataGridView — the control handles its own horizontal scrolling; the outer ScrollView prevented Fill columns from detecting viewport width changes (#268)
 - **ComboBox**: Fix popup appearing on the first ComboBox when a second instance is clicked — overlay now always uses a dedicated wrapper Grid so it covers the full page regardless of the original layout type (StackLayout, Grid with RowDefinitions, etc.) (#267)
 - **ComboBox**: Replace `StyleId`-based wrapper detection with `ConditionalWeakTable` for cleaner page-wrapper tracking in `PopupOverlayHelper` (#267)
 

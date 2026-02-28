@@ -50,7 +50,7 @@
             </Grid>
 
             <!-- Data Rows (combined frozen + scrollable) -->
-            <Grid x:Name="dataContainer" Grid.Row="1" ColumnDefinitions="Auto,*" VerticalOptions="FillAndExpand">
+            <Grid x:Name="dataContainer" Grid.Row="1" ColumnDefinitions="Auto,*" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
                 <!-- Frozen Data Columns -->
                 <ScrollView x:Name="frozenDataScrollView"
                             Grid.Column="0"
