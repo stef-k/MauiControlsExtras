@@ -2359,6 +2359,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             keyboardBehavior.HandleTabKey = true;
         }
 
+        Loaded += OnDataGridViewLoaded;
         Unloaded += OnDataGridViewUnloaded;
         SizeChanged += OnDataGridSizeChanged;
         dataContainer.SizeChanged += OnDataContainerSizeChanged;
@@ -3690,12 +3691,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 try
                 {
-                    args.Handled = true;
                     var winPos = args.GetPosition(element);
-                    // Convert viewport-relative coords to content coords by adding scroll offset
                     var contentX = winPos.X + scrollView.ScrollX;
                     var contentY = winPos.Y + scrollView.ScrollY;
-                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
                 }
                 catch (Exception ex)
                 {
@@ -3711,11 +3710,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     if (args.HoldingState != Microsoft.UI.Input.HoldingState.Started)
                         return;
 
-                    args.Handled = true;
                     var winPos = args.GetPosition(element);
                     var contentX = winPos.X + scrollView.ScrollX;
                     var contentY = winPos.Y + scrollView.ScrollY;
-                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
                 }
                 catch (Exception ex)
                 {
@@ -3797,11 +3795,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 try
                 {
-                    args.Handled = true;
                     var viewportPos = isFrozen ? _androidFrozenScrollLastTouch : _androidDataScrollLastTouch;
                     var contentX = viewportPos.X + scrollView.ScrollX;
                     var contentY = viewportPos.Y + scrollView.ScrollY;
-                    HandleGridLevelContextMenu(contentX, contentY, isFrozen);
+                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
                 }
                 catch (Exception ex)
                 {
@@ -3880,7 +3877,9 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// Hit-tests content coordinates to find the cell container, then dispatches the context menu.
     /// Works for both non-virtualized (dataGrid) and virtualized (_virtualizingPanel) modes.
     /// </summary>
-    private void HandleGridLevelContextMenu(double contentX, double contentY, bool isFrozen)
+    /// <returns><c>true</c> if a cell was found and the context menu dispatched; <c>false</c> if
+    /// the hit-test missed (empty area, suppressed cell, etc.).</returns>
+    private bool HandleGridLevelContextMenu(double contentX, double contentY, bool isFrozen)
     {
         // Determine the content grid to search
         Layout contentGrid;
@@ -3904,12 +3903,12 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             // Two-level: virtualizing panel children are row Grids, cells are nested inside
             var row = FindChildAtPosition(contentGrid, contentX, contentY);
             if (row is not Grid rowGrid)
-                return;
+                return false;
 
             // Convert content-space coordinates to row-relative coordinates
             cell = FindChildAtPosition(rowGrid, contentX - rowGrid.Frame.X, contentY - rowGrid.Frame.Y) as Grid;
             if (cell == null)
-                return;
+                return false;
 
             cellAbsoluteX = rowGrid.Frame.X + cell.Frame.X;
             cellAbsoluteY = rowGrid.Frame.Y + cell.Frame.Y;
@@ -3919,20 +3918,21 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             // Flat grid: cells are direct children with content-space Frames
             cell = FindChildAtPosition(contentGrid, contentX, contentY) as Grid;
             if (cell == null)
-                return;
+                return false;
 
             cellAbsoluteX = cell.Frame.X;
             cellAbsoluteY = cell.Frame.Y;
         }
 
         if (!_cellMetadata.TryGetValue(cell, out var meta))
-            return;
+            return false;
 
         if (ShouldSuppressContextMenu(meta.RowIndex, meta.ColIndex))
-            return;
+            return false;
 
         var cellRelativePosition = new Point(contentX - cellAbsoluteX, contentY - cellAbsoluteY);
         DispatchShowContextMenuSafely(meta.Item, meta.Column, meta.RowIndex, meta.ColIndex, cellRelativePosition, cell);
+        return true;
     }
 
     /// <summary>
@@ -3983,6 +3983,20 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
         => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
+
+    private void OnDataGridViewLoaded(object? sender, EventArgs e)
+    {
+        // Re-subscribe handlers that were detached in OnDataGridViewUnloaded.
+        // -= before += prevents double subscription on first Loaded (constructor already subscribes).
+        SizeChanged -= OnDataGridSizeChanged;
+        SizeChanged += OnDataGridSizeChanged;
+        dataContainer.SizeChanged -= OnDataContainerSizeChanged;
+        dataContainer.SizeChanged += OnDataContainerSizeChanged;
+        dataScrollView.HandlerChanged -= OnDataScrollViewHandlerChanged;
+        dataScrollView.HandlerChanged += OnDataScrollViewHandlerChanged;
+        frozenDataScrollView.HandlerChanged -= OnFrozenScrollViewHandlerChanged;
+        frozenDataScrollView.HandlerChanged += OnFrozenScrollViewHandlerChanged;
+    }
 
     private void OnDataGridViewUnloaded(object? sender, EventArgs e)
     {
