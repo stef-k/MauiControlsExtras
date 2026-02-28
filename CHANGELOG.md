@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **DataGrid**: Replace per-cell native context menu handlers with grid-level handlers on ScrollViews — reduces ~14,000 event subscriptions to 2 for large datasets (#268)
+- **DataGrid**: Suppress per-child layout passes during bulk cell creation with `BatchBegin`/`BatchCommit` (#268)
+- **DataGrid**: Reliable Fill column distribution via `dataContainer.SizeChanged` hook instead of fragile 50ms timer (#268)
+- **DataGrid**: Call `PreMeasureFitHeaderColumns` before row creation so FitHeader columns have accurate widths up front (#268)
+- **DemoApp**: Enable pagination by default in DataGrid demo for better UX with 500-item dataset (#268)
 - **DataGrid**: Optimize pagination page changes with in-place cell content updates — preserves Grid containers, gesture recognizers, and native context menu handlers instead of full teardown/rebuild (~5-7x faster) (#268)
 - **DataGrid**: Enable virtualization + pagination coexistence — `EnableVirtualization` and `EnablePagination` can now be used together; the virtualizing panel receives the page slice and recycles rows via `RowUpdater` (#268)
 - **DataGrid**: Optimize virtualized row recycling with in-place cell updates — `UpdateVirtualizedRow` now updates existing cell containers instead of clearing and rebuilding (#268)
