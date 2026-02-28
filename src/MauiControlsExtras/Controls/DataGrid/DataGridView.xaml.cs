@@ -5331,23 +5331,58 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             var isSelected = _selectedItems.Contains(itemToUpdate);
             var isAlternate = displayIndex % 2 == 1;
 
-            // Update frozen cells
-            foreach (var child in frozenDataGrid.Children)
+            if (_virtualizingPanel != null)
             {
-                if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                // Virtualized: cells are inside row Grids in the virtualizing panel
+                var rowView = _virtualizingPanel.GetVisibleRow(displayIndex);
+                if (rowView is Grid rowGrid)
                 {
-                    var colIndex = Grid.GetColumn(cellGrid);
-                    UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    foreach (var cell in rowGrid.Children)
+                    {
+                        if (cell is Grid cellGrid)
+                        {
+                            var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
+                            UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                        }
+                    }
+                }
+
+                // Also update frozen virtualizing panel if present
+                if (_frozenVirtualizingPanel != null)
+                {
+                    var frozenRowView = _frozenVirtualizingPanel.GetVisibleRow(displayIndex);
+                    if (frozenRowView is Grid frozenRowGrid)
+                    {
+                        foreach (var cell in frozenRowGrid.Children)
+                        {
+                            if (cell is Grid cellGrid)
+                            {
+                                var colIndex = Grid.GetColumn(cellGrid);
+                                UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                            }
+                        }
+                    }
                 }
             }
-
-            // Update scrollable cells
-            foreach (var child in dataGrid.Children)
+            else
             {
-                if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                // Non-virtualized: cells are direct children of dataGrid/frozenDataGrid
+                foreach (var child in frozenDataGrid.Children)
                 {
-                    var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
-                    UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                    {
+                        var colIndex = Grid.GetColumn(cellGrid);
+                        UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    }
+                }
+
+                foreach (var child in dataGrid.Children)
+                {
+                    if (child is Grid cellGrid && Grid.GetRow(cellGrid) == displayIndex)
+                    {
+                        var colIndex = Grid.GetColumn(cellGrid) + frozenColumns.Count;
+                        UpdateCellBackground(cellGrid, rowIndex, colIndex, isSelected, isAlternate);
+                    }
                 }
             }
         }
