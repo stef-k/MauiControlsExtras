@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **DataGrid:** Android long-press context menu not firing when cells have TapGestureRecognizer — MAUI's gesture system prevents native LongClick detection; replaced with Touch-event-based long-press detection using `Handler.PostDelayed` ([#275](https://github.com/stef-k/MauiControlsExtras/issues/275))
+
 ## [3.3.1] - 2026-03-01
 
 ### Fixed
