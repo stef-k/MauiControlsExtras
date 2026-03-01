@@ -170,12 +170,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     // Grid-level context menu handler state (one per ScrollView, replaces per-cell handlers).
     private readonly GridContextMenuHandlerState _dataScrollViewContextMenu = new();
     private readonly GridContextMenuHandlerState _frozenScrollViewContextMenu = new();
-#if ANDROID
-    // Stores the last touch-down position (in DIPs) for the Android long-click handler,
-    // keyed per ScrollView platform view.
-    private Point _androidDataScrollLastTouch;
-    private Point _androidFrozenScrollLastTouch;
-#endif
 
     /// <summary>
     /// Stores native event handler references for grid-level context menus on a ScrollView.
@@ -192,9 +186,6 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         public UIKit.UITapGestureRecognizer? SecondaryClickRecognizer;
 #endif
         public UIKit.UILongPressGestureRecognizer? LongPressRecognizer;
-#elif ANDROID
-        public EventHandler<Android.Views.View.LongClickEventArgs>? LongClickHandler;
-        public EventHandler<Android.Views.View.TouchEventArgs>? TouchHandler;
 #endif
     }
 
@@ -209,6 +200,14 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         public DataGridColumn Column = null!;
         public int RowIndex;
         public int ColIndex;
+#if ANDROID
+        /// <summary>
+        /// Tracks whether a native Android LongClick handler has been attached to this
+        /// cell's current platform view, preventing duplicate subscriptions on re-entry.
+        /// Reset when the handler disconnects (platform view changes).
+        /// </summary>
+        public bool HasAndroidLongClick;
+#endif
     }
 
     private readonly ConditionalWeakTable<Grid, CellMetadata> _cellMetadata = new();
@@ -3765,48 +3764,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             uiView.AddGestureRecognizer(state.LongPressRecognizer);
         }
 #elif ANDROID
-        if (platformView is Android.Views.View androidView)
-        {
-            state.TouchHandler = (sender, args) =>
-            {
-                try
-                {
-                    if (args.Event?.Action == Android.Views.MotionEventActions.Down)
-                    {
-                        var density = androidView.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
-                        var rawX = args.Event.GetX();
-                        var rawY = args.Event.GetY();
-                        if (isFrozen)
-                            _androidFrozenScrollLastTouch = new Point(rawX / density, rawY / density);
-                        else
-                            _androidDataScrollLastTouch = new Point(rawX / density, rawY / density);
-                    }
-                    args.Handled = false;
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceWarning($"[DataGridView] Touch handler error: {ex}");
-                }
-            };
-            androidView.LongClickable = true;
-            androidView.Touch += state.TouchHandler;
-
-            state.LongClickHandler = (sender, args) =>
-            {
-                try
-                {
-                    var viewportPos = isFrozen ? _androidFrozenScrollLastTouch : _androidDataScrollLastTouch;
-                    var contentX = viewportPos.X + scrollView.ScrollX;
-                    var contentY = viewportPos.Y + scrollView.ScrollY;
-                    args.Handled = HandleGridLevelContextMenu(contentX, contentY, isFrozen);
-                }
-                catch (Exception ex)
-                {
-                    Trace.TraceWarning($"[DataGridView] LongClick handler error: {ex}");
-                }
-            };
-            androidView.LongClick += state.LongClickHandler;
-        }
+        // Android context menu is handled per-cell via SetupAndroidCellLongPress.
+        // Grid-level handlers don't work because TapGestureRecognizer on cells
+        // consumes ACTION_DOWN, preventing the parent ScrollView from receiving
+        // Touch/LongClick events.
 #endif
         state.IsAttached = true;
     }
@@ -3856,19 +3817,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             }
         }
 #elif ANDROID
-        if (platformView is Android.Views.View androidView)
-        {
-            if (state.LongClickHandler != null)
-            {
-                androidView.LongClick -= state.LongClickHandler;
-                state.LongClickHandler = null;
-            }
-            if (state.TouchHandler != null)
-            {
-                androidView.Touch -= state.TouchHandler;
-                state.TouchHandler = null;
-            }
-        }
+        // Android context menu uses per-cell LongClick handlers (SetupAndroidCellLongPress).
+        // They are detached when MAUI disconnects the cell handler (HandlerChanged resets the
+        // CellMetadata.HasAndroidLongClick flag); the native LongClick subscription is released
+        // when the platform view is disposed by MAUI's handler lifecycle.
 #endif
         state.IsAttached = false;
     }
@@ -3983,6 +3935,68 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
     /// </summary>
     private bool ShouldSuppressContextMenu(int rowIndex, int colIndex)
         => DataGridContextMenuHelper.IsCellInEditMode(rowIndex, colIndex, _editingRowIndex, _editingColumnIndex, _currentEditControl != null);
+
+#if ANDROID
+    /// <summary>
+    /// Attaches a native Android LongClick handler to a cell container.
+    /// On Android, cells have TapGestureRecognizer which consumes ACTION_DOWN,
+    /// preventing parent ScrollView from receiving Touch/LongClick events.
+    /// Per-cell native handlers avoid this by operating at the same view level.
+    /// </summary>
+    /// <remarks>
+    /// The handler is attached/detached via <c>HandlerChanged</c>: when the MAUI handler
+    /// connects, we attach LongClick on the new platform view; when it disconnects (handler
+    /// replaced or view removed from tree), we reset the tracking flag so re-attachment
+    /// works correctly on reconnect. Context menu configuration is checked at invocation
+    /// time so cells react to runtime property changes.
+    /// </remarks>
+    private void SetupAndroidCellLongPress(Grid container)
+    {
+        container.HandlerChanged += (s, e) =>
+        {
+            if (!_cellMetadata.TryGetValue(container, out var meta))
+                return;
+
+            if (container.Handler?.PlatformView is Android.Views.View androidView)
+            {
+                // Handler connected — attach LongClick if not already attached
+                if (!meta.HasAndroidLongClick)
+                {
+                    androidView.LongClickable = true;
+                    androidView.LongClick += (sender, args) =>
+                    {
+                        try
+                        {
+                            if (!(ShowDefaultContextMenu || ContextMenuTemplate != null
+                                || (GetValue(ContextMenuItemsProperty) is ContextMenuItemCollection c && c.Count > 0)))
+                                return;
+
+                            if (_cellMetadata.TryGetValue(container, out var m)
+                                && !ShouldSuppressContextMenu(m.RowIndex, m.ColIndex))
+                            {
+                                DispatchShowContextMenuSafely(m.Item, m.Column,
+                                    m.RowIndex, m.ColIndex, null, container);
+                                args.Handled = true;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.TraceWarning($"[DataGridView] Cell LongClick error: {ex}");
+                        }
+                    };
+                    meta.HasAndroidLongClick = true;
+                }
+            }
+            else
+            {
+                // Handler disconnected — reset flag so re-attachment works on reconnect.
+                // The old native view's LongClick subscription is released when the native
+                // view is disposed by MAUI's handler lifecycle.
+                meta.HasAndroidLongClick = false;
+            }
+        };
+    }
+#endif
 
     private void OnDataGridViewLoaded(object? sender, EventArgs e)
     {
@@ -4930,6 +4944,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             dropGesture.Drop += (s, e) => OnRowDrop(meta.RowIndex, e);
             container.GestureRecognizers.Add(dropGesture);
         }
+
+#if ANDROID
+        SetupAndroidCellLongPress(container);
+#endif
 
         return container;
     }
