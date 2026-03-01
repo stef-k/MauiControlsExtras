@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-03-01
+
 ### Fixed
 
 - **DataGrid**: Fix context menu not showing on Android long-press — use per-cell native `LongClick` handlers instead of grid-level handlers, which were blocked by `TapGestureRecognizer` consuming `ACTION_DOWN` ([#275](https://github.com/stef-k/MauiControlsExtras/issues/275))
