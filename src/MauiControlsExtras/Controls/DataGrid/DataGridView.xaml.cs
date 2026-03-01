@@ -3967,6 +3967,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         Java.Lang.Runnable? pendingCallback = null;
         float downX = 0, downY = 0;
 
+        // Cancels and disposes the pending long-press Runnable (frees native Java peer).
+        void CancelPending()
+        {
+            if (pendingCallback != null)
+            {
+                _androidLongPressHandler?.RemoveCallbacks(pendingCallback);
+                pendingCallback.Dispose();
+                pendingCallback = null;
+            }
+        }
+
         container.HandlerChanged += (s, e) =>
         {
             if (!_cellMetadata.TryGetValue(container, out var meta))
@@ -3986,20 +3997,24 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                     {
                         try
                         {
-                            var action = args.Event!.ActionMasked;
+                            if (args.Event is not { } motionEvent)
+                                return;
+
+                            var action = motionEvent.ActionMasked;
 
                             if (action == Android.Views.MotionEventActions.Down)
                             {
-                                downX = args.Event.RawX;
-                                downY = args.Event.RawY;
+                                downX = motionEvent.RawX;
+                                downY = motionEvent.RawY;
 
-                                // Cancel any previous pending callback (safety)
-                                if (pendingCallback != null)
-                                    _androidLongPressHandler!.RemoveCallbacks(pendingCallback);
+                                CancelPending();
 
                                 pendingCallback = new Java.Lang.Runnable(() =>
                                 {
                                     pendingCallback = null;
+                                    if (!androidView.IsAttachedToWindow)
+                                        return;
+
                                     if (!(ShowDefaultContextMenu || ContextMenuTemplate != null
                                         || (GetValue(ContextMenuItemsProperty) is ContextMenuItemCollection c && c.Count > 0)))
                                         return;
@@ -4019,23 +4034,17 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
                             {
                                 if (pendingCallback != null)
                                 {
-                                    var dx = args.Event.RawX - downX;
-                                    var dy = args.Event.RawY - downY;
+                                    var dx = motionEvent.RawX - downX;
+                                    var dy = motionEvent.RawY - downY;
                                     if (dx * dx + dy * dy > touchSlop * touchSlop)
-                                    {
-                                        _androidLongPressHandler!.RemoveCallbacks(pendingCallback);
-                                        pendingCallback = null;
-                                    }
+                                        CancelPending();
                                 }
                             }
                             else if (action == Android.Views.MotionEventActions.Up
-                                || action == Android.Views.MotionEventActions.Cancel)
+                                || action == Android.Views.MotionEventActions.Cancel
+                                || action == Android.Views.MotionEventActions.PointerDown)
                             {
-                                if (pendingCallback != null)
-                                {
-                                    _androidLongPressHandler!.RemoveCallbacks(pendingCallback);
-                                    pendingCallback = null;
-                                }
+                                CancelPending();
                             }
                         }
                         catch (Exception ex)
@@ -4052,11 +4061,7 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
             {
                 // Handler disconnected — cancel any pending callback and reset flag.
                 // The Touch subscription is released when MAUI disposes the native view.
-                if (pendingCallback != null && _androidLongPressHandler != null)
-                {
-                    _androidLongPressHandler.RemoveCallbacks(pendingCallback);
-                    pendingCallback = null;
-                }
+                CancelPending();
                 meta.HasAndroidLongPress = false;
             }
         };
@@ -4085,6 +4090,10 @@ public partial class DataGridView : Base.ListStyledControlBase, Base.IUndoRedo, 
         frozenDataScrollView.HandlerChanged -= OnFrozenScrollViewHandlerChanged;
         DetachGridLevelContextMenuHandlers(dataScrollView, _dataScrollViewContextMenu);
         DetachGridLevelContextMenuHandlers(frozenDataScrollView, _frozenScrollViewContextMenu);
+#if ANDROID
+        // Purge all pending long-press callbacks to prevent stale UI interactions.
+        _androidLongPressHandler?.RemoveCallbacksAndMessages(null);
+#endif
         ClearVirtualizationPanels();
     }
 
