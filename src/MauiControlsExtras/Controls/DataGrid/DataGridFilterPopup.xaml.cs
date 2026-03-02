@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using MauiControlsExtras.Base;
 
@@ -9,13 +8,11 @@ namespace MauiControlsExtras.Controls;
 /// </summary>
 public partial class DataGridFilterPopup : StyledControlBase
 {
-    // Sentinel used in _selectedValues to represent null cell values,
-    // because HashSet<object> cannot use null as a key.
+    // Sentinel used internally to represent null cell values,
+    // because null cannot be stored as a FilterItem.Value directly.
     // Converted back to null at the emit boundary (OnApplyClicked).
     private static readonly object NullSentinel = new();
 
-    private readonly HashSet<object> _selectedValues = new();
-    private readonly ObservableCollection<FilterItem> _filteredItems = new();
     private List<FilterItem> _allItems = new();
     private DataGridColumn? _column;
     private CancellationTokenSource? _debounceTokenSource;
@@ -50,7 +47,6 @@ public partial class DataGridFilterPopup : StyledControlBase
     {
         InitializeComponent();
         SetupItemTemplate();
-        filterItemsList.ItemsSource = _filteredItems;
     }
 
     private void SetupItemTemplate()
@@ -73,7 +69,6 @@ public partial class DataGridFilterPopup : StyledControlBase
                 VerticalOptions = LayoutOptions.Center
             };
             checkBox.SetBinding(CheckBox.IsCheckedProperty, new Binding(nameof(FilterItem.IsSelected), BindingMode.TwoWay));
-            checkBox.CheckedChanged += OnItemCheckChanged;
 
             var label = new Label
             {
@@ -101,31 +96,21 @@ public partial class DataGridFilterPopup : StyledControlBase
         });
     }
 
-    private void OnItemCheckChanged(object? sender, CheckedChangedEventArgs e)
-    {
-        if (sender is CheckBox checkBox && checkBox.BindingContext is FilterItem item)
-        {
-            if (e.Value)
-                _selectedValues.Add(item.Value!);
-            else
-                _selectedValues.Remove(item.Value!);
-        }
-    }
-
     /// <summary>
     /// Sets the available values for filtering.
     /// </summary>
     public void SetValues(IEnumerable<object?> distinctValues, IEnumerable<object>? currentlySelected = null)
     {
         _allItems.Clear();
-        _selectedValues.Clear();
 
-        // Add current selections (wrap null → NullSentinel for HashSet compatibility)
+        // Build a set of currently selected values for O(1) lookup
+        HashSet<object>? selectedSet = null;
         if (currentlySelected != null)
         {
+            selectedSet = new HashSet<object>();
             foreach (var val in currentlySelected)
             {
-                _selectedValues.Add(val ?? NullSentinel);
+                selectedSet.Add(val ?? NullSentinel);
             }
         }
 
@@ -139,7 +124,7 @@ public partial class DataGridFilterPopup : StyledControlBase
                 Value = wrappedValue,
                 DisplayText = displayText,
                 DisplayTextLower = displayText.ToLowerInvariant(),
-                IsSelected = _selectedValues.Contains(wrappedValue)
+                IsSelected = selectedSet?.Contains(wrappedValue) ?? false
             };
             _allItems.Add(item);
         }
@@ -159,20 +144,15 @@ public partial class DataGridFilterPopup : StyledControlBase
     {
         var searchText = searchEntry.Text?.ToLowerInvariant() ?? string.Empty;
 
-        _filteredItems.Clear();
-
         if (string.IsNullOrEmpty(searchText))
         {
-            foreach (var item in _allItems)
-                _filteredItems.Add(item);
+            filterItemsList.ItemsSource = new List<FilterItem>(_allItems);
         }
         else
         {
-            foreach (var item in _allItems)
-            {
-                if (item.DisplayTextLower.Contains(searchText))
-                    _filteredItems.Add(item);
-            }
+            filterItemsList.ItemsSource = _allItems
+                .Where(i => i.DisplayTextLower.Contains(searchText))
+                .ToList();
         }
     }
 
@@ -195,14 +175,12 @@ public partial class DataGridFilterPopup : StyledControlBase
     {
         foreach (var item in _allItems)
         {
-            _selectedValues.Add(item.Value!);
             item.IsSelected = true;
         }
     }
 
     private void OnClearClicked(object? sender, EventArgs e)
     {
-        _selectedValues.Clear();
         foreach (var item in _allItems)
         {
             item.IsSelected = false;
@@ -218,8 +196,12 @@ public partial class DataGridFilterPopup : StyledControlBase
     private void OnApplyClicked(object? sender, EventArgs e)
     {
         _debounceTokenSource?.Cancel();
-        // Convert NullSentinel back to null for downstream consumers
-        var values = _selectedValues.Select(v => v == NullSentinel ? null! : v).ToList();
+        // Derive selected values from the authoritative FilterItem.IsSelected state.
+        // Convert NullSentinel back to null for downstream consumers.
+        var values = _allItems
+            .Where(i => i.IsSelected)
+            .Select(i => i.Value == NullSentinel ? null! : i.Value)
+            .ToList();
         var args = new FilterAppliedEventArgs(_column, values, searchEntry.Text);
         FilterApplied?.Invoke(this, args);
     }
