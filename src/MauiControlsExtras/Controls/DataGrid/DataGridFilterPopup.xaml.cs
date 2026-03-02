@@ -101,7 +101,11 @@ public partial class DataGridFilterPopup : StyledControlBase
     /// </summary>
     public void SetValues(IEnumerable<object?> distinctValues, IEnumerable<object>? currentlySelected = null)
     {
+        _debounceTokenSource?.Cancel();
+        _debounceTokenSource?.Dispose();
+        _debounceTokenSource = null;
         _allItems.Clear();
+        searchEntry.Text = string.Empty;
 
         // Build a set of currently selected values for O(1) lookup
         HashSet<object>? selectedSet = null;
@@ -159,6 +163,7 @@ public partial class DataGridFilterPopup : StyledControlBase
     private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
     {
         _debounceTokenSource?.Cancel();
+        _debounceTokenSource?.Dispose();
         _debounceTokenSource = new CancellationTokenSource();
 
         var token = _debounceTokenSource.Token;
@@ -190,12 +195,16 @@ public partial class DataGridFilterPopup : StyledControlBase
     private void OnCancelClicked(object? sender, EventArgs e)
     {
         _debounceTokenSource?.Cancel();
+        _debounceTokenSource?.Dispose();
+        _debounceTokenSource = null;
         FilterCancelled?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnApplyClicked(object? sender, EventArgs e)
     {
         _debounceTokenSource?.Cancel();
+        _debounceTokenSource?.Dispose();
+        _debounceTokenSource = null;
         // Derive selected values from the authoritative FilterItem.IsSelected state.
         // Convert NullSentinel back to null for downstream consumers.
         var values = _allItems
