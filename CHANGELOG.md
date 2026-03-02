@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **DataGrid:** Filter popup slow with 500+ distinct values — virtualize with CollectionView, add 100ms search debounce ([#280](https://github.com/stef-k/MauiControlsExtras/issues/280))
+
 ## [3.3.2] - 2026-03-01
 
 ### Fixed

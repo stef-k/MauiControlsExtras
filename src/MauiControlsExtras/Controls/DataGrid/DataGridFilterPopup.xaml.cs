@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using MauiControlsExtras.Base;
 
 namespace MauiControlsExtras.Controls;
@@ -7,15 +9,16 @@ namespace MauiControlsExtras.Controls;
 /// </summary>
 public partial class DataGridFilterPopup : StyledControlBase
 {
-    // Sentinel used in _selectedValues and _checkboxMap to represent null cell values,
-    // because HashSet<object>/Dictionary<object,T> cannot use null as a key.
+    // Sentinel used in _selectedValues to represent null cell values,
+    // because HashSet<object> cannot use null as a key.
     // Converted back to null at the emit boundary (OnApplyClicked).
     private static readonly object NullSentinel = new();
 
     private readonly HashSet<object> _selectedValues = new();
-    private readonly Dictionary<object, CheckBox> _checkboxMap = new();
+    private readonly ObservableCollection<FilterItem> _filteredItems = new();
     private List<FilterItem> _allItems = new();
     private DataGridColumn? _column;
+    private CancellationTokenSource? _debounceTokenSource;
 
     /// <summary>
     /// Occurs when the filter is applied.
@@ -46,6 +49,67 @@ public partial class DataGridFilterPopup : StyledControlBase
     public DataGridFilterPopup()
     {
         InitializeComponent();
+        SetupItemTemplate();
+        filterItemsList.ItemsSource = _filteredItems;
+    }
+
+    private void SetupItemTemplate()
+    {
+        filterItemsList.ItemTemplate = new DataTemplate(() =>
+        {
+            var grid = new Grid
+            {
+                ColumnDefinitions =
+                {
+                    new ColumnDefinition(new GridLength(32)),
+                    new ColumnDefinition(GridLength.Star)
+                },
+                ColumnSpacing = 4,
+                Padding = new Thickness(0, 2)
+            };
+
+            var checkBox = new CheckBox
+            {
+                VerticalOptions = LayoutOptions.Center
+            };
+            checkBox.SetBinding(CheckBox.IsCheckedProperty, new Binding(nameof(FilterItem.IsSelected), BindingMode.TwoWay));
+            checkBox.CheckedChanged += OnItemCheckChanged;
+
+            var label = new Label
+            {
+                VerticalOptions = LayoutOptions.Center,
+                LineBreakMode = LineBreakMode.TailTruncation
+            };
+            label.SetBinding(Label.TextProperty, new Binding(nameof(FilterItem.DisplayText)));
+
+            var tapGesture = new TapGestureRecognizer();
+            tapGesture.Tapped += (s, e) =>
+            {
+                if (label.BindingContext is FilterItem item)
+                {
+                    item.IsSelected = !item.IsSelected;
+                }
+            };
+            label.GestureRecognizers.Add(tapGesture);
+
+            Grid.SetColumn(checkBox, 0);
+            Grid.SetColumn(label, 1);
+            grid.Children.Add(checkBox);
+            grid.Children.Add(label);
+
+            return grid;
+        });
+    }
+
+    private void OnItemCheckChanged(object? sender, CheckedChangedEventArgs e)
+    {
+        if (sender is CheckBox checkBox && checkBox.BindingContext is FilterItem item)
+        {
+            if (e.Value)
+                _selectedValues.Add(item.Value!);
+            else
+                _selectedValues.Remove(item.Value!);
+        }
     }
 
     /// <summary>
@@ -55,7 +119,6 @@ public partial class DataGridFilterPopup : StyledControlBase
     {
         _allItems.Clear();
         _selectedValues.Clear();
-        _checkboxMap.Clear();
 
         // Add current selections (wrap null → NullSentinel for HashSet compatibility)
         if (currentlySelected != null)
@@ -75,6 +138,7 @@ public partial class DataGridFilterPopup : StyledControlBase
             {
                 Value = wrappedValue,
                 DisplayText = displayText,
+                DisplayTextLower = displayText.ToLowerInvariant(),
                 IsSelected = _selectedValues.Contains(wrappedValue)
             };
             _allItems.Add(item);
@@ -83,7 +147,7 @@ public partial class DataGridFilterPopup : StyledControlBase
         // Sort alphabetically
         _allItems = _allItems.OrderBy(i => i.DisplayText).ToList();
 
-        BuildCheckboxList(_allItems);
+        ApplySearchFilter();
     }
 
     private void UpdateHeader()
@@ -91,63 +155,40 @@ public partial class DataGridFilterPopup : StyledControlBase
         headerLabel.Text = _column != null ? $"Filter: {_column.Header}" : "Filter";
     }
 
-    private void BuildCheckboxList(IEnumerable<FilterItem> items)
+    private void ApplySearchFilter()
     {
-        checkboxContainer.Children.Clear();
-        _checkboxMap.Clear();
+        var searchText = searchEntry.Text?.ToLowerInvariant() ?? string.Empty;
 
-        foreach (var item in items)
+        _filteredItems.Clear();
+
+        if (string.IsNullOrEmpty(searchText))
         {
-            var row = new HorizontalStackLayout { Spacing = 8 };
-
-            var checkBox = new CheckBox
+            foreach (var item in _allItems)
+                _filteredItems.Add(item);
+        }
+        else
+        {
+            foreach (var item in _allItems)
             {
-                IsChecked = item.IsSelected,
-                VerticalOptions = LayoutOptions.Center
-            };
-
-            // Store reference for Select All / Clear (Value is never null; NullSentinel used for null cells)
-            _checkboxMap[item.Value!] = checkBox;
-
-            checkBox.CheckedChanged += (s, e) =>
-            {
-                if (e.Value)
-                    _selectedValues.Add(item.Value!);
-                else
-                    _selectedValues.Remove(item.Value!);
-            };
-
-            var label = new Label
-            {
-                Text = item.DisplayText,
-                VerticalOptions = LayoutOptions.Center
-            };
-
-            // Make the label tappable too
-            var tapGesture = new TapGestureRecognizer();
-            tapGesture.Tapped += (s, e) => checkBox.IsChecked = !checkBox.IsChecked;
-            label.GestureRecognizers.Add(tapGesture);
-
-            row.Children.Add(checkBox);
-            row.Children.Add(label);
-            checkboxContainer.Children.Add(row);
+                if (item.DisplayTextLower.Contains(searchText))
+                    _filteredItems.Add(item);
+            }
         }
     }
 
     private void OnSearchTextChanged(object? sender, TextChangedEventArgs e)
     {
-        var searchText = e.NewTextValue?.ToLowerInvariant() ?? string.Empty;
+        _debounceTokenSource?.Cancel();
+        _debounceTokenSource = new CancellationTokenSource();
 
-        if (string.IsNullOrEmpty(searchText))
+        var token = _debounceTokenSource.Token;
+        Task.Delay(100, token).ContinueWith(_ =>
         {
-            BuildCheckboxList(_allItems);
-        }
-        else
-        {
-            var filtered = _allItems.Where(i =>
-                i.DisplayText.ToLowerInvariant().Contains(searchText));
-            BuildCheckboxList(filtered);
-        }
+            if (!token.IsCancellationRequested)
+            {
+                MainThread.BeginInvokeOnMainThread(ApplySearchFilter);
+            }
+        }, TaskScheduler.Default);
     }
 
     private void OnSelectAllClicked(object? sender, EventArgs e)
@@ -155,41 +196,55 @@ public partial class DataGridFilterPopup : StyledControlBase
         foreach (var item in _allItems)
         {
             _selectedValues.Add(item.Value!);
-            if (_checkboxMap.TryGetValue(item.Value!, out var checkBox))
-            {
-                checkBox.IsChecked = true;
-            }
+            item.IsSelected = true;
         }
     }
 
     private void OnClearClicked(object? sender, EventArgs e)
     {
         _selectedValues.Clear();
-        foreach (var checkBox in _checkboxMap.Values)
+        foreach (var item in _allItems)
         {
-            checkBox.IsChecked = false;
+            item.IsSelected = false;
         }
     }
 
     private void OnCancelClicked(object? sender, EventArgs e)
     {
+        _debounceTokenSource?.Cancel();
         FilterCancelled?.Invoke(this, EventArgs.Empty);
     }
 
     private void OnApplyClicked(object? sender, EventArgs e)
     {
+        _debounceTokenSource?.Cancel();
         // Convert NullSentinel back to null for downstream consumers
         var values = _selectedValues.Select(v => v == NullSentinel ? null! : v).ToList();
         var args = new FilterAppliedEventArgs(_column, values, searchEntry.Text);
         FilterApplied?.Invoke(this, args);
     }
 
-    private class FilterItem
+    private class FilterItem : INotifyPropertyChanged
     {
+        private bool _isSelected;
+
         // Value is never null internally; NullSentinel represents null cell values
-        public object Value { get; set; } = null!;
-        public string DisplayText { get; set; } = string.Empty;
-        public bool IsSelected { get; set; }
+        public object Value { get; init; } = null!;
+        public string DisplayText { get; init; } = string.Empty;
+        public string DisplayTextLower { get; init; } = string.Empty;
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected == value) return;
+                _isSelected = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSelected)));
+            }
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
     }
 }
 
