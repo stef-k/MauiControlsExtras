@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.3] - 2026-03-02
+
 ### Fixed
 
 - **DataGrid:** Filter popup slow with 500+ distinct values — virtualize with CollectionView, add 100ms search debounce ([#280](https://github.com/stef-k/MauiControlsExtras/issues/280))
@@ -422,6 +424,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Highlights |
 |---------|------|------------|
+| 3.3.3 | 2026-03-02 | DataGrid filter popup virtualization with CollectionView + search debounce ([#280](https://github.com/stef-k/MauiControlsExtras/issues/280)) |
 | 3.3.0 | 2026-02-28 | DataGrid auto-virtualization, pagination optimization, context menu & column sizing fixes, ComboBox popup anchor fix |
 | 3.2.0 | 2026-02-26 | DataGrid column sizing modes (Fill, FitHeader), zero-warning build, IL2026/IL3050 AOT fixes, theme change responsiveness |
 | 3.1.0 | 2026-02-26 | SelectedIndex/SelectedIndices features, AOT/trimming fixes, DataGrid virtualization crash fix, ComboBox selection fixes |
