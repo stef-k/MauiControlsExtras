@@ -20,7 +20,7 @@
                     Opacity="0.3" />
         </Border.Shadow>
 
-        <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="12">
+        <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="12">
             <!-- Header -->
             <Label x:Name="headerLabel"
                    Grid.Row="0"
@@ -43,36 +43,42 @@
                        ClearButtonVisibility="WhileEditing" />
             </Border>
 
-            <!-- Value List -->
-            <ScrollView Grid.Row="2">
-                <VerticalStackLayout x:Name="valuesContainer" Spacing="4">
-                    <!-- Select All / Clear buttons -->
-                    <Grid ColumnDefinitions="*,*" Margin="0,0,0,8">
-                        <Button x:Name="selectAllButton"
-                                Grid.Column="0"
-                                Text="Select All"
-                                Clicked="OnSelectAllClicked"
-                                HeightRequest="32"
-                                Padding="8,4"
-                                FontSize="12"
-                                Margin="0,0,4,0" />
-                        <Button x:Name="clearButton"
-                                Grid.Column="1"
-                                Text="Clear"
-                                Clicked="OnClearClicked"
-                                HeightRequest="32"
-                                Padding="8,4"
-                                FontSize="12"
-                                Margin="4,0,0,0" />
-                    </Grid>
+            <!-- Select All / Clear buttons (fixed, always visible) -->
+            <Grid Grid.Row="2" ColumnDefinitions="*,*" Margin="0,0,0,8">
+                <Button x:Name="selectAllButton"
+                        Grid.Column="0"
+                        Text="Select All"
+                        Clicked="OnSelectAllClicked"
+                        HeightRequest="32"
+                        Padding="8,4"
+                        FontSize="12"
+                        Margin="0,0,4,0" />
+                <Button x:Name="clearButton"
+                        Grid.Column="1"
+                        Text="Clear"
+                        Clicked="OnClearClicked"
+                        HeightRequest="32"
+                        Padding="8,4"
+                        FontSize="12"
+                        Margin="4,0,0,0" />
+            </Grid>
 
-                    <!-- Checkbox items will be added dynamically -->
-                    <VerticalStackLayout x:Name="checkboxContainer" Spacing="2" />
-                </VerticalStackLayout>
-            </ScrollView>
+            <!-- Virtualized Value List -->
+            <CollectionView x:Name="filterItemsList"
+                            Grid.Row="3"
+                            SelectionMode="None">
+                <CollectionView.EmptyView>
+                    <Label Text="No matches"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#999999, Dark=#777777}"
+                           FontSize="13"
+                           Margin="0,16" />
+                </CollectionView.EmptyView>
+            </CollectionView>
 
             <!-- Action Buttons -->
-            <Grid Grid.Row="3" ColumnDefinitions="*,*" Margin="0,8,0,0">
+            <Grid Grid.Row="4" ColumnDefinitions="*,*" Margin="0,8,0,0">
                 <Button x:Name="cancelButton"
                         Grid.Column="0"
                         Text="Cancel"
