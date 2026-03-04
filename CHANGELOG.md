@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.4] - 2026-03-04
+
 ### Fixed
 
 - **ComboBox:** include TranslationX/Y in popup anchor bounds calculation for custom view-switching layouts; dismiss stale overlays before opening new popup ([#282](https://github.com/stef-k/MauiControlsExtras/issues/282))
