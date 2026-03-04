@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ComboBox:** include TranslationX/Y in popup anchor bounds calculation for custom view-switching layouts; dismiss stale overlays before opening new popup ([#282](https://github.com/stef-k/MauiControlsExtras/issues/282))
 - **DataGrid:** fix IL2026 trim warnings from filter popup bindings ([#283](https://github.com/stef-k/MauiControlsExtras/issues/283))
 
 ## [3.3.3] - 2026-03-02
