@@ -11,6 +11,7 @@ internal static class PopupOverlayHelper
     private const double DefaultPopupWidth = 250.0;
     private static readonly ConditionalWeakTable<ContentPage, Grid> _wrapperCache = new();
     private static Grid? _activeOverlay;
+    private static Action? _activeOverlayDismiss;
 
     /// <summary>
     /// Gets the bounds of a view relative to the specified container,
@@ -108,9 +109,9 @@ internal static class PopupOverlayHelper
         page.SizeChanged += onPageSizeChanged;
 
         // Dismiss any stale overlay before adding the new one (single-popup-at-a-time).
-        if (_activeOverlay?.Parent is Layout existingParent)
-            existingParent.Children.Remove(_activeOverlay);
+        _activeOverlayDismiss?.Invoke();
         _activeOverlay = overlay;
+        _activeOverlayDismiss = safeDismiss;
 
         rootLayout.Children.Add(overlay);
 
@@ -128,7 +129,10 @@ internal static class PopupOverlayHelper
         }
 
         if (_activeOverlay == overlay)
+        {
             _activeOverlay = null;
+            _activeOverlayDismiss = null;
+        }
     }
 
     /// <summary>
