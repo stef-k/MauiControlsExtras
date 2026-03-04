@@ -10,6 +10,8 @@ internal static class PopupOverlayHelper
     private const double DefaultPopupHeight = 280.0;
     private const double DefaultPopupWidth = 250.0;
     private static readonly ConditionalWeakTable<ContentPage, Grid> _wrapperCache = new();
+    private static Grid? _activeOverlay;
+    private static Action? _activeOverlayDismiss;
 
     /// <summary>
     /// Gets the bounds of a view relative to the specified container,
@@ -26,8 +28,8 @@ internal static class PopupOverlayHelper
         {
             if (current is VisualElement ve)
             {
-                x += ve.X;
-                y += ve.Y;
+                x += ve.X + ve.TranslationX;
+                y += ve.Y + ve.TranslationY;
 
                 if (current.Parent is ScrollView scrollView)
                 {
@@ -56,9 +58,9 @@ internal static class PopupOverlayHelper
         PopupPlacement placement,
         Action? onDismissed)
     {
-        var page = FindPage(anchor);
+        var page = FindContentPage(anchor);
         if (page == null)
-            throw new InvalidOperationException("Cannot find a Page in the visual tree to host the popup overlay.");
+            throw new InvalidOperationException("Cannot find a ContentPage in the visual tree to host the popup overlay.");
 
         var rootLayout = EnsureRootLayout(page);
 
@@ -106,6 +108,11 @@ internal static class PopupOverlayHelper
         void onPageSizeChanged(object? s, EventArgs e) => safeDismiss();
         page.SizeChanged += onPageSizeChanged;
 
+        // Dismiss any stale overlay before adding the new one (single-popup-at-a-time).
+        _activeOverlayDismiss?.Invoke();
+        _activeOverlay = overlay;
+        _activeOverlayDismiss = safeDismiss;
+
         rootLayout.Children.Add(overlay);
 
         return overlay;
@@ -120,17 +127,23 @@ internal static class PopupOverlayHelper
         {
             parentLayout.Children.Remove(overlay);
         }
+
+        if (_activeOverlay == overlay)
+        {
+            _activeOverlay = null;
+            _activeOverlayDismiss = null;
+        }
     }
 
     /// <summary>
-    /// Finds the Page ancestor of the given element.
+    /// Finds the nearest ContentPage ancestor of the given element.
     /// </summary>
-    private static Page? FindPage(Element element)
+    private static ContentPage? FindContentPage(Element element)
     {
         Element? current = element;
         while (current != null)
         {
-            if (current is Page page)
+            if (current is ContentPage page)
                 return page;
             current = current.Parent;
         }
