@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **DataGrid:** fix IL2026 trim warnings from filter popup bindings ([#283](https://github.com/stef-k/MauiControlsExtras/issues/283))
+
 ## [3.3.3] - 2026-03-02
 
 ### Fixed

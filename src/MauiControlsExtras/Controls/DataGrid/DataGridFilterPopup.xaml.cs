@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using MauiControlsExtras.Base;
 
 namespace MauiControlsExtras.Controls;
@@ -49,6 +50,10 @@ public partial class DataGridFilterPopup : StyledControlBase
         SetupItemTemplate();
     }
 
+    [DynamicDependency(nameof(FilterItem.IsSelected), typeof(FilterItem))]
+    [DynamicDependency(nameof(FilterItem.DisplayText), typeof(FilterItem))]
+    [UnconditionalSuppressMessage("AOT", "IL2026:RequiresUnreferencedCode",
+        Justification = "FilterItem properties preserved via DynamicDependency attributes.")]
     private void SetupItemTemplate()
     {
         filterItemsList.ItemTemplate = new DataTemplate(() =>
