@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.5] - 2026-03-05
+
+### Fixed
+
+- **All controls:** suppress IL2026 trim warnings from `InitializeComponent()` across all XAML controls ([#283](https://github.com/stef-k/MauiControlsExtras/issues/283))
+
 ## [3.3.4] - 2026-03-04
 
 ### Fixed
