@@ -2,8 +2,10 @@
 <base:TextStyledControlBase xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
                             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
                             xmlns:base="clr-namespace:MauiControlsExtras.Base"
+                            xmlns:local="clr-namespace:MauiControlsExtras.Controls"
                             x:Class="MauiControlsExtras.Controls.MultiSelectComboBox"
-                            x:Name="thisControl">
+                            x:Name="thisControl"
+                            x:DataType="local:MultiSelectComboBox">
 
     <Grid RowDefinitions="Auto,Auto">
 

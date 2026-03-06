@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.6] - 2026-03-06
+
+### Fixed
+
+- **All controls:** eliminate IL2026 trim warnings at the source by migrating all XAML bindings to compiled bindings (`x:DataType`), replacing the previous suppression-only approach that was ineffective for consumers ([#283](https://github.com/stef-k/MauiControlsExtras/issues/283))
+
+### Changed
+
+- **All controls:** remove `XC0025` global warning suppression — compiled bindings are now active across all XAML files
+
+### Removed
+
+- **All controls:** remove now-unnecessary `[UnconditionalSuppressMessage]` and `[DynamicDependency]` attributes from all 17 XAML control constructors (compiled bindings eliminate the need)
+
 ## [3.3.5] - 2026-03-05
 
 ### Fixed
