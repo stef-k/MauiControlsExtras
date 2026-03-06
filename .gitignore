@@ -1,3 +1,6 @@
+# Crash dumps
+*.stackdump
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/

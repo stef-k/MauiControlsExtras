@@ -4,7 +4,8 @@
                           xmlns:base="clr-namespace:MauiControlsExtras.Base"
                           xmlns:local="clr-namespace:MauiControlsExtras.Controls"
                           x:Class="MauiControlsExtras.Controls.Calendar"
-                          x:Name="thisControl">
+                          x:Name="thisControl"
+                          x:DataType="local:Calendar">
 
     <Border StrokeThickness="{Binding EffectiveBorderThickness, Source={x:Reference thisControl}}"
             Stroke="{Binding EffectiveBorderColor, Source={x:Reference thisControl}}"
